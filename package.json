@@ -7,11 +7,14 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
+    "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run src"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/chrome": "^0.0.326",
+    "@types/node": "^25.9.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.4",
     "vitest": "^4.0.13"

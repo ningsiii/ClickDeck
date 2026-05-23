@@ -24,6 +24,7 @@ npm install
 npm run build
 npm run typecheck
 npm test
+npm run e2e
 ```
 
 Load the built `dist/` directory in Chrome via `chrome://extensions` with Developer mode enabled.
@@ -58,6 +59,7 @@ npm install
 npm run build
 npm run typecheck
 npm test
+npm run e2e
 ```
 
 构建后，在 Chrome 的 `chrome://extensions` 开启开发者模式，并加载 `dist/` 目录。

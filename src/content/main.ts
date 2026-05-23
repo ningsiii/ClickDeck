@@ -22,6 +22,8 @@ chrome.runtime.onMessage.addListener((message: ClickDeckMessage) => {
   }
 });
 
+window.addEventListener("keydown", handleKeyDown, true);
+
 function toggleClickDeck(): void {
   if (active) {
     deactivate();
@@ -179,6 +181,14 @@ function injectBaseStyles(): void {
     }
   `;
   document.documentElement.append(style);
+}
+
+function handleKeyDown(event: KeyboardEvent): void {
+  if (event.altKey && event.shiftKey && event.code === "KeyC") {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleClickDeck();
+  }
 }
 
 function handleMouseMove(event: MouseEvent): void {

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClickDeck Demo Page</title>
+    <style>
+      :root {
+        color: #172033;
+        background: #f6f8fb;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        width: min(960px, calc(100vw - 48px));
+        margin: 48px auto;
+        padding: 48px;
+        background: #ffffff;
+        border: 1px solid #d8dee9;
+        border-radius: 12px;
+        box-shadow: 0 18px 48px rgba(23, 32, 51, 0.12);
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 48px;
+        line-height: 1.05;
+      }
+
+      p {
+        max-width: 680px;
+        font-size: 18px;
+        line-height: 1.7;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 32px;
+      }
+
+      .card {
+        padding: 20px;
+        border: 1px solid #d8dee9;
+        border-radius: 8px;
+        background: #fbfcfe;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Quarterly Product Review</h1>
+      <p>
+        This page is a stable local fixture for validating ClickDeck selection, style changes,
+        and export behavior before testing against real-world pages.
+      </p>
+      <section class="grid" aria-label="Highlights">
+        <article class="card">
+          <strong>Focus</strong>
+          <span>Make final visual adjustments directly in the browser.</span>
+        </article>
+        <article class="card">
+          <strong>Flow</strong>
+          <span>Open page, select element, tune style, export.</span>
+        </article>
+        <article class="card">
+          <strong>Boundary</strong>
+          <span>No AI generation and no source-code write-back in MVP.</span>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
