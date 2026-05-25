@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ClickDeck",
   "description": "Visually fine-tune the current HTML page and export it.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "action": {
     "default_title": "Toggle ClickDeck"
   },

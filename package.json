@@ -1,6 +1,6 @@
 {
   "name": "clickdeck",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Visually fine-tune the current HTML page and export it.",
   "private": true,
   "license": "MIT",
