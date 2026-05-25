@@ -10,10 +10,11 @@ import {
   type EditorPatch
 } from "../state/editor-state";
 import { createEditHistory } from "../state/history";
-import { createElementLocator, describeElement } from "./dom-utils";
+import { canAutoStartTextEditing, createElementLocator, describeElement } from "./dom-utils";
+import { getPanelLabels } from "./i18n";
 import { createOverlay, type ClickDeckOverlay } from "./overlay";
 import { createPanel, type ClickDeckPanel, type PanelAction } from "./panel";
-import { getEditableTarget } from "./selection";
+import { getEditableTarget, getTabSwitchTarget } from "./selection";
 import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
 import { exportPdfSnapshot } from "../export/pdf";
@@ -24,6 +25,7 @@ export type ClickDeckController = {
 };
 
 export function createController(logger: ClickDeckLogger, rootId: string): ClickDeckController {
+  const labels = getPanelLabels();
   const state = createEditorState();
   const history = createEditHistory();
   let active = false;
@@ -154,14 +156,79 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     setSelectedElement(state, { element: target, descriptor });
     panel?.setHint(descriptor);
 
-    // Start editing the new target
-    editingElement = target;
-    originalText = target.textContent ?? "";
-    target.setAttribute("contenteditable", "true");
-    target.focus();
+    // Only auto-start in-place text editing for text-like elements.
+    // Non-text elements (img/button/input/...) must not be forced into contenteditable.
+    if (canAutoStartTextEditing(target)) {
+      editingElement = target;
+      originalText = target.textContent ?? "";
+      target.setAttribute("contenteditable", "true");
+      target.focus();
+    } else {
+      editingElement = null;
+      originalText = "";
+    }
 
     updateOutline();
     logger.info("Element selected", descriptor);
+  }
+
+  function clearSelection(reason: string): void {
+    stopEditing();
+    selectedElement = null;
+    setSelectedElement(state, null);
+    panel?.setHint(labels.selectHint);
+    updateOutline();
+    logger.info("Selection cleared", { reason });
+  }
+
+  function selectElement(target: HTMLElement, reason: string): void {
+    stopEditing();
+    selectedElement = target;
+    const descriptor = describeElement(target);
+    setSelectedElement(state, { element: target, descriptor });
+    panel?.setHint(descriptor);
+    updateOutline();
+    logger.info("Element selected", { descriptor, reason });
+  }
+
+  function handleSelectionShortcut(event: KeyboardEvent): void {
+    if (!active) {
+      return;
+    }
+
+    // Esc: stop editing + cancel selection, but keep ClickDeck active.
+    if (event.code === "Escape") {
+      if (!selectedElement && !editingElement) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      clearSelection("escape");
+      return;
+    }
+
+    // Tab / Shift+Tab: simple deterministic parent/first-child switch.
+    if (event.code === "Tab") {
+      if (!selectedElement) {
+        return;
+      }
+
+      // Avoid stealing focus when user is navigating native inputs.
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const direction = event.shiftKey ? "backward" : "forward";
+      const next = getTabSwitchTarget(selectedElement, direction);
+      if (!next || next === selectedElement) {
+        return;
+      }
+
+      selectElement(next, `tab:${direction}`);
+    }
   }
 
   function handleStyleAction(action: StyleAction): void {
@@ -308,6 +375,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     window.addEventListener("scroll", updateOutline, true);
     window.addEventListener("resize", updateOutline, true);
     window.addEventListener("keydown", handleHistoryShortcut, true);
+    window.addEventListener("keydown", handleSelectionShortcut, true);
     logger.info("ClickDeck activated");
   }
 
@@ -324,6 +392,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     window.removeEventListener("scroll", updateOutline, true);
     window.removeEventListener("resize", updateOutline, true);
     window.removeEventListener("keydown", handleHistoryShortcut, true);
+    window.removeEventListener("keydown", handleSelectionShortcut, true);
 
     panel?.destroy();
     panel = null;

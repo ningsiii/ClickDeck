@@ -42,6 +42,45 @@ export function createElementLocator(element: HTMLElement): ElementLocator {
   };
 }
 
+export function canAutoStartTextEditing(element: HTMLElement): boolean {
+  if (isClickDeckUiElement(element)) {
+    return false;
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  if (
+    tagName === "img" ||
+    tagName === "button" ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    tagName === "svg" ||
+    tagName === "canvas"
+  ) {
+    return false;
+  }
+
+  if (element.isContentEditable) {
+    return true;
+  }
+
+  const text = (element.textContent ?? "").trim();
+  return text.length > 0;
+}
+
+export function findFirstEditableDescendant(root: HTMLElement): HTMLElement | null {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  let node = walker.nextNode();
+  while (node) {
+    const element = node as HTMLElement;
+    if (!isClickDeckUiElement(element) && element !== document.body && element !== document.documentElement) {
+      return element;
+    }
+    node = walker.nextNode();
+  }
+  return null;
+}
+
 function pickRoleHint(element: HTMLElement): string | undefined {
   const ariaLabel = element.getAttribute("aria-label")?.trim();
   if (ariaLabel) return ariaLabel.slice(0, 80);

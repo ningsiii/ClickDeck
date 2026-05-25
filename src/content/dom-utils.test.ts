@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { createElementLocator } from "./dom-utils";
+import { canAutoStartTextEditing, createElementLocator } from "./dom-utils";
 
 describe("createElementLocator", () => {
   it("includes a short text snippet for text elements", () => {
@@ -64,5 +64,29 @@ describe("createElementLocator", () => {
     const locator = createElementLocator(div);
 
     expect(locator.classHint).toBe(".some-class");
+  });
+});
+
+describe("canAutoStartTextEditing", () => {
+  it("returns true for text-like elements with text content", () => {
+    document.body.innerHTML = `<main><p>Hello</p></main>`;
+    const paragraph = document.querySelector("p") as HTMLElement;
+    expect(canAutoStartTextEditing(paragraph)).toBe(true);
+  });
+
+  it("returns false for non-text elements like img/button/input", () => {
+    document.body.innerHTML = `
+      <main>
+        <img alt="x" src="https://example.com/x.png" />
+        <button>OK</button>
+        <input value="hi" />
+      </main>
+    `;
+    const img = document.querySelector("img") as HTMLElement;
+    const button = document.querySelector("button") as HTMLElement;
+    const input = document.querySelector("input") as HTMLElement;
+    expect(canAutoStartTextEditing(img)).toBe(false);
+    expect(canAutoStartTextEditing(button)).toBe(false);
+    expect(canAutoStartTextEditing(input)).toBe(false);
   });
 });
