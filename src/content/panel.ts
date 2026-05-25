@@ -95,6 +95,41 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     onAction(button.dataset.action as PanelAction);
   });
 
+  // --- Drag logic start ---
+  const header = element.querySelector<HTMLElement>(".clickdeck-panel__header");
+  if (header) {
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    header.addEventListener("mousedown", (e: MouseEvent) => {
+      // Ignore if clicking a button inside the header
+      if ((e.target as HTMLElement).closest("button")) {
+        return;
+      }
+      isDragging = true;
+      offsetX = e.clientX - element.getBoundingClientRect().left;
+      offsetY = e.clientY - element.getBoundingClientRect().top;
+      e.preventDefault();
+    });
+
+    window.addEventListener("mousemove", (e: MouseEvent) => {
+      if (!isDragging) {
+        return;
+      }
+      const x = e.clientX - offsetX;
+      const y = e.clientY - offsetY;
+      element.style.left = `${x}px`;
+      element.style.top = `${y}px`;
+      element.style.right = "auto";
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+  }
+  // --- Drag logic end ---
+
   return {
     element,
     destroy: () => {

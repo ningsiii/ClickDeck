@@ -85,6 +85,8 @@ function injectBaseStyles(rootId: string): void {
       border: 1px solid rgba(17, 24, 39, 0.14);
       border-radius: 8px;
       box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
       pointer-events: auto;
     }
 
@@ -93,6 +95,11 @@ function injectBaseStyles(rootId: string): void {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 4px;
+      cursor: grab;
+    }
+
+    .clickdeck-panel__header:active {
+      cursor: grabbing;
     }
 
     .clickdeck-panel__title {
