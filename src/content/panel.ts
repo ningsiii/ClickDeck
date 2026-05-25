@@ -1,12 +1,15 @@
 import type { StyleAction } from "./style-actions";
 
+export type PanelAction = StyleAction | "undo" | "redo";
+
 export type ClickDeckPanel = {
   element: HTMLDivElement;
   destroy: () => void;
   setHint: (text: string) => void;
+  setHistoryAvailability: (canUndo: boolean, canRedo: boolean) => void;
 };
 
-export function createPanel(onAction: (action: StyleAction) => void): ClickDeckPanel {
+export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
   const element = document.createElement("div");
   element.className = "clickdeck-panel";
   element.dataset.clickdeck = "true";
@@ -22,6 +25,10 @@ export function createPanel(onAction: (action: StyleAction) => void): ClickDeckP
     buttonMarkup("align-left", "Left"),
     buttonMarkup("align-center", "Center"),
     buttonMarkup("align-right", "Right"),
+    `</div>`,
+    `<div class="clickdeck-panel__group">`,
+    buttonMarkup("undo", "Undo", true),
+    buttonMarkup("redo", "Redo", true),
     `</div>`
   ].join("");
 
@@ -31,7 +38,7 @@ export function createPanel(onAction: (action: StyleAction) => void): ClickDeckP
       return;
     }
 
-    onAction(button.dataset.action as StyleAction);
+    onAction(button.dataset.action as PanelAction);
   });
 
   return {
@@ -44,11 +51,20 @@ export function createPanel(onAction: (action: StyleAction) => void): ClickDeckP
       if (hint) {
         hint.textContent = text;
       }
+    },
+    setHistoryAvailability: (canUndo, canRedo) => {
+      const undoButton = element.querySelector<HTMLButtonElement>("[data-action='undo']");
+      const redoButton = element.querySelector<HTMLButtonElement>("[data-action='redo']");
+      if (undoButton) {
+        undoButton.disabled = !canUndo;
+      }
+      if (redoButton) {
+        redoButton.disabled = !canRedo;
+      }
     }
   };
 }
 
-function buttonMarkup(action: StyleAction, label: string): string {
-  return `<button class="clickdeck-button" data-action="${action}" type="button">${label}</button>`;
+function buttonMarkup(action: PanelAction, label: string, disabled = false): string {
+  return `<button class="clickdeck-button" data-action="${action}" type="button"${disabled ? " disabled" : ""}>${label}</button>`;
 }
-

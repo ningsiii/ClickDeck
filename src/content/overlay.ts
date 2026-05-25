@@ -125,7 +125,13 @@ function injectBaseStyles(rootId: string): void {
       background: #eff6ff;
       border-color: #93c5fd;
     }
+
+    .clickdeck-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+    }
   `;
   document.documentElement.append(style);
 }
-

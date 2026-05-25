@@ -36,6 +36,14 @@ test("loads the extension and applies a style change on a page element", async (
     const updatedFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
 
     expect(parseFloat(updatedFontSize)).toBeGreaterThan(parseFloat(initialFontSize));
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    const undoneFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
+    expect(undoneFontSize).toBe(initialFontSize);
+
+    await page.getByRole("button", { name: "Redo" }).click();
+    const redoneFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
+    expect(redoneFontSize).toBe(updatedFontSize);
   } finally {
     await context.close();
     await new Promise<void>((resolve) => server.close(() => resolve()));
