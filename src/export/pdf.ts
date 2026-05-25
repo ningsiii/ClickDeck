@@ -2,6 +2,21 @@ import type { ClickDeckLogger } from "../diagnostics/logger";
 
 export type PdfExportMode = "long-page" | "a4" | "slides";
 
+function getBasePrintCss(): string {
+  // Minimal print safety net: avoid common containers being cut in half when printing.
+  // Not a full pagination engine; just a practical default.
+  return `
+    @media print {
+      section, article, figure, blockquote,
+      .card, .panel, .page, .slide,
+      [data-card], [data-panel] {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+  `;
+}
+
 export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger): void {
   const styleId = "clickdeck-pdf-style";
   let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
@@ -38,8 +53,11 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
     css = "";
   }
 
-  styleEl.textContent = css;
+  styleEl.textContent = `${css}\n${getBasePrintCss()}`.trim();
 
+  // Chrome/Edge print dialogs often don't include background colors/images by default.
+  // We cannot control that setting from an extension, so we log a clear reminder.
+  logger.info("PDF export note: enable background graphics/colors in the print dialog for best results.");
   logger.info(`Triggering PDF export in ${mode} mode`);
 
   // Content scripts run in an isolated world and cannot reliably call window.print().

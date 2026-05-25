@@ -41,6 +41,7 @@ describe("exportPdfSnapshot", () => {
     expect(styleEl).not.toBeNull();
     expect(styleEl.textContent).toContain("size: A4");
     expect(styleEl.textContent).toContain("margin: 16mm");
+    expect(styleEl.textContent).toContain("break-inside: avoid");
 
     // Flush requestAnimationFrame
     vi.runAllTicks();
@@ -56,6 +57,7 @@ describe("exportPdfSnapshot", () => {
     expect(styleEl).not.toBeNull();
     expect(styleEl.textContent).toContain("size: 16in 9in");
     expect(styleEl.textContent).toContain("page-break-after: always");
+    expect(styleEl.textContent).toContain("break-inside: avoid");
 
     vi.runAllTicks();
     vi.runAllTimers();
@@ -68,7 +70,7 @@ describe("exportPdfSnapshot", () => {
 
     const styleEl = document.getElementById("clickdeck-pdf-style") as HTMLStyleElement;
     expect(styleEl).not.toBeNull();
-    expect(styleEl.textContent).toBe("");
+    expect(styleEl.textContent).toContain("break-inside: avoid");
 
     vi.runAllTicks();
     vi.runAllTimers();

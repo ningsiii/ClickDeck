@@ -1,5 +1,21 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
 
+function ensureBaseTag(clone: HTMLElement): void {
+  // Inject <base> tag to ensure relative URLs (images, css) still work.
+  // Note: external resources still depend on their original URLs; this is not an offline packager.
+  const baseEl = document.createElement("base");
+  baseEl.href = window.location.href;
+  const head = clone.querySelector("head");
+  if (head) {
+    head.prepend(baseEl);
+    return;
+  }
+
+  const newHead = document.createElement("head");
+  newHead.appendChild(baseEl);
+  clone.insertBefore(newHead, clone.firstChild);
+}
+
 export function exportHtmlSnapshot(logger: ClickDeckLogger): void {
   try {
     const clone = document.documentElement.cloneNode(true) as HTMLElement;
@@ -8,17 +24,7 @@ export function exportHtmlSnapshot(logger: ClickDeckLogger): void {
     const elementsToRemove = clone.querySelectorAll("[data-clickdeck='true'], #clickdeck-style");
     elementsToRemove.forEach(el => el.remove());
 
-    // Inject <base> tag to ensure relative URLs (images, css) still work
-    const baseEl = document.createElement("base");
-    baseEl.href = window.location.href;
-    const head = clone.querySelector("head");
-    if (head) {
-      head.prepend(baseEl);
-    } else {
-      const newHead = document.createElement("head");
-      newHead.appendChild(baseEl);
-      clone.insertBefore(newHead, clone.firstChild);
-    }
+    ensureBaseTag(clone);
 
     const htmlContent = clone.outerHTML;
     // Prepend doctype if the document has one
@@ -37,7 +43,9 @@ export function exportHtmlSnapshot(logger: ClickDeckLogger): void {
     a.click();
 
     URL.revokeObjectURL(url);
-    logger.info("HTML snapshot exported successfully");
+    logger.info(
+      "HTML snapshot exported. Note: external images/fonts still rely on their original URLs. data: URL images are preserved."
+    );
   } catch (error) {
     logger.error("Failed to export HTML snapshot", { error });
   }
