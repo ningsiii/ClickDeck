@@ -7,6 +7,7 @@ export type SelectedElementState = {
 
 export type StylePatch = {
   id: string;
+  kind: "style";
   targetElement: HTMLElement;
   targetDescriptor: string;
   property: StyleProperty;
@@ -15,10 +16,22 @@ export type StylePatch = {
   createdAt: number;
 };
 
+export type ContentPatch = {
+  id: string;
+  kind: "content";
+  targetElement: HTMLElement;
+  targetDescriptor: string;
+  before: string;
+  after: string;
+  createdAt: number;
+};
+
+export type EditorPatch = StylePatch | ContentPatch;
+
 export type EditorState = {
   active: boolean;
   selected: SelectedElementState | null;
-  patches: StylePatch[];
+  patches: EditorPatch[];
 };
 
 export function createEditorState(): EditorState {
@@ -38,5 +51,9 @@ export function setSelectedElement(state: EditorState, selected: SelectedElement
 }
 
 export function recordStylePatch(state: EditorState, patch: StylePatch): void {
+  state.patches.push(patch);
+}
+
+export function recordContentPatch(state: EditorState, patch: ContentPatch): void {
   state.patches.push(patch);
 }

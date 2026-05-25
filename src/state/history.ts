@@ -1,8 +1,8 @@
-import type { StylePatch } from "./editor-state";
+import type { EditorPatch } from "./editor-state";
 
 export type EditHistory = {
-  undoStack: StylePatch[];
-  redoStack: StylePatch[];
+  undoStack: EditorPatch[];
+  redoStack: EditorPatch[];
 };
 
 export function createEditHistory(): EditHistory {

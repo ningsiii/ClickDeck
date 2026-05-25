@@ -2,9 +2,12 @@ import { getRecentLogs, type ClickDeckLogger } from "../diagnostics/logger";
 import {
   createEditorState,
   recordStylePatch,
+  recordContentPatch,
   setEditorActive,
   setSelectedElement,
-  type StylePatch
+  type StylePatch,
+  type ContentPatch,
+  type EditorPatch
 } from "../state/editor-state";
 import { createEditHistory } from "../state/history";
 import { describeElement } from "./dom-utils";
@@ -41,8 +44,12 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     panel?.setHistoryAvailability(history.undoStack.length > 0, history.redoStack.length > 0);
   }
 
-  function applyPatchValue(patch: StylePatch, value: string): void {
-    patch.targetElement.style[patch.property] = value;
+  function applyPatchValue(patch: EditorPatch, value: string): void {
+    if (patch.kind === "style") {
+      patch.targetElement.style[patch.property] = value;
+    } else {
+      patch.targetElement.textContent = value;
+    }
   }
 
   function undoLastPatch(): void {
@@ -103,6 +110,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     const descriptor = describeElement(target);
     setSelectedElement(state, { element: target, descriptor });
     panel?.setHint(descriptor);
+    panel?.setTextContent(target.textContent ?? "");
     updateOutline();
     logger.info("Element selected", descriptor);
   }
@@ -119,6 +127,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
     const patch: StylePatch = {
       id: `${Date.now()}-${state.patches.length + 1}`,
+      kind: "style",
       targetElement: selectedElement,
       targetDescriptor: describeElement(selectedElement),
       property: change.property,
@@ -189,6 +198,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       selectedElement.style.color = colorValue;
       const patch: StylePatch = {
         id: `${Date.now()}-${state.patches.length + 1}`,
+        kind: "style",
         targetElement: selectedElement,
         targetDescriptor: describeElement(selectedElement),
         property: "color",
@@ -201,6 +211,33 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       history.redoStack.length = 0;
       logger.info("Color picker applied", { color: colorValue, target: patch.targetDescriptor });
       updateOutline();
+      refreshHistoryButtons();
+      return;
+    }
+
+    if (action === "commit-text") {
+      if (!selectedElement || !panel) {
+        return;
+      }
+      const newText = panel.getTextContent();
+      const oldText = selectedElement.textContent ?? "";
+      if (newText === oldText) {
+        return;
+      }
+      selectedElement.textContent = newText;
+      const patch: ContentPatch = {
+        id: `${Date.now()}-${state.patches.length + 1}`,
+        kind: "content",
+        targetElement: selectedElement,
+        targetDescriptor: describeElement(selectedElement),
+        before: oldText,
+        after: newText,
+        createdAt: Date.now()
+      };
+      recordContentPatch(state, patch);
+      history.undoStack.push(patch);
+      history.redoStack.length = 0;
+      logger.info("Text content changed", { target: patch.targetDescriptor });
       refreshHistoryButtons();
       return;
     }

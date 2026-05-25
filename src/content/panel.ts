@@ -1,12 +1,14 @@
 import type { StyleAction } from "./style-actions";
 
-export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics" | "export-html" | "export-pdf-long" | "export-pdf-a4" | "export-pdf-slides" | `color:${string}`;
+export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics" | "export-html" | "export-pdf-long" | "export-pdf-a4" | "export-pdf-slides" | `color:${string}` | "commit-text";
 
 export type ClickDeckPanel = {
   element: HTMLDivElement;
   destroy: () => void;
   setHint: (text: string) => void;
   setHistoryAvailability: (canUndo: boolean, canRedo: boolean) => void;
+  setTextContent: (text: string) => void;
+  getTextContent: () => string;
 };
 
 export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
@@ -56,6 +58,13 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
         <input type="color" class="clickdeck-color-picker" value="#2563eb" title="Pick color" />
         <button class="clickdeck-button" data-action="pick-bg-color" type="button">Auto</button>
         <button class="clickdeck-button" data-action="reset-color" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Text</div>
+      <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
+        <textarea class="clickdeck-text-editor" rows="3" placeholder="Select an element to edit text"></textarea>
+        <button class="clickdeck-button" data-action="commit-text" type="button">Apply Text</button>
       </div>
     </div>
     <div class="clickdeck-panel__section">
@@ -158,6 +167,16 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       if (redoButton) {
         redoButton.disabled = !canRedo;
       }
+    },
+    setTextContent: (text) => {
+      const textarea = element.querySelector<HTMLTextAreaElement>(".clickdeck-text-editor");
+      if (textarea) {
+        textarea.value = text;
+      }
+    },
+    getTextContent: () => {
+      const textarea = element.querySelector<HTMLTextAreaElement>(".clickdeck-text-editor");
+      return textarea?.value ?? "";
     }
   };
 }
