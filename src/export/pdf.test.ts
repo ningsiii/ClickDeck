@@ -8,6 +8,8 @@ import type { ClickDeckLogger } from "../diagnostics/logger";
 describe("exportPdfSnapshot", () => {
   let logger: ClickDeckLogger;
 
+  let appendChildSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     logger = {
       debug: vi.fn(),
@@ -17,12 +19,15 @@ describe("exportPdfSnapshot", () => {
     };
     
     vi.useFakeTimers();
-    window.print = vi.fn();
+    // We suppress console error because JSDOM throws "Not implemented" when evaluating window.print()
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    appendChildSpy = vi.spyOn(document.body, "appendChild");
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     document.head.innerHTML = "";
+    document.body.innerHTML = "";
   });
 
   it("injects a4 style and prints", () => {
@@ -33,8 +38,10 @@ describe("exportPdfSnapshot", () => {
     expect(styleEl.textContent).toContain("size: A4");
     expect(styleEl.textContent).toContain("margin: 16mm");
 
-    vi.advanceTimersByTime(150);
-    expect(window.print).toHaveBeenCalled();
+    const scriptAppended = appendChildSpy.mock.calls.some(call => 
+      call[0] instanceof HTMLScriptElement && call[0].textContent === "window.print();"
+    );
+    expect(scriptAppended).toBe(true);
   });
 
   it("injects slides style and prints", () => {
@@ -45,8 +52,10 @@ describe("exportPdfSnapshot", () => {
     expect(styleEl.textContent).toContain("size: 16in 9in");
     expect(styleEl.textContent).toContain("page-break-after: always");
 
-    vi.advanceTimersByTime(150);
-    expect(window.print).toHaveBeenCalled();
+    const scriptAppended = appendChildSpy.mock.calls.some(call => 
+      call[0] instanceof HTMLScriptElement && call[0].textContent === "window.print();"
+    );
+    expect(scriptAppended).toBe(true);
   });
 
   it("injects empty style for long-page and prints", () => {
@@ -56,7 +65,9 @@ describe("exportPdfSnapshot", () => {
     expect(styleEl).not.toBeNull();
     expect(styleEl.textContent).toBe("");
 
-    vi.advanceTimersByTime(150);
-    expect(window.print).toHaveBeenCalled();
+    const scriptAppended = appendChildSpy.mock.calls.some(call => 
+      call[0] instanceof HTMLScriptElement && call[0].textContent === "window.print();"
+    );
+    expect(scriptAppended).toBe(true);
   });
 });

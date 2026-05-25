@@ -8,6 +8,18 @@ export function exportHtmlSnapshot(logger: ClickDeckLogger): void {
     const elementsToRemove = clone.querySelectorAll("[data-clickdeck='true'], #clickdeck-style");
     elementsToRemove.forEach(el => el.remove());
 
+    // Inject <base> tag to ensure relative URLs (images, css) still work
+    const baseEl = document.createElement("base");
+    baseEl.href = window.location.href;
+    const head = clone.querySelector("head");
+    if (head) {
+      head.prepend(baseEl);
+    } else {
+      const newHead = document.createElement("head");
+      newHead.appendChild(baseEl);
+      clone.insertBefore(newHead, clone.firstChild);
+    }
+
     const htmlContent = clone.outerHTML;
     // Prepend doctype if the document has one
     const doctype = document.doctype 

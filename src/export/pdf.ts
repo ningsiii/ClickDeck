@@ -42,10 +42,12 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
 
   logger.info(`Triggering PDF export in ${mode} mode`);
   
-  // Allow DOM to update style before print
-  setTimeout(() => {
-    window.print();
-    // Clean up after print dialog closes (heuristically)
-    setTimeout(() => styleEl?.remove(), 2000);
-  }, 100);
+  // We must call window.print() in the main world. Content scripts often have restrictions.
+  const script = document.createElement("script");
+  script.textContent = "window.print();";
+  document.body.appendChild(script);
+  script.remove();
+  
+  // Clean up after print dialog closes (heuristically)
+  setTimeout(() => styleEl?.remove(), 2000);
 }
