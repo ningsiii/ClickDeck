@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClickDeck Showcase Page</title>
+    <style>
+      :root {
+        color: #2c261f;
+        background: #efe7dc;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 12% 20%, rgba(255, 248, 232, 0.92), transparent 28rem),
+          linear-gradient(135deg, #f4eddf 0%, #e8d6c0 48%, #d7e3d0 100%);
+      }
+
+      main {
+        width: min(1120px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 14px 0 28px;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        color: #6f5845;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      .brand img {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(75, 55, 33, 0.16);
+      }
+
+      .topbar span:last-child {
+        font-size: 13px;
+      }
+
+      .hero {
+        min-height: calc(100vh - 120px);
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+        gap: 34px;
+        align-items: center;
+      }
+
+      .copy {
+        padding: 34px 0;
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        color: #8a6041;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 720px;
+        color: #2f281f;
+        font-size: clamp(50px, 8vw, 96px);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 610px;
+        margin: 24px 0 0;
+        color: #5e5147;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        font-size: 19px;
+        line-height: 1.65;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 18px;
+        border: 1px solid #8d6949;
+        border-radius: 8px;
+        background: #2f281f;
+        color: #fff9ed;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .button.secondary {
+        background: rgba(255, 250, 242, 0.56);
+        color: #4c392b;
+      }
+
+      .brief {
+        position: relative;
+        padding: 24px;
+        border: 1px solid rgba(88, 63, 39, 0.22);
+        border-radius: 12px;
+        background: rgba(255, 250, 242, 0.74);
+        box-shadow: 0 24px 70px rgba(82, 57, 35, 0.18);
+        backdrop-filter: blur(8px);
+      }
+
+      .brief::before {
+        content: "";
+        position: absolute;
+        inset: 14px;
+        border: 1px dashed rgba(122, 92, 58, 0.32);
+        border-radius: 8px;
+        pointer-events: none;
+      }
+
+      .slide {
+        position: relative;
+        min-height: 430px;
+        padding: 28px;
+        border-radius: 8px;
+        background: #fffaf2;
+        overflow: hidden;
+      }
+
+      .slide-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        color: #7c624a;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .slide h2 {
+        width: 75%;
+        margin: 52px 0 16px;
+        color: #3b2f25;
+        font-size: 42px;
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      .slide p {
+        width: 72%;
+        margin: 0;
+        color: #66574c;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        font-size: 17px;
+        line-height: 1.65;
+      }
+
+      .ribbon {
+        position: absolute;
+        right: -32px;
+        bottom: 42px;
+        width: 230px;
+        padding: 14px 20px;
+        transform: rotate(-6deg);
+        border-radius: 8px;
+        background: #d9552a;
+        color: #fff9ed;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        font-weight: 700;
+        box-shadow: 0 16px 34px rgba(150, 58, 26, 0.22);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .metric {
+        min-height: 118px;
+        padding: 18px;
+        border: 1px solid rgba(88, 63, 39, 0.18);
+        border-radius: 8px;
+        background: rgba(255, 250, 242, 0.72);
+      }
+
+      .metric strong {
+        display: block;
+        color: #2f281f;
+        font-size: 32px;
+        line-height: 1;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 10px;
+        color: #66574c;
+        font-family: "Trebuchet MS", Verdana, sans-serif;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 820px) {
+        main {
+          width: min(100% - 28px, 620px);
+          padding-top: 18px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .hero {
+          min-height: auto;
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: clamp(48px, 16vw, 72px);
+        }
+
+        .slide h2,
+        .slide p {
+          width: 100%;
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div class="brand">
+          <img src="../public/brand/logo2-panel.png" alt="" />
+          <span>ClickDeck demo</span>
+        </div>
+        <span>Open this page, press Alt+Shift+C, and edit it in place.</span>
+      </header>
+
+      <section class="hero" aria-label="Demo brief">
+        <div class="copy">
+          <p class="eyebrow">HTML presentation polish</p>
+          <h1>Make the final page feel finished.</h1>
+          <p class="lead">
+            This showcase page is designed for recording ClickDeck demos: select the headline,
+            tune typography, adjust color, edit copy, undo changes, and export a clean HTML or PDF result.
+          </p>
+          <div class="actions">
+            <a class="button" href="#metrics">Tune the metrics</a>
+            <a class="button secondary" href="#brief">Edit the brief</a>
+          </div>
+        </div>
+
+        <aside class="brief" id="brief" aria-label="Presentation preview">
+          <div class="slide">
+            <div class="slide-header">
+              <span>Project Brief</span>
+              <span>v0.1 alpha</span>
+            </div>
+            <h2>Browser-first editing for HTML documents.</h2>
+            <p>
+              ClickDeck turns the rendered page into a lightweight visual editor, so the last mile
+              of layout and copy polish can happen where the work is already visible.
+            </p>
+            <div class="ribbon">Ready for GitHub feedback</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="metrics" id="metrics" aria-label="Demo metrics">
+        <article class="metric">
+          <strong>1 click</strong>
+          <span>Select visible elements without digging through the DOM tree.</span>
+        </article>
+        <article class="metric">
+          <strong>4 tools</strong>
+          <span>Typography, spacing, alignment, and color controls for common polish work.</span>
+        </article>
+        <article class="metric">
+          <strong>0 cloud</strong>
+          <span>Local browser editing with no default upload of page content or diagnostics.</span>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
