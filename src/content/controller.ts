@@ -31,6 +31,37 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let selectedElement: HTMLElement | null = null;
   let overlay: ClickDeckOverlay | null = null;
   let panel: ClickDeckPanel | null = null;
+  let editingElement: HTMLElement | null = null;
+  let originalText: string = "";
+
+  function stopEditing(): void {
+    if (!editingElement) {
+      return;
+    }
+
+    editingElement.removeAttribute("contenteditable");
+    const newText = editingElement.textContent ?? "";
+
+    if (newText !== originalText) {
+      const patch: ContentPatch = {
+        id: `${Date.now()}-${state.patches.length + 1}`,
+        kind: "content",
+        targetElement: editingElement,
+        targetDescriptor: describeElement(editingElement),
+        before: originalText,
+        after: newText,
+        createdAt: Date.now()
+      };
+      recordContentPatch(state, patch);
+      history.undoStack.push(patch);
+      history.redoStack.length = 0;
+      logger.info("In-place text editing completed", { target: patch.targetDescriptor });
+      refreshHistoryButtons();
+    }
+
+    editingElement = null;
+    originalText = "";
+  }
 
   function updateOutline(): void {
     if (!overlay) {
@@ -100,6 +131,16 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     }
 
     const target = getEditableTarget(event.target);
+
+    // If clicking inside the currently editing element, do not intercept
+    // This allows the user to click to place the cursor.
+    if (editingElement && editingElement.contains(event.target as Node)) {
+      return;
+    }
+
+    // Stop editing the previous element before selecting a new one
+    stopEditing();
+
     if (!target) {
       return;
     }
@@ -110,7 +151,13 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     const descriptor = describeElement(target);
     setSelectedElement(state, { element: target, descriptor });
     panel?.setHint(descriptor);
-    panel?.setTextContent(target.textContent ?? "");
+
+    // Start editing the new target
+    editingElement = target;
+    originalText = target.textContent ?? "";
+    target.setAttribute("contenteditable", "true");
+    target.focus();
+
     updateOutline();
     logger.info("Element selected", descriptor);
   }
@@ -148,6 +195,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handlePanelAction(action: PanelAction): void {
+    // Commit any active text editing before handling other actions
+    stopEditing();
+
     if (action === "close") {
       deactivate();
       return;
@@ -215,33 +265,6 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    if (action === "commit-text") {
-      if (!selectedElement || !panel) {
-        return;
-      }
-      const newText = panel.getTextContent();
-      const oldText = selectedElement.textContent ?? "";
-      if (newText === oldText) {
-        return;
-      }
-      selectedElement.textContent = newText;
-      const patch: ContentPatch = {
-        id: `${Date.now()}-${state.patches.length + 1}`,
-        kind: "content",
-        targetElement: selectedElement,
-        targetDescriptor: describeElement(selectedElement),
-        before: oldText,
-        after: newText,
-        createdAt: Date.now()
-      };
-      recordContentPatch(state, patch);
-      history.undoStack.push(patch);
-      history.redoStack.length = 0;
-      logger.info("Text content changed", { target: patch.targetDescriptor });
-      refreshHistoryButtons();
-      return;
-    }
-
     handleStyleAction(action as StyleAction);
   }
 
@@ -250,8 +273,16 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    // Let browser handle native undo if typing inside editable element
+    if (editingElement && document.activeElement === editingElement) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
+    
+    stopEditing();
+
     if (event.shiftKey) {
       redoLastPatch();
       return;
@@ -278,6 +309,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
   function deactivate(): void {
     active = false;
+    stopEditing();
     setEditorActive(state, false);
     hoveredElement = null;
     selectedElement = null;

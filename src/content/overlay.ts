@@ -181,26 +181,6 @@ function injectBaseStyles(rootId: string): void {
       background: transparent;
     }
 
-    .clickdeck-text-editor {
-      width: 100%;
-      min-height: 60px;
-      padding: 6px 8px;
-      color: #111827;
-      background: #ffffff;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: inherit;
-      line-height: 1.4;
-      resize: vertical;
-    }
-
-    .clickdeck-text-editor:focus {
-      outline: 2px solid #2563eb;
-      outline-offset: -1px;
-      border-color: #2563eb;
-    }
-
     .clickdeck-button--icon {
       min-height: 24px;
       width: 24px;
