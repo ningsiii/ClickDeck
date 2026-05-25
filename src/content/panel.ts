@@ -1,4 +1,5 @@
 import type { StyleAction } from "./style-actions";
+import { getPanelLabels } from "./i18n";
 
 export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics" | "export-html" | "export-pdf-long" | "export-pdf-a4" | "export-pdf-slides" | `color:${string}`;
 
@@ -10,79 +11,85 @@ export type ClickDeckPanel = {
 };
 
 export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
+  const labels = getPanelLabels();
+  const logoUrl = chrome.runtime.getURL("brand/logo2-panel.png");
   const element = document.createElement("div");
   element.className = "clickdeck-panel";
   element.dataset.clickdeck = "true";
   element.innerHTML = `
     <div class="clickdeck-panel__header">
-      <span class="clickdeck-panel__title">ClickDeck <span class="clickdeck-panel__status">Active</span></span>
-      <button class="clickdeck-button clickdeck-button--icon" data-action="close" type="button" aria-label="Close" title="Close">✕</button>
+      <span class="clickdeck-panel__title">
+        <img class="clickdeck-panel__logo" src="${logoUrl}" alt="" />
+        <span>ClickDeck</span>
+        <span class="clickdeck-panel__status">${labels.active}</span>
+      </span>
+      <button class="clickdeck-button clickdeck-button--icon" data-action="close" type="button" aria-label="${labels.close}" title="${labels.close}">✕</button>
     </div>
-    <div class="clickdeck-panel__hint">Select an element on the page.</div>
+    <div class="clickdeck-panel__hint">${labels.selectHint}</div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Typography</div>
+      <div class="clickdeck-panel__section-title">${labels.typography}</div>
       <div class="clickdeck-panel__group">
         ${buttonMarkup("font-smaller", "A-")}
         ${buttonMarkup("font-larger", "A+")}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Weight</div>
+      <div class="clickdeck-panel__section-title">${labels.weight}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("weight-light", "Light")}
-        ${buttonMarkup("weight-normal", "Normal")}
-        ${buttonMarkup("weight-bold", "Bold")}
+        ${buttonMarkup("weight-light", labels.light)}
+        ${buttonMarkup("weight-normal", labels.normal)}
+        ${buttonMarkup("weight-bold", labels.bold)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Spacing</div>
+      <div class="clickdeck-panel__section-title">${labels.spacing}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("spacing-compact", "Compact")}
-        ${buttonMarkup("spacing-normal", "Normal")}
-        ${buttonMarkup("spacing-loose", "Loose")}
+        ${buttonMarkup("spacing-compact", labels.compact)}
+        ${buttonMarkup("spacing-normal", labels.normal)}
+        ${buttonMarkup("spacing-loose", labels.loose)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Alignment</div>
+      <div class="clickdeck-panel__section-title">${labels.alignment}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("align-left", "Left")}
-        ${buttonMarkup("align-center", "Center")}
-        ${buttonMarkup("align-right", "Right")}
+        ${buttonMarkup("align-left", labels.left)}
+        ${buttonMarkup("align-center", labels.center)}
+        ${buttonMarkup("align-right", labels.right)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Color</div>
+      <div class="clickdeck-panel__section-title">${labels.color}</div>
       <div class="clickdeck-panel__group">
-        <input type="color" class="clickdeck-color-picker" value="#2563eb" title="Pick color" />
-        <button class="clickdeck-button" data-action="pick-bg-color" type="button">Auto</button>
-        <button class="clickdeck-button" data-action="reset-color" type="button">Reset</button>
+        <input type="color" class="clickdeck-color-picker" value="#2563eb" title="${labels.pickColor}" />
+        <button class="clickdeck-button" data-action="pick-bg-color" type="button">${labels.auto}</button>
+        <button class="clickdeck-button" data-action="reset-color" type="button">${labels.reset}</button>
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">History</div>
+      <div class="clickdeck-panel__section-title">${labels.history}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("undo", "Undo", true)}
-        ${buttonMarkup("redo", "Redo", true)}
+        ${buttonMarkup("undo", labels.undo, true)}
+        ${buttonMarkup("redo", labels.redo, true)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Export HTML</div>
+      <div class="clickdeck-panel__section-title">${labels.exportHtml}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("export-html", "Export")}
+        ${buttonMarkup("export-html", labels.export)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Export PDF</div>
+      <div class="clickdeck-panel__section-title">${labels.exportPdf}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("export-pdf-long", "Long")}
+        ${buttonMarkup("export-pdf-long", labels.long)}
         ${buttonMarkup("export-pdf-a4", "A4")}
         ${buttonMarkup("export-pdf-slides", "16:9")}
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">Diagnostics</div>
+      <div class="clickdeck-panel__section-title">${labels.diagnostics}</div>
       <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
-        ${buttonMarkup("copy-diagnostics", "Copy diagnostics")}
+        ${buttonMarkup("copy-diagnostics", labels.copyDiagnostics)}
       </div>
     </div>
   `;

@@ -22,6 +22,12 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["brand/logo2-panel.png"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
