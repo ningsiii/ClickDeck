@@ -8,7 +8,8 @@ export type StyleAction =
   | "align-left"
   | "align-center"
   | "align-right"
-  | "accent";
+  | "accent"
+  | "reset-color";
 
 export type AppliedStyleChange = {
   property: StyleProperty;
@@ -65,6 +66,13 @@ export function applyStyleAction(
         property: "color",
         before: element.style.color,
         after: "#2563eb"
+      };
+      break;
+    case "reset-color":
+      change = {
+        property: "color",
+        before: element.style.color,
+        after: ""
       };
       break;
   }

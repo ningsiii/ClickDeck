@@ -88,25 +88,56 @@ function injectBaseStyles(rootId: string): void {
       pointer-events: auto;
     }
 
+    .clickdeck-panel__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
     .clickdeck-panel__title {
       font-size: 14px;
       font-weight: 700;
-      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .clickdeck-panel__status {
+      font-size: 10px;
+      font-weight: 500;
+      color: #10b981;
+      background: #d1fae5;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      margin-left: 6px;
     }
 
     .clickdeck-panel__hint {
       min-height: 18px;
-      margin-bottom: 10px;
       color: #4b5563;
       font-size: 12px;
       line-height: 1.4;
+    }
+
+    .clickdeck-panel__section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .clickdeck-panel__section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
     }
 
     .clickdeck-panel__group {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
-      margin-top: 8px;
     }
 
     .clickdeck-button {
@@ -131,6 +162,24 @@ function injectBaseStyles(rootId: string): void {
       cursor: not-allowed;
       background: #f3f4f6;
       border-color: #e5e7eb;
+    }
+
+    .clickdeck-button--icon {
+      min-height: 24px;
+      width: 24px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+    }
+
+    .clickdeck-button--icon:hover {
+      background: #f3f4f6;
+      color: #111827;
+      border-color: transparent;
     }
   `;
   document.documentElement.append(style);

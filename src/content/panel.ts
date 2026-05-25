@@ -1,6 +1,6 @@
 import type { StyleAction } from "./style-actions";
 
-export type PanelAction = StyleAction | "undo" | "redo";
+export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics";
 
 export type ClickDeckPanel = {
   element: HTMLDivElement;
@@ -13,24 +13,48 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
   const element = document.createElement("div");
   element.className = "clickdeck-panel";
   element.dataset.clickdeck = "true";
-  element.innerHTML = [
-    `<div class="clickdeck-panel__title">ClickDeck</div>`,
-    `<div class="clickdeck-panel__hint">Select an element on the page.</div>`,
-    `<div class="clickdeck-panel__group">`,
-    buttonMarkup("font-smaller", "A-"),
-    buttonMarkup("font-larger", "A+"),
-    buttonMarkup("accent", "Accent"),
-    `</div>`,
-    `<div class="clickdeck-panel__group">`,
-    buttonMarkup("align-left", "Left"),
-    buttonMarkup("align-center", "Center"),
-    buttonMarkup("align-right", "Right"),
-    `</div>`,
-    `<div class="clickdeck-panel__group">`,
-    buttonMarkup("undo", "Undo", true),
-    buttonMarkup("redo", "Redo", true),
-    `</div>`
-  ].join("");
+  element.innerHTML = `
+    <div class="clickdeck-panel__header">
+      <span class="clickdeck-panel__title">ClickDeck <span class="clickdeck-panel__status">Active</span></span>
+      <button class="clickdeck-button clickdeck-button--icon" data-action="close" type="button" aria-label="Close" title="Close">✕</button>
+    </div>
+    <div class="clickdeck-panel__hint">Select an element on the page.</div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Typography</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("font-smaller", "A-")}
+        ${buttonMarkup("font-larger", "A+")}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Alignment</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("align-left", "Left")}
+        ${buttonMarkup("align-center", "Center")}
+        ${buttonMarkup("align-right", "Right")}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Color</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("accent", "Accent")}
+        ${buttonMarkup("reset-color", "Reset Color")}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">History</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("undo", "Undo", true)}
+        ${buttonMarkup("redo", "Redo", true)}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Diagnostics</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("copy-diagnostics", "Copy diagnostics")}
+      </div>
+    </div>
+  `;
 
   element.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action]");

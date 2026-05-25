@@ -1,4 +1,4 @@
-import type { ClickDeckLogger } from "../diagnostics/logger";
+import { getRecentLogs, type ClickDeckLogger } from "../diagnostics/logger";
 import {
   createEditorState,
   recordStylePatch,
@@ -137,6 +137,17 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handlePanelAction(action: PanelAction): void {
+    if (action === "close") {
+      deactivate();
+      return;
+    }
+
+    if (action === "copy-diagnostics") {
+      void navigator.clipboard.writeText(JSON.stringify(getRecentLogs(), null, 2));
+      logger.info("Diagnostics copied to clipboard");
+      return;
+    }
+
     if (action === "undo") {
       undoLastPatch();
       return;
@@ -147,7 +158,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    handleStyleAction(action);
+    handleStyleAction(action as StyleAction);
   }
 
   function handleHistoryShortcut(event: KeyboardEvent): void {
