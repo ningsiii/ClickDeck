@@ -34,9 +34,11 @@ temp/
 # Local/internal planning docs
 AGENTS.md
 docs/Chrome插件*
+docs/chrome插件*
 docs/PRD*
 docs/RELEASE_CHECKLIST.md
 docs/OUTREACH_PLAYBOOK.md
+docs/豆包.md
 docs/工程*
 docs/执行*
 docs/assets/logo*-original.png
