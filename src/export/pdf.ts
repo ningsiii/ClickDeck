@@ -41,13 +41,17 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
   styleEl.textContent = css;
 
   logger.info(`Triggering PDF export in ${mode} mode`);
-  
-  // We must call window.print() in the main world. Content scripts often have restrictions.
-  const script = document.createElement("script");
-  script.textContent = "window.print();";
-  document.body.appendChild(script);
-  script.remove();
-  
-  // Clean up after print dialog closes (heuristically)
-  setTimeout(() => styleEl?.remove(), 2000);
+
+  // Content scripts run in an isolated world and cannot reliably call window.print().
+  // Dynamic <script> injection is also blocked by strict CSPs on most real-world sites.
+  // The correct MV3 approach: ask the background service worker to call window.print()
+  // via chrome.scripting.executeScript({ world: "MAIN" }), which bypasses both limitations.
+  //
+  // We use requestAnimationFrame to let the browser apply the injected @page CSS
+  // before handing control to the background for printing.
+  requestAnimationFrame(() => {
+    chrome.runtime.sendMessage({ type: "CLICKDECK_PRINT" });
+    // Clean up the print style after the dialog has had time to open
+    setTimeout(() => styleEl?.remove(), 3000);
+  });
 }
