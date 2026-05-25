@@ -8,7 +8,7 @@ export type StyleAction =
   | "align-left"
   | "align-center"
   | "align-right"
-  | "accent"
+  | "pick-bg-color"
   | "reset-color"
   | "weight-light"
   | "weight-normal"
@@ -67,13 +67,30 @@ export function applyStyleAction(
         after: "right"
       };
       break;
-    case "accent":
+    case "pick-bg-color": {
+      // Walk up the DOM tree to find the nearest ancestor with a non-transparent background
+      let bg = "";
+      let current: HTMLElement | null = element.parentElement;
+      while (current) {
+        const computedBg = window.getComputedStyle(current).backgroundColor;
+        // "transparent" or "rgba(0, 0, 0, 0)" are both considered transparent
+        if (computedBg && computedBg !== "transparent" && computedBg !== "rgba(0, 0, 0, 0)") {
+          bg = computedBg;
+          break;
+        }
+        current = current.parentElement;
+      }
+      if (!bg) {
+        logger.info("No non-transparent background found in ancestors");
+        return null;
+      }
       change = {
         property: "color",
         before: element.style.color,
-        after: "#2563eb"
+        after: bg
       };
       break;
+    }
     case "reset-color":
       change = {
         property: "color",

@@ -1,6 +1,6 @@
 import type { StyleAction } from "./style-actions";
 
-export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics" | "export-html" | "export-pdf-long" | "export-pdf-a4" | "export-pdf-slides";
+export type PanelAction = StyleAction | "undo" | "redo" | "close" | "copy-diagnostics" | "export-html" | "export-pdf-long" | "export-pdf-a4" | "export-pdf-slides" | `color:${string}`;
 
 export type ClickDeckPanel = {
   element: HTMLDivElement;
@@ -53,8 +53,9 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     <div class="clickdeck-panel__section">
       <div class="clickdeck-panel__section-title">Color</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("accent", "Accent")}
-        ${buttonMarkup("reset-color", "Reset Color")}
+        <input type="color" class="clickdeck-color-picker" value="#2563eb" title="Pick color" />
+        <button class="clickdeck-button" data-action="pick-bg-color" type="button">Auto</button>
+        <button class="clickdeck-button" data-action="reset-color" type="button">Reset</button>
       </div>
     </div>
     <div class="clickdeck-panel__section">
@@ -94,6 +95,13 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
 
     onAction(button.dataset.action as PanelAction);
   });
+
+  const colorPicker = element.querySelector<HTMLInputElement>(".clickdeck-color-picker");
+  if (colorPicker) {
+    colorPicker.addEventListener("input", () => {
+      onAction(`color:${colorPicker.value}` as PanelAction);
+    });
+  }
 
   // --- Drag logic start ---
   const header = element.querySelector<HTMLElement>(".clickdeck-panel__header");

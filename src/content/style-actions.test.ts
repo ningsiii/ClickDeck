@@ -46,11 +46,19 @@ describe("applyStyleAction", () => {
   });
 
   it("applies colors", () => {
-    applyStyleAction(logger, element, "accent");
-    expect(element.style.color).toBe("rgb(37, 99, 235)"); // #2563eb
+    // Mock parent for pick-bg-color
+    const parent = document.createElement("div");
+    parent.style.backgroundColor = "rgb(255, 0, 0)";
+    parent.appendChild(element);
+    document.body.appendChild(parent);
+
+    applyStyleAction(logger, element, "pick-bg-color");
+    expect(element.style.color).toBe("rgb(255, 0, 0)");
 
     applyStyleAction(logger, element, "reset-color");
     expect(element.style.color).toBe("");
+    
+    parent.remove();
   });
 
   it("applies font weight", () => {

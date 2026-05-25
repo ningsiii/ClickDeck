@@ -180,6 +180,31 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    if (typeof action === "string" && action.startsWith("color:")) {
+      if (!selectedElement) {
+        return;
+      }
+      const colorValue = action.slice(6); // Remove "color:" prefix
+      const before = selectedElement.style.color;
+      selectedElement.style.color = colorValue;
+      const patch: StylePatch = {
+        id: `${Date.now()}-${state.patches.length + 1}`,
+        targetElement: selectedElement,
+        targetDescriptor: describeElement(selectedElement),
+        property: "color",
+        before,
+        after: colorValue,
+        createdAt: Date.now()
+      };
+      recordStylePatch(state, patch);
+      history.undoStack.push(patch);
+      history.redoStack.length = 0;
+      logger.info("Color picker applied", { color: colorValue, target: patch.targetDescriptor });
+      updateOutline();
+      refreshHistoryButtons();
+      return;
+    }
+
     handleStyleAction(action as StyleAction);
   }
 

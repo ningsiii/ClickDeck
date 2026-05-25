@@ -171,6 +171,16 @@ function injectBaseStyles(rootId: string): void {
       border-color: #e5e7eb;
     }
 
+    .clickdeck-color-picker {
+      min-height: 32px;
+      width: 100%;
+      padding: 2px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
     .clickdeck-button--icon {
       min-height: 24px;
       width: 24px;
