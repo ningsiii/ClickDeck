@@ -42,11 +42,19 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       </div>
     </div>
     <div class="clickdeck-panel__section">
-      <div class="clickdeck-panel__section-title">${labels.spacing}</div>
+      <div class="clickdeck-panel__section-title">${labels.lineHeight}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("spacing-compact", labels.compact)}
-        ${buttonMarkup("spacing-normal", labels.normal)}
-        ${buttonMarkup("spacing-loose", labels.loose)}
+        ${buttonMarkup("lineheight-compact", labels.compact)}
+        ${buttonMarkup("lineheight-normal", labels.normal)}
+        ${buttonMarkup("lineheight-loose", labels.loose)}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">${labels.letterSpacing}</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("letterspacing-tight", labels.tight)}
+        ${buttonMarkup("letterspacing-normal", labels.normal)}
+        ${buttonMarkup("letterspacing-wide", labels.wide)}
       </div>
     </div>
     <div class="clickdeck-panel__section">
@@ -63,6 +71,37 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
         <input type="color" class="clickdeck-color-picker" value="#2563eb" title="${labels.pickColor}" />
         <button class="clickdeck-button" data-action="pick-bg-color" type="button">${labels.auto}</button>
         <button class="clickdeck-button" data-action="reset-color" type="button">${labels.reset}</button>
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">${labels.background}</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("bg-warm", labels.warm)}
+        ${buttonMarkup("bg-white", labels.white)}
+        ${buttonMarkup("bg-transparent", labels.transparent)}
+        ${buttonMarkup("bg-reset", labels.reset)}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">${labels.radius}</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("radius-none", labels.none)}
+        ${buttonMarkup("radius-sm", labels.small)}
+        ${buttonMarkup("radius-md", labels.medium)}
+        ${buttonMarkup("radius-lg", labels.large)}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">${labels.spacing}</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("margin-compact", `${labels.margin} ${labels.compact}`)}
+        ${buttonMarkup("margin-normal", `${labels.margin} ${labels.normal}`)}
+        ${buttonMarkup("margin-loose", `${labels.margin} ${labels.loose}`)}
+      </div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("padding-compact", `${labels.padding} ${labels.compact}`)}
+        ${buttonMarkup("padding-normal", `${labels.padding} ${labels.normal}`)}
+        ${buttonMarkup("padding-loose", `${labels.padding} ${labels.loose}`)}
       </div>
     </div>
     <div class="clickdeck-panel__section">

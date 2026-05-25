@@ -73,13 +73,49 @@ describe("applyStyleAction", () => {
   });
 
   it("applies spacing", () => {
-    applyStyleAction(logger, element, "spacing-compact");
+    applyStyleAction(logger, element, "lineheight-compact");
     expect(element.style.lineHeight).toBe("1.2");
 
-    applyStyleAction(logger, element, "spacing-normal");
+    applyStyleAction(logger, element, "lineheight-normal");
     expect(element.style.lineHeight).toBe("1.5");
 
-    applyStyleAction(logger, element, "spacing-loose");
+    applyStyleAction(logger, element, "lineheight-loose");
     expect(element.style.lineHeight).toBe("1.8");
+  });
+
+  it("applies letter spacing presets", () => {
+    applyStyleAction(logger, element, "letterspacing-tight");
+    expect(element.style.letterSpacing).toBe("-0.02em");
+
+    applyStyleAction(logger, element, "letterspacing-normal");
+    expect(element.style.letterSpacing).toBe("0px");
+
+    applyStyleAction(logger, element, "letterspacing-wide");
+    expect(element.style.letterSpacing).toBe("0.04em");
+  });
+
+  it("applies background color presets", () => {
+    applyStyleAction(logger, element, "bg-warm");
+    expect(element.style.backgroundColor).toBe("rgb(247, 243, 234)");
+
+    applyStyleAction(logger, element, "bg-transparent");
+    expect(element.style.backgroundColor).toBe("transparent");
+
+    applyStyleAction(logger, element, "bg-reset");
+    expect(element.style.backgroundColor).toBe("");
+  });
+
+  it("applies border radius presets", () => {
+    applyStyleAction(logger, element, "radius-none");
+    expect(element.style.borderRadius).toBe("0px");
+
+    applyStyleAction(logger, element, "radius-sm");
+    expect(element.style.borderRadius).toBe("6px");
+
+    applyStyleAction(logger, element, "radius-md");
+    expect(element.style.borderRadius).toBe("10px");
+
+    applyStyleAction(logger, element, "radius-lg");
+    expect(element.style.borderRadius).toBe("16px");
   });
 });

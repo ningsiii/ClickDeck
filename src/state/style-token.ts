@@ -1,1 +1,11 @@
-export type StyleProperty = "fontSize" | "textAlign" | "color" | "margin" | "padding" | "fontWeight" | "lineHeight";
+export type StyleProperty =
+  | "fontSize"
+  | "textAlign"
+  | "color"
+  | "backgroundColor"
+  | "margin"
+  | "padding"
+  | "fontWeight"
+  | "lineHeight"
+  | "letterSpacing"
+  | "borderRadius";

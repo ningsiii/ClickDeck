@@ -13,9 +13,26 @@ export type StyleAction =
   | "weight-light"
   | "weight-normal"
   | "weight-bold"
-  | "spacing-compact"
-  | "spacing-normal"
-  | "spacing-loose";
+  | "lineheight-compact"
+  | "lineheight-normal"
+  | "lineheight-loose"
+  | "letterspacing-tight"
+  | "letterspacing-normal"
+  | "letterspacing-wide"
+  | "margin-compact"
+  | "margin-normal"
+  | "margin-loose"
+  | "padding-compact"
+  | "padding-normal"
+  | "padding-loose"
+  | "bg-warm"
+  | "bg-white"
+  | "bg-transparent"
+  | "bg-reset"
+  | "radius-none"
+  | "radius-sm"
+  | "radius-md"
+  | "radius-lg";
 
 export type AppliedStyleChange = {
   property: StyleProperty;
@@ -119,25 +136,144 @@ export function applyStyleAction(
         after: "bold"
       };
       break;
-    case "spacing-compact":
+    case "lineheight-compact":
       change = {
         property: "lineHeight",
         before: element.style.lineHeight,
         after: "1.2"
       };
       break;
-    case "spacing-normal":
+    case "lineheight-normal":
       change = {
         property: "lineHeight",
         before: element.style.lineHeight,
         after: "1.5"
       };
       break;
-    case "spacing-loose":
+    case "lineheight-loose":
       change = {
         property: "lineHeight",
         before: element.style.lineHeight,
         after: "1.8"
+      };
+      break;
+    case "letterspacing-tight":
+      change = {
+        property: "letterSpacing",
+        before: element.style.letterSpacing,
+        after: "-0.02em"
+      };
+      break;
+    case "letterspacing-normal":
+      change = {
+        property: "letterSpacing",
+        before: element.style.letterSpacing,
+        after: "0px"
+      };
+      break;
+    case "letterspacing-wide":
+      change = {
+        property: "letterSpacing",
+        before: element.style.letterSpacing,
+        after: "0.04em"
+      };
+      break;
+    case "margin-compact":
+      change = {
+        property: "margin",
+        before: element.style.margin,
+        after: "4px"
+      };
+      break;
+    case "margin-normal":
+      change = {
+        property: "margin",
+        before: element.style.margin,
+        after: "8px"
+      };
+      break;
+    case "margin-loose":
+      change = {
+        property: "margin",
+        before: element.style.margin,
+        after: "16px"
+      };
+      break;
+    case "padding-compact":
+      change = {
+        property: "padding",
+        before: element.style.padding,
+        after: "6px"
+      };
+      break;
+    case "padding-normal":
+      change = {
+        property: "padding",
+        before: element.style.padding,
+        after: "12px"
+      };
+      break;
+    case "padding-loose":
+      change = {
+        property: "padding",
+        before: element.style.padding,
+        after: "20px"
+      };
+      break;
+    case "bg-warm":
+      change = {
+        property: "backgroundColor",
+        before: element.style.backgroundColor,
+        after: "#f7f3ea"
+      };
+      break;
+    case "bg-white":
+      change = {
+        property: "backgroundColor",
+        before: element.style.backgroundColor,
+        after: "#ffffff"
+      };
+      break;
+    case "bg-transparent":
+      change = {
+        property: "backgroundColor",
+        before: element.style.backgroundColor,
+        after: "transparent"
+      };
+      break;
+    case "bg-reset":
+      change = {
+        property: "backgroundColor",
+        before: element.style.backgroundColor,
+        after: ""
+      };
+      break;
+    case "radius-none":
+      change = {
+        property: "borderRadius",
+        before: element.style.borderRadius,
+        after: "0"
+      };
+      break;
+    case "radius-sm":
+      change = {
+        property: "borderRadius",
+        before: element.style.borderRadius,
+        after: "6px"
+      };
+      break;
+    case "radius-md":
+      change = {
+        property: "borderRadius",
+        before: element.style.borderRadius,
+        after: "10px"
+      };
+      break;
+    case "radius-lg":
+      change = {
+        property: "borderRadius",
+        before: element.style.borderRadius,
+        after: "16px"
       };
       break;
   }
