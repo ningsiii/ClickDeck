@@ -27,6 +27,22 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       </div>
     </div>
     <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Weight</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("weight-light", "Light")}
+        ${buttonMarkup("weight-normal", "Normal")}
+        ${buttonMarkup("weight-bold", "Bold")}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
+      <div class="clickdeck-panel__section-title">Spacing</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("spacing-compact", "Compact")}
+        ${buttonMarkup("spacing-normal", "Normal")}
+        ${buttonMarkup("spacing-loose", "Loose")}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section">
       <div class="clickdeck-panel__section-title">Alignment</div>
       <div class="clickdeck-panel__group">
         ${buttonMarkup("align-left", "Left")}

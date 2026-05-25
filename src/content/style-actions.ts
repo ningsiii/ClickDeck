@@ -9,7 +9,13 @@ export type StyleAction =
   | "align-center"
   | "align-right"
   | "accent"
-  | "reset-color";
+  | "reset-color"
+  | "weight-light"
+  | "weight-normal"
+  | "weight-bold"
+  | "spacing-compact"
+  | "spacing-normal"
+  | "spacing-loose";
 
 export type AppliedStyleChange = {
   property: StyleProperty;
@@ -73,6 +79,48 @@ export function applyStyleAction(
         property: "color",
         before: element.style.color,
         after: ""
+      };
+      break;
+    case "weight-light":
+      change = {
+        property: "fontWeight",
+        before: element.style.fontWeight,
+        after: "300"
+      };
+      break;
+    case "weight-normal":
+      change = {
+        property: "fontWeight",
+        before: element.style.fontWeight,
+        after: "normal"
+      };
+      break;
+    case "weight-bold":
+      change = {
+        property: "fontWeight",
+        before: element.style.fontWeight,
+        after: "bold"
+      };
+      break;
+    case "spacing-compact":
+      change = {
+        property: "lineHeight",
+        before: element.style.lineHeight,
+        after: "1.2"
+      };
+      break;
+    case "spacing-normal":
+      change = {
+        property: "lineHeight",
+        before: element.style.lineHeight,
+        after: "1.5"
+      };
+      break;
+    case "spacing-loose":
+      change = {
+        property: "lineHeight",
+        before: element.style.lineHeight,
+        after: "1.8"
       };
       break;
   }

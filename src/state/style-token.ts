@@ -1,1 +1,1 @@
-export type StyleProperty = "fontSize" | "textAlign" | "color" | "margin" | "padding";
+export type StyleProperty = "fontSize" | "textAlign" | "color" | "margin" | "padding" | "fontWeight" | "lineHeight";
