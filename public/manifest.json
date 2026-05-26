@@ -24,7 +24,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["brand/logo2-panel.png"],
+      "resources": ["brand/logo2-panel.png", "icons/icon48.png"],
       "matches": ["<all_urls>"]
     }
   ],
