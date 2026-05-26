@@ -108,11 +108,13 @@ describe("applyStyleAction", () => {
 
   it("applies border radius", () => {
     // 8. 圆角增加：`8px` -> `10px`
+    element.style.borderTopLeftRadius = "8px";
     element.style.borderRadius = "8px";
     applyStyleAction(logger, element, "radius-increase");
     expect(element.style.borderRadius).toBe("10px");
 
     // 9. 圆角减少：`8px` -> `6px`
+    element.style.borderTopLeftRadius = "8px";
     element.style.borderRadius = "8px";
     applyStyleAction(logger, element, "radius-decrease");
     expect(element.style.borderRadius).toBe("6px");

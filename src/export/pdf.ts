@@ -42,9 +42,48 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
         margin: 0;
       }
       @media print {
-        section, .slide, .page {
-          page-break-after: always;
-          break-after: page;
+        html,
+        body {
+          width: 16in;
+          min-height: 9in;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+        }
+        .deck,
+        .deck-container,
+        [data-deck] {
+          width: 16in !important;
+          height: auto !important;
+          overflow: visible !important;
+          scroll-snap-type: none !important;
+        }
+        .slide,
+        [data-slide],
+        [aria-roledescription="slide"] {
+          width: 16in !important;
+          height: 9in !important;
+          min-height: 9in !important;
+          margin: 0 !important;
+          break-after: page !important;
+          page-break-after: always !important;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+          overflow: hidden !important;
+        }
+        .slide:last-of-type,
+        [data-slide]:last-of-type {
+          break-after: auto !important;
+          page-break-after: auto !important;
+        }
+        .nav-dots,
+        .nav-dot,
+        [data-clickdeck="true"] {
+          display: none !important;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
       }
     `;

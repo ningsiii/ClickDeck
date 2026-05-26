@@ -55,9 +55,16 @@ describe("exportPdfSnapshot", () => {
 
     const styleEl = document.getElementById("clickdeck-pdf-style") as HTMLStyleElement;
     expect(styleEl).not.toBeNull();
-    expect(styleEl.textContent).toContain("size: 16in 9in");
-    expect(styleEl.textContent).toContain("page-break-after: always");
-    expect(styleEl.textContent).toContain("break-inside: avoid");
+    const css = styleEl.textContent || "";
+    expect(css).toContain("size: 16in 9in");
+    expect(css).toContain(".slide");
+    expect(css).toContain("width: 16in !important");
+    expect(css).toContain("height: 9in !important");
+    expect(css).toContain(".deck");
+    expect(css).toContain("overflow: visible !important");
+    expect(css).toContain(".nav-dots");
+    expect(css).toContain("display: none !important");
+    expect(css).toContain("break-inside: avoid");
 
     vi.runAllTicks();
     vi.runAllTimers();
