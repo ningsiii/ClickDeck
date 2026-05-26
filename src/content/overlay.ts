@@ -210,6 +210,35 @@ function injectBaseStyles(rootId: string): void {
       gap: 6px;
     }
 
+    .clickdeck-panel__group--spacing {
+      grid-template-columns: 1fr minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .clickdeck-panel__group--spacing:last-child {
+      margin-bottom: 0;
+    }
+
+    .clickdeck-panel__spacing-label {
+      font-size: 11px;
+      color: #8a6a4e;
+    }
+
+    .clickdeck-panel__sub-section {
+      margin-bottom: 8px;
+    }
+
+    .clickdeck-panel__sub-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .clickdeck-panel__sub-title {
+      font-size: 10px;
+      color: #a48c77;
+      margin-bottom: 4px;
+    }
+
     .clickdeck-button {
       min-height: 32px;
       padding: 0 8px;

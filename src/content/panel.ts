@@ -45,18 +45,19 @@ export type ClickDeckPanel = {
 
 export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
   const labels = getPanelLabels();
-  const logoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo2-panel.png") : "brand/logo2-panel.png";
+  const panelLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo2-panel.png") : "brand/logo2-panel.png";
+  const collapsedLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("icons/icon48.png") : "icons/icon48.png";
   const element = document.createElement("div");
   element.className = "clickdeck-panel";
   element.dataset.clickdeck = "true";
   element.innerHTML = `
     <div class="clickdeck-panel__floating-button" data-internal-action="restore" title="${labels.restorePanel}" aria-label="${labels.restorePanel}">
-      <img src="${logoUrl}" alt="ClickDeck" />
+      <img src="${collapsedLogoUrl}" alt="ClickDeck" />
     </div>
     <div class="clickdeck-panel__content-wrapper">
       <div class="clickdeck-panel__header">
         <span class="clickdeck-panel__title">
-          <img class="clickdeck-panel__logo" src="${logoUrl}" alt="" />
+          <img class="clickdeck-panel__logo" src="${panelLogoUrl}" alt="" />
           <span>ClickDeck</span>
           <span class="clickdeck-panel__status">${labels.active}</span>
         </span>
@@ -129,11 +130,13 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     </div>
     <div class="clickdeck-panel__section" data-section="spacing" data-context="text,container,image">
       <div class="clickdeck-panel__section-title">${labels.spacing}</div>
-      <div class="clickdeck-panel__group" data-spacing-group="margin">
+      <div class="clickdeck-panel__group clickdeck-panel__group--spacing" data-spacing-group="margin">
+        <span class="clickdeck-panel__spacing-label">${labels.margin}</span>
         ${iconButtonMarkup("margin-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><path d="M12 2v4M12 22v-4M2 12h4M22 12h-4"/></svg>`, labels.decreaseMargin)}
         ${iconButtonMarkup("margin-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><path d="M12 6v-4M12 18v4M6 12h-4M18 12h4"/></svg>`, labels.increaseMargin)}
       </div>
-      <div class="clickdeck-panel__group" data-spacing-group="padding">
+      <div class="clickdeck-panel__group clickdeck-panel__group--spacing" data-spacing-group="padding">
+        <span class="clickdeck-panel__spacing-label">${labels.padding}</span>
         ${iconButtonMarkup("padding-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20"/><rect x="8" y="8" width="8" height="8"/><path d="M12 2v6M12 22v-6M2 12h6M22 12h-6"/></svg>`, labels.decreasePadding)}
         ${iconButtonMarkup("padding-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20"/><rect x="8" y="8" width="8" height="8"/><path d="M12 8v-6M12 16v6M8 12h-6M16 12h6"/></svg>`, labels.increasePadding)}
       </div>
@@ -145,39 +148,51 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
         ${buttonMarkup("redo", labels.redo, true)}
       </div>
     </div>
+    <div class="clickdeck-panel__section" data-section="image" data-context="image">
+      <div class="clickdeck-panel__section-title">${labels.image}</div>
+      <div class="clickdeck-panel__sub-section">
+        <div class="clickdeck-panel__sub-title">${labels.imageSource}</div>
+        <div class="clickdeck-panel__group">
+          ${buttonMarkup("replace-image", labels.replaceImage, true)}
+        </div>
+      </div>
+      <div class="clickdeck-panel__sub-section">
+        <div class="clickdeck-panel__sub-title">${labels.imageSize}</div>
+        <div class="clickdeck-panel__group">
+          ${buttonMarkup("image-width-smaller", labels.smaller)}
+          ${buttonMarkup("image-width-larger", labels.larger)}
+          ${buttonMarkup("image-maxwidth-100", labels.imageMax100)}
+        </div>
+      </div>
+      <div class="clickdeck-panel__sub-section">
+        <div class="clickdeck-panel__sub-title">${labels.imageFit}</div>
+        <div class="clickdeck-panel__group">
+          ${buttonMarkup("image-fit-contain", labels.imageContain)}
+          ${buttonMarkup("image-fit-cover", labels.imageCover)}
+        </div>
+      </div>
+      <div class="clickdeck-panel__sub-section">
+        <div class="clickdeck-panel__sub-title">${labels.imageRadius}</div>
+        <div class="clickdeck-panel__group">
+          ${buttonMarkup("image-radius-none", labels.none)}
+          ${buttonMarkup("image-radius-sm", labels.small)}
+          ${buttonMarkup("image-radius-lg", labels.large)}
+          ${buttonMarkup("image-radius-round", labels.round)}
+        </div>
+      </div>
+    </div>
     <div class="clickdeck-panel__section" data-section="finish">
       <div class="clickdeck-panel__section-title">${labels.finish}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("export-html", labels.export)}
+        ${buttonMarkup("export-html", labels.exportHtmlButton)}
       </div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("export-pdf-long", labels.long)}
-        ${buttonMarkup("export-pdf-a4", "A4")}
-        ${buttonMarkup("export-pdf-slides", "16:9")}
+        ${buttonMarkup("export-pdf-long", labels.exportPdfLong)}
+        ${buttonMarkup("export-pdf-a4", labels.exportPdfA4)}
+        ${buttonMarkup("export-pdf-slides", labels.exportPdfSlides)}
       </div>
       <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
         ${buttonMarkup("copy-ai-prompt", labels.copyAiPrompt)}
-      </div>
-    </div>
-    <div class="clickdeck-panel__section" data-section="image" data-context="image">
-      <div class="clickdeck-panel__section-title">${labels.image}</div>
-      <div class="clickdeck-panel__group">
-        ${buttonMarkup("replace-image", labels.replaceImage, true)}
-      </div>
-      <div class="clickdeck-panel__group">
-        ${buttonMarkup("image-width-smaller", labels.smaller)}
-        ${buttonMarkup("image-width-larger", labels.larger)}
-        ${buttonMarkup("image-maxwidth-100", "Max 100%")}
-      </div>
-      <div class="clickdeck-panel__group">
-        ${buttonMarkup("image-fit-contain", "Contain")}
-        ${buttonMarkup("image-fit-cover", "Cover")}
-      </div>
-      <div class="clickdeck-panel__group">
-        ${buttonMarkup("image-radius-none", labels.none)}
-        ${buttonMarkup("image-radius-sm", labels.small)}
-        ${buttonMarkup("image-radius-lg", labels.large)}
-        ${buttonMarkup("image-radius-round", labels.round)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="diagnostics">

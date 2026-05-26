@@ -32,6 +32,17 @@ export type PanelLabels = {
   white: string;
   transparent: string;
   image: string;
+  imageSource: string;
+  imageSize: string;
+  imageFit: string;
+  imageRadius: string;
+  exportHtmlButton: string;
+  exportPdfLong: string;
+  exportPdfA4: string;
+  exportPdfSlides: string;
+  imageMax100: string;
+  imageContain: string;
+  imageCover: string;
   smaller: string;
   larger: string;
   round: string;
@@ -66,6 +77,7 @@ export type PanelLabels = {
   transparency: string;
   promptImageAIHint: string;
   promptImageUIReminder: string;
+  promptSwitchLangConfirm: string;
   increaseWeight: string;
   decreaseWeight: string;
   increaseLineHeight: string;
@@ -117,6 +129,17 @@ const englishLabels: PanelLabels = {
   white: "White",
   transparent: "Transparent",
   image: "Image",
+  imageSource: "Source",
+  imageSize: "Size",
+  imageFit: "Fit",
+  imageRadius: "Radius",
+  exportHtmlButton: "Export HTML",
+  exportPdfLong: "PDF Long",
+  exportPdfA4: "PDF A4",
+  exportPdfSlides: "PDF 16:9",
+  imageMax100: "Max 100%",
+  imageContain: "Contain",
+  imageCover: "Cover",
   smaller: "Smaller",
   larger: "Larger",
   round: "Round",
@@ -147,10 +170,11 @@ const englishLabels: PanelLabels = {
   dismiss: "Dismiss",
   clear: "Clear",
   collapse: "Collapse",
-  restorePanel: "Restore Panel",
+  restorePanel: "Restore panel",
   transparency: "Transparency",
   promptImageAIHint: "If this prompt does not include an image file or asset path, please ask the user for the replacement image before changing this src.",
-  promptImageUIReminder: "Image reminder: This prompt references a replaced image. When sending it to AI, attach the image file or provide the asset path. The full data URL is intentionally not copied.",
+  promptImageUIReminder: "Image reminder: This prompt references a replaced image. When sending it to AI, attach the image file or provide the asset path.",
+  promptSwitchLangConfirm: "You have manually edited the prompt. Switching language will discard your changes. Continue?",
   increaseWeight: "Increase weight",
   decreaseWeight: "Decrease weight",
   increaseLineHeight: "Increase line height",
@@ -198,16 +222,27 @@ const chineseLabels: PanelLabels = {
   small: "小",
   medium: "中",
   large: "大",
-  warm: "暖",
-  white: "白",
+  warm: "暖色",
+  white: "白色",
   transparent: "透明",
   image: "图片",
+  imageSource: "图片来源",
+  imageSize: "尺寸",
+  imageFit: "裁切",
+  imageRadius: "圆角",
+  exportHtmlButton: "导出 HTML",
+  exportPdfLong: "PDF 长页",
+  exportPdfA4: "PDF A4",
+  exportPdfSlides: "PDF 16:9",
+  imageMax100: "最大 100%",
+  imageContain: "完整显示",
+  imageCover: "填满裁切",
   smaller: "变小",
   larger: "变大",
   round: "圆形",
   replaceImage: "替换图片",
   ai: "AI",
-  copyAiPrompt: "复制修改意图 Prompt",
+  copyAiPrompt: "复制 AI edit prompt",
   noEdits: "当前没有可总结的修改。",
   left: "左",
   center: "居中",
@@ -218,9 +253,9 @@ const chineseLabels: PanelLabels = {
   redo: "重做",
   export: "导出",
   long: "长页",
-  copyDiagnostics: "复制诊断",
+  copyDiagnostics: "复制诊断信息",
   pickColor: "选择颜色",
-  promptPreviewTitle: "AI 修改意图 Prompt",
+  promptPreviewTitle: "AI edit prompt",
   promptLangEn: "English",
   promptLangZh: "中文",
   promptCopy: "复制",
@@ -235,13 +270,14 @@ const chineseLabels: PanelLabels = {
   restorePanel: "展开",
   transparency: "透明度",
   promptImageAIHint: "如果这份 prompt 没有同时提供图片文件或资源路径，请先向用户索要替换图片，再修改这个 src。",
-  promptImageUIReminder: "图片提醒：这份 prompt 提到了替换图片。发送给 AI 时，请额外附上图片文件，或提供项目中的图片路径。完整 data URL 已刻意不复制。",
-  increaseWeight: "增加字重",
+  promptImageUIReminder: "图片提醒：这份 prompt 提到了替换图片。发送给 AI 时，请额外附上图片文件，或提供项目中的图片路径。",
+  promptSwitchLangConfirm: "你已手动编辑了 prompt，切换语言将丢失这些编辑，确定继续吗？",
+  increaseWeight: "增大字重",
   decreaseWeight: "减小字重",
-  increaseLineHeight: "增大行距",
-  decreaseLineHeight: "减小行距",
-  increaseLetterSpacing: "增大字距",
-  decreaseLetterSpacing: "减小字距",
+  increaseLineHeight: "增大行高",
+  decreaseLineHeight: "减小行高",
+  increaseLetterSpacing: "增大字间距",
+  decreaseLetterSpacing: "减小字间距",
   increaseRadius: "增大圆角",
   decreaseRadius: "减小圆角",
   increaseMargin: "增大外边距",
