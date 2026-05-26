@@ -55,35 +55,33 @@ describe("buildPrintHtml", () => {
 describe("exportPdfSnapshot", () => {
   let logger: ClickDeckLogger;
 
-  // Minimal iframe stub
+  // Minimal iframe stub — now using srcdoc instead of document.write
+  let capturedSrcdoc = "";
   const mockContentWindow = {
     print: vi.fn(),
     addEventListener: vi.fn(),
-  };
-  const mockIframeDoc = {
-    open: vi.fn(),
-    write: vi.fn(),
-    close: vi.fn(),
   };
 
   beforeEach(() => {
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     vi.useFakeTimers();
+    capturedSrcdoc = "";
     mockContentWindow.print.mockClear();
     mockContentWindow.addEventListener.mockClear();
-    mockIframeDoc.open.mockClear();
-    mockIframeDoc.write.mockClear();
-    mockIframeDoc.close.mockClear();
 
     // Stub createElement to intercept iframe creation
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       if (tag === "iframe") {
-        const el = origCreate("div"); // use div as stand-in
-        Object.defineProperty(el, "contentDocument", { get: () => mockIframeDoc });
+        const el = origCreate("div") as unknown as Record<string, unknown>;
+        // Capture srcdoc assignment via property descriptor
+        Object.defineProperty(el, "srcdoc", {
+          set(val: string) { capturedSrcdoc = val; },
+          get() { return capturedSrcdoc; },
+        });
         Object.defineProperty(el, "contentWindow", { get: () => mockContentWindow });
-        // Immediately fire load event when listener is added
-        el.addEventListener = (event: string, cb: EventListenerOrEventListenerObject) => {
+        // Fire load event asynchronously when listener is added
+        (el as unknown as HTMLElement).addEventListener = (event: string, cb: EventListenerOrEventListenerObject) => {
           if (event === "load") {
             Promise.resolve().then(() => (cb as EventListener)(new Event("load")));
           }
@@ -101,24 +99,22 @@ describe("exportPdfSnapshot", () => {
     document.body.innerHTML = "";
   });
 
-  it("writes HTML into iframe document for a4 mode", async () => {
+  it("writes HTML into iframe srcdoc for a4 mode", async () => {
     exportPdfSnapshot("a4", logger);
-    await Promise.resolve(); // let load microtask fire
-    expect(mockIframeDoc.write).toHaveBeenCalledWith(expect.stringContaining("size: A4"));
+    await Promise.resolve();
+    expect(capturedSrcdoc).toContain("size: A4");
   });
 
-  it("writes HTML into iframe document for slides mode", async () => {
+  it("writes HTML into iframe srcdoc for slides mode", async () => {
     exportPdfSnapshot("slides", logger);
     await Promise.resolve();
-    expect(mockIframeDoc.write).toHaveBeenCalledWith(expect.stringContaining("16in 9in"));
+    expect(capturedSrcdoc).toContain("16in 9in");
   });
 
-  it("writes HTML into iframe document for long-page mode", async () => {
+  it("writes HTML into iframe srcdoc for long-page mode", async () => {
     exportPdfSnapshot("long-page", logger);
     await Promise.resolve();
-    expect(mockIframeDoc.open).toHaveBeenCalled();
-    expect(mockIframeDoc.write).toHaveBeenCalled();
-    expect(mockIframeDoc.close).toHaveBeenCalled();
+    expect(capturedSrcdoc).toContain("break-inside: avoid");
   });
 
   it("calls contentWindow.print() after load", async () => {

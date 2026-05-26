@@ -66,6 +66,9 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
     clone.insertBefore(head, clone.firstChild);
   }
 
+  // Remove any stale clickdeck print iframes that may have been left in the DOM
+  clone.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
+
   // <base> tag so relative URLs resolve against the original page
   const baseEl = document.createElement("base");
   baseEl.href = doc.location?.href ?? "";
@@ -99,26 +102,35 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
   logger.info("PDF export note: enable background graphics/colors in the print dialog for best results.");
   logger.info(`Triggering PDF export in ${mode} mode`);
 
+  // Clean up any stale print iframes from a previous export that didn't clean up properly.
+  // This prevents Chrome from showing "Print failed" when two print jobs overlap.
+  document.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
+
   try {
     const html = buildPrintHtml(mode, document);
 
-    // Create a hidden iframe
+    // Create a hidden iframe with realistic print dimensions.
+    // Chrome's PDF generator uses the iframe viewport for layout; 1×1 px produces blank output.
     const iframe = document.createElement("iframe");
-    iframe.setAttribute("data-clickdeck", "true"); // so HTML export skips it
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;opacity:0;";
+    iframe.setAttribute("data-clickdeck", "true");       // excluded from HTML export
+    iframe.setAttribute("data-clickdeck-print-iframe", "true"); // tracked for cleanup
+    // Off-screen but full-width so Chrome can render content correctly before printing
+    iframe.style.cssText = [
+      "position:fixed",
+      "top:0",
+      "left:-10000px",
+      "width:" + (mode === "slides" ? "1920px" : "794px"),
+      "height:" + (mode === "slides" ? "1080px" : "1123px"),
+      "border:none",
+      "visibility:hidden",
+      "pointer-events:none",
+    ].join(";");
     document.body.appendChild(iframe);
 
-    const iframeDoc = iframe.contentDocument;
-    if (!iframeDoc) {
-      logger.error("PDF export: could not access iframe document");
-      iframe.remove();
-      return;
-    }
-
-    // Write the content directly — bypasses all blob/cross-origin restrictions
-    iframeDoc.open();
-    iframeDoc.write(html);
-    iframeDoc.close();
+    // Use srcdoc instead of document.write().
+    // Chrome's print pipeline handles srcdoc iframes correctly; document.write() on file://
+    // parent pages can produce blank output in Chrome's PDF generator.
+    iframe.srcdoc = html;
 
     // Wait for the iframe to finish loading, then print it
     iframe.addEventListener("load", () => {
@@ -130,7 +142,7 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
       // Clean up after the dialog is dismissed
       const cleanup = () => iframe.remove();
       iframe.contentWindow?.addEventListener("afterprint", cleanup, { once: true });
-      // Safety fallback in case afterprint never fires
+      // Safety fallback in case afterprint never fires (e.g. user cancelled)
       setTimeout(cleanup, 60_000);
     }, { once: true });
 
