@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>如何优雅地改 HTML - ClickDeck</title>
+  <style>
+    :root {
+      --bg-color: #f8f9fa;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --border: #e5e7eb;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-serif: Georgia, "Times New Roman", Times, serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Magazine Header / Top bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 80px;
+    }
+
+    .top-bar span {
+      display: inline-block;
+    }
+
+    .dot-divider {
+      width: 100%;
+      height: 4px;
+      background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+      background-size: 8px 4px;
+      margin: 40px 0;
+    }
+
+    /* Hero Section */
+    .hero {
+      position: relative;
+      margin-bottom: 100px;
+      text-align: center;
+    }
+
+    .hero-label {
+      font-family: var(--font-serif);
+      font-style: italic;
+      color: var(--accent);
+      font-size: 20px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: 80px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      color: var(--text-main);
+    }
+
+    .hero p.subtitle {
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 16px;
+    }
+
+    .hero p.desc {
+      font-size: 16px;
+      color: #9ca3af;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Content Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 32px;
+      margin-bottom: 120px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent);
+      border-radius: 50%;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      font-size: 32px;
+      font-family: var(--font-serif);
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .card p {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Specific Grid Placements */
+    .item-text { grid-column: 1 / 8; }
+    .item-color { grid-column: 8 / 13; background-color: var(--accent-light); border-color: #bfdbfe; }
+    .item-image { grid-column: 1 / 6; }
+    .item-undo { grid-column: 6 / 13; }
+    .item-finish { grid-column: 1 / 13; text-align: center; }
+
+    /* Image placeholder */
+    .img-wrapper {
+      width: 100%;
+      height: 200px;
+      background-color: #f3f4f6;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px dashed #d1d5db;
+    }
+
+    .img-wrapper img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+    }
+
+    /* Finish Section */
+    .cta-box {
+      background: var(--text-main);
+      color: #ffffff;
+      border-radius: 24px;
+      padding: 60px 40px;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .cta-box h2 {
+      font-family: var(--font-serif);
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+    .cta-box p {
+      font-size: 18px;
+      color: #9ca3af;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      font-size: 14px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="top-bar">
+    <span>Complete Guide</span>
+    <span>Vol. 01</span>
+    <span>Browser Editing</span>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">ClickDeck Manual</div>
+    <h1>如何优雅地改 HTML</h1>
+    <p class="subtitle">不用反复指挥 AI，在浏览器里直接微调你的页面。</p>
+    <p class="desc">适合 AI 生成的报告、简历、落地页、作品集和 HTML 文档。</p>
+  </div>
+  
+  <div class="dot-divider"></div>
+
+  <div class="grid">
+    
+    <!-- 版块 1 -->
+    <div class="card item-text">
+      <div class="section-title">文字与排版</div>
+      <h2>像改 PPT 一样调整文字</h2>
+      <p>选中标题或段落，直接调整字号、字重、行高、字间距和对齐。轻微视觉问题不用重新生成整页。</p>
+      <div style="padding: 24px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h3 style="font-size: 24px; margin-bottom: 12px; font-weight: 600; font-family: var(--font-serif);">排版测试标题</h3>
+        <p style="font-size: 15px; color: #4b5563; line-height: 1.8;">这是一段用来测试 ClickDeck 文本修改能力的占位文字。你可以尝试点击它，修改文字的内容、调整大小或者改变颜色，看看效果如何。</p>
+      </div>
+    </div>
+
+    <!-- 版块 2 -->
+    <div class="card item-color">
+      <div class="section-title" style="color: #1d4ed8;">颜色与空间</div>
+      <h2 style="color: #1e3a8a;">把“不太对”的颜色和间距调顺</h2>
+      <p style="color: #3b82f6;">给卡片换背景色，调圆角，区分外边距和内边距，让 AI 生成的页面更像最终稿。</p>
+      <div style="background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);">
+        <p style="font-size: 16px; font-weight: 500; color: #1e40af; text-align: center;">我是一个可调色的块</p>
+      </div>
+    </div>
+
+    <!-- 版块 3 -->
+    <div class="card item-image">
+      <div class="section-title">图片与素材</div>
+      <h2>替换图片，调整比例和圆角</h2>
+      <p>选中图片后，可以替换成本地素材，也可以调整宽度、最大宽度、圆角和 object-fit。</p>
+      <div class="img-wrapper">
+        <img src="../public/brand/logo2-panel.png" alt="Logo Placeholder" />
+      </div>
+    </div>
+
+    <!-- 版块 4 -->
+    <div class="card item-undo">
+      <div class="section-title">撤销与恢复</div>
+      <h2>每一步都可以回退</h2>
+      <p>改错了就撤销，想恢复再重做。刷新页面后也可以恢复当前页面的保存修改。</p>
+      <div style="display: flex; gap: 16px; margin-top: 24px;">
+        <div style="flex: 1; height: 100px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;"></div>
+        <div style="flex: 1; height: 100px; background: #d1fae5; border-radius: 8px; border: 1px solid #a7f3d0;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="dot-divider"></div>
+
+  <div class="cta-box">
+    <div class="section-title" style="justify-content: center; color: #9ca3af;">两种收尾方式</div>
+    <h2>简单修改直接导出，复杂修改交给 AI</h2>
+    <p style="margin-bottom: 40px;">如果只是轻微调整，直接导出 HTML 或 PDF；如果还想让 AI 优化源码，就复制 AI edit prompt，带着明确定位和 before/after 继续沟通。</p>
+    
+    <div style="background: rgba(255,255,255,0.1); padding: 32px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);">
+      <h3 style="font-size: 24px; margin-bottom: 12px; font-family: var(--font-serif);">ClickDeck：给 AI 生成 HTML 的最后一公里</h3>
+      <p style="color: #e5e7eb;">你负责判断好不好看，ClickDeck 负责把修改落到页面上。</p>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2026 ClickDeck Promotional Fixture. Generated for Testing Purposes.
+  </footer>
+</div>
+
+</body>
+</html>

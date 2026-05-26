@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>如何优雅地与 AI 沟通设计 - ClickDeck</title>
+  <style>
+    :root {
+      --bg-color: #fefcf8;
+      --text-main: #3e2723;
+      --text-muted: #795548;
+      --accent: #f97316;
+      --accent-light: #ffedd5;
+      --border: #e7e5e4;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow-y: hidden;
+      overflow-x: hidden;
+    }
+
+    .deck-container {
+      width: 100vw;
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      position: relative;
+    }
+
+    .slide-content {
+      width: 100%;
+      max-width: 1000px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .slide-number {
+      position: absolute;
+      top: 40px;
+      right: 40px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 8px 16px;
+      border-radius: 99px;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 72px;
+      line-height: 1.1;
+      font-weight: 800;
+      margin-bottom: 24px;
+      letter-spacing: -0.03em;
+    }
+    
+    h2 {
+      font-size: 56px;
+      line-height: 1.2;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    p.subtitle {
+      font-size: 28px;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.5;
+    }
+
+    /* Cards */
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 48px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+      margin-top: 40px;
+    }
+    
+    /* Highlight blocks */
+    .highlight-block {
+      background-color: var(--accent-light);
+      border-left: 6px solid var(--accent);
+      padding: 32px;
+      border-radius: 8px;
+      margin-top: 40px;
+    }
+    
+    .highlight-block p {
+      font-size: 24px;
+      color: #9a3412;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    /* Mock Prompt Box */
+    .prompt-box {
+      background: #1c1917;
+      color: #d6d3d1;
+      font-family: monospace;
+      padding: 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-top: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    .prompt-box .keyword { color: #f97316; }
+    .prompt-box .string { color: #86efac; }
+
+    /* Dot Navigation */
+    .nav-dots {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--border);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    
+    .nav-dot.active {
+      background-color: var(--accent);
+    }
+
+    /* Slide specific adjustments */
+    #slide-1 {
+      background: radial-gradient(circle at 80% 20%, #fff7ed 0%, #fefcf8 50%);
+    }
+
+    .svg-placeholder {
+      width: 100%;
+      max-width: 400px;
+      height: 200px;
+      background: #f5f5f4;
+      border: 2px dashed #d6d3d1;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a8a29e;
+      margin-top: 24px;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="deck-container" id="deck">
+
+  <!-- Slide 1: Cover -->
+  <section class="slide" data-slide="1" id="slide-1">
+    <div class="slide-number">01 / Cover</div>
+    <div class="slide-content">
+      <h1>如何优雅地与 AI<br><span style="color: var(--accent)">沟通设计</span></h1>
+      <p class="subtitle">把人的视觉判断，翻译成 AI 能执行的修改指令。</p>
+    </div>
+  </section>
+
+  <!-- Slide 2: Problem -->
+  <section class="slide" data-slide="2" id="slide-2">
+    <div class="slide-number">02 / Problem</div>
+    <div class="slide-content">
+      <h2>“再大一点、浅一点、靠左一点”<br>太累了</h2>
+      <p class="subtitle">自然语言很适合表达意图，却不擅长精确描述位置、字号、颜色和间距。</p>
+      
+      <div class="highlight-block">
+        <p>“把那个卡片的背景稍微调亮一点，然后字也变大一点，间距不要太挤...” —— AI 往往无法准确 Get 你的“一点”是多少。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 3: Direct Edit -->
+  <section class="slide" data-slide="3" id="slide-3">
+    <div class="slide-number">03 / Direct Edit</div>
+    <div class="slide-content">
+      <h2>先在页面上直接改</h2>
+      <p class="subtitle">点选元素，调字号、颜色、间距、圆角和图片。人的审美判断先落到真实页面上。</p>
+      
+      <div class="card">
+        <h3 style="font-size: 32px; margin-bottom: 16px;">测试卡片编辑</h3>
+        <p style="font-size: 18px; color: var(--text-muted);">请尝试使用 ClickDeck 调整这个卡片的 padding、背景色或者修改这些文字的大小。</p>
+        
+        <div class="svg-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 4: Record Intent -->
+  <section class="slide" data-slide="4" id="slide-4">
+    <div class="slide-number">04 / Record Intent</div>
+    <div class="slide-content">
+      <h2>ClickDeck 记录发生了什么</h2>
+      <p class="subtitle">每一次修改都有目标元素、locator、before/after。它不是截图，而是结构化修改意图。</p>
+      
+      <div class="card" style="background: #fafaf9;">
+        <ul style="list-style: none; font-size: 20px; line-height: 2;">
+          <li>✅ <span style="font-weight: 600;">Target:</span> 标题 h2</li>
+          <li>✅ <span style="font-weight: 600;">Style:</span> fontSize 从 "24px" 改为 "32px"</li>
+          <li>✅ <span style="font-weight: 600;">Style:</span> color 从 "#333" 改为 "#f97316"</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 5: AI Prompt -->
+  <section class="slide" data-slide="5" id="slide-5">
+    <div class="slide-number">05 / AI Prompt</div>
+    <div class="slide-content">
+      <h2>再把修改交给 AI</h2>
+      <p class="subtitle">如果页面还需要源码级优化，复制 AI edit prompt，让 Claude/Cursor/v0 按明确指令继续改。</p>
+      
+      <div class="prompt-box">
+        <span class="keyword">1. Target:</span> h2 "测试卡片"<br>
+        <span class="keyword">   Locator:</span> section[data-slide="3"] > .card > h2<br>
+        <span class="keyword">   Style:</span> fontSize changed from <span class="string">"24px"</span> to <span class="string">"32px"</span>.<br>
+        <span class="keyword">   Style:</span> color changed from <span class="string">"#000"</span> to <span class="string">"#f97316"</span>.
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 6: Finish -->
+  <section class="slide" data-slide="6" id="slide-6">
+    <div class="slide-number">06 / Finish</div>
+    <div class="slide-content" style="text-align: center;">
+      <h2 style="font-size: 64px;">两条路：导出，或继续迭代</h2>
+      <p class="subtitle" style="margin: 0 auto 48px;">简单调整可以直接导出 HTML/PDF；复杂调整则带着 prompt 和素材，让 AI 更准确地继续。</p>
+      
+      <div style="display: flex; gap: 24px; justify-content: center;">
+        <div style="background: var(--text-main); color: #fff; padding: 20px 40px; border-radius: 12px; font-size: 20px; font-weight: 600;">直接导出 HTML</div>
+        <div style="background: var(--accent); color: #fff; padding: 20px 40px; border-radius: 12px; font-size: 20px; font-weight: 600;">复制 AI Prompt</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav-dots">
+  <div class="nav-dot active" data-target="1"></div>
+  <div class="nav-dot" data-target="2"></div>
+  <div class="nav-dot" data-target="3"></div>
+  <div class="nav-dot" data-target="4"></div>
+  <div class="nav-dot" data-target="5"></div>
+  <div class="nav-dot" data-target="6"></div>
+</div>
+
+<script>
+  // Simple navigation logic
+  const container = document.getElementById('deck');
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.nav-dot');
+  
+  // Update dots on scroll
+  container.addEventListener('scroll', () => {
+    let currentSlide = 0;
+    slides.forEach((slide, index) => {
+      const rect = slide.getBoundingClientRect();
+      if (rect.top >= -10 && rect.top <= 10) {
+        currentSlide = index;
+      }
+    });
+    
+    dots.forEach((dot, index) => {
+      if (index === currentSlide) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  });
+
+  // Click dots to scroll
+  dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+      slides[index].scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    let currentSlide = Array.from(dots).findIndex(dot => dot.classList.contains('active'));
+    
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+      if (currentSlide < slides.length - 1) {
+        e.preventDefault();
+        slides[currentSlide + 1].scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      if (currentSlide > 0) {
+        e.preventDefault();
+        slides[currentSlide - 1].scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
