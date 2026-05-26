@@ -108,7 +108,9 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
   // before handing control to the background for printing.
   requestAnimationFrame(() => {
     chrome.runtime.sendMessage({ type: "CLICKDECK_PRINT" });
-    // Clean up the print style after the dialog has had time to open
-    setTimeout(() => styleEl?.remove(), 3000);
+    // We intentionally DO NOT remove the style element here.
+    // Removing the style element while the Chrome print dialog is open or generating the PDF
+    // will cause a layout recalculation that corrupts the resulting PDF file.
+    // The CSS is isolated to @media print and @page, so it is safe to leave in the DOM.
   });
 }
