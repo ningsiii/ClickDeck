@@ -26,7 +26,13 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   chrome.scripting.executeScript({
     target: { tabId },
     world: "MAIN",
-    func: () => window.print(),
+    func: () => {
+      window.addEventListener("afterprint", () => {
+        const el = document.getElementById("clickdeck-pdf-style");
+        if (el) el.remove();
+      }, { once: true });
+      window.print();
+    },
   }).catch((err) => {
     console.warn("[ClickDeck] executeScript for print failed", err);
   });

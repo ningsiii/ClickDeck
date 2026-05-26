@@ -19,13 +19,14 @@ function getBasePrintCss(): string {
 
 export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger): void {
   const styleId = "clickdeck-pdf-style";
-  let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
-  
-  if (!styleEl) {
-    styleEl = document.createElement("style");
-    styleEl.id = styleId;
-    document.head.append(styleEl);
+  const oldStyle = document.getElementById(styleId);
+  if (oldStyle) {
+    oldStyle.remove();
   }
+  
+  const styleEl = document.createElement("style");
+  styleEl.id = styleId;
+  document.head.append(styleEl);
 
   let css = "";
   if (mode === "a4") {
@@ -108,9 +109,9 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
   // before handing control to the background for printing.
   requestAnimationFrame(() => {
     chrome.runtime.sendMessage({ type: "CLICKDECK_PRINT" });
-    // We intentionally DO NOT remove the style element here.
-    // Removing the style element while the Chrome print dialog is open or generating the PDF
-    // will cause a layout recalculation that corrupts the resulting PDF file.
-    // The CSS is isolated to @media print and @page, so it is safe to leave in the DOM.
+    // The cleanup of this style element is securely handled by the background service worker.
+    // It injects an 'afterprint' event listener into the MAIN world right before calling window.print().
+    // This ensures the CSS is removed ONLY after the print dialog is completely closed,
+    // avoiding the race condition that corrupts PDFs if the DOM is modified during PDF generation.
   });
 }
