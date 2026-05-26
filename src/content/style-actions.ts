@@ -10,29 +10,22 @@ export type StyleAction =
   | "align-right"
   | "pick-bg-color"
   | "reset-color"
-  | "weight-light"
-  | "weight-normal"
-  | "weight-bold"
-  | "lineheight-compact"
-  | "lineheight-normal"
-  | "lineheight-loose"
-  | "letterspacing-tight"
-  | "letterspacing-normal"
-  | "letterspacing-wide"
-  | "margin-compact"
-  | "margin-normal"
-  | "margin-loose"
-  | "padding-compact"
-  | "padding-normal"
-  | "padding-loose"
+  | "weight-decrease"
+  | "weight-increase"
+  | "lineheight-decrease"
+  | "lineheight-increase"
+  | "letterspacing-decrease"
+  | "letterspacing-increase"
+  | "margin-decrease"
+  | "margin-increase"
+  | "padding-decrease"
+  | "padding-increase"
   | "bg-warm"
   | "bg-white"
   | "bg-transparent"
   | "bg-reset"
-  | "radius-none"
-  | "radius-sm"
-  | "radius-md"
-  | "radius-lg"
+  | "radius-decrease"
+  | "radius-increase"
   | "image-width-smaller"
   | "image-width-larger"
   | "image-maxwidth-100"
@@ -124,111 +117,96 @@ export function applyStyleAction(
         after: ""
       };
       break;
-    case "weight-light":
+    case "weight-decrease": {
+      const current = readFontWeight(computed.fontWeight);
       change = {
         property: "fontWeight",
         before: element.style.fontWeight,
-        after: "300"
+        after: `${clamp(current - 100, 100, 900)}`
       };
       break;
-    case "weight-normal":
+    }
+    case "weight-increase": {
+      const current = readFontWeight(computed.fontWeight);
       change = {
         property: "fontWeight",
         before: element.style.fontWeight,
-        after: "normal"
+        after: `${clamp(current + 100, 100, 900)}`
       };
       break;
-    case "weight-bold":
-      change = {
-        property: "fontWeight",
-        before: element.style.fontWeight,
-        after: "bold"
-      };
-      break;
-    case "lineheight-compact":
+    }
+    case "lineheight-decrease": {
+      const current = readLineHeightRatio(computed);
       change = {
         property: "lineHeight",
         before: element.style.lineHeight,
-        after: "1.2"
+        after: `${roundTo(clamp(current - 0.1, 1.0, 2.4), 1)}`
       };
       break;
-    case "lineheight-normal":
+    }
+    case "lineheight-increase": {
+      const current = readLineHeightRatio(computed);
       change = {
         property: "lineHeight",
         before: element.style.lineHeight,
-        after: "1.5"
+        after: `${roundTo(clamp(current + 0.1, 1.0, 2.4), 1)}`
       };
       break;
-    case "lineheight-loose":
-      change = {
-        property: "lineHeight",
-        before: element.style.lineHeight,
-        after: "1.8"
-      };
-      break;
-    case "letterspacing-tight":
+    }
+    case "letterspacing-decrease": {
+      const current = readLetterSpacingEm(computed);
       change = {
         property: "letterSpacing",
         before: element.style.letterSpacing,
-        after: "-0.02em"
+        after: `${roundTo(clamp(current - 0.02, -0.08, 0.16), 2)}em`
       };
       break;
-    case "letterspacing-normal":
+    }
+    case "letterspacing-increase": {
+      const current = readLetterSpacingEm(computed);
       change = {
         property: "letterSpacing",
         before: element.style.letterSpacing,
-        after: "0px"
+        after: `${roundTo(clamp(current + 0.02, -0.08, 0.16), 2)}em`
       };
       break;
-    case "letterspacing-wide":
-      change = {
-        property: "letterSpacing",
-        before: element.style.letterSpacing,
-        after: "0.04em"
-      };
-      break;
-    case "margin-compact":
+    }
+    case "margin-decrease": {
+      const current = readPixelValue(computed.marginTop, 0);
       change = {
         property: "margin",
         before: element.style.margin,
-        after: "4px"
+        after: `${clamp(current - 4, 0, 96)}px`
       };
       break;
-    case "margin-normal":
+    }
+    case "margin-increase": {
+      const current = readPixelValue(computed.marginTop, 0);
       change = {
         property: "margin",
         before: element.style.margin,
-        after: "8px"
+        after: `${clamp(current + 4, 0, 96)}px`
       };
       break;
-    case "margin-loose":
-      change = {
-        property: "margin",
-        before: element.style.margin,
-        after: "16px"
-      };
-      break;
-    case "padding-compact":
+    }
+    case "padding-decrease": {
+      const current = readPixelValue(computed.paddingTop, 0);
       change = {
         property: "padding",
         before: element.style.padding,
-        after: "6px"
+        after: `${clamp(current - 4, 0, 96)}px`
       };
       break;
-    case "padding-normal":
+    }
+    case "padding-increase": {
+      const current = readPixelValue(computed.paddingTop, 0);
       change = {
         property: "padding",
         before: element.style.padding,
-        after: "12px"
+        after: `${clamp(current + 4, 0, 96)}px`
       };
       break;
-    case "padding-loose":
-      change = {
-        property: "padding",
-        before: element.style.padding,
-        after: "20px"
-      };
-      break;
+    }
     case "bg-warm":
       change = {
         property: "backgroundColor",
@@ -257,34 +235,24 @@ export function applyStyleAction(
         after: ""
       };
       break;
-    case "radius-none":
+    case "radius-decrease": {
+      const current = readPixelValue(computed.borderTopLeftRadius, 0);
       change = {
         property: "borderRadius",
         before: element.style.borderRadius,
-        after: "0"
+        after: `${clamp(current - 2, 0, 48)}px`
       };
       break;
-    case "radius-sm":
+    }
+    case "radius-increase": {
+      const current = readPixelValue(computed.borderTopLeftRadius, 0);
       change = {
         property: "borderRadius",
         before: element.style.borderRadius,
-        after: "6px"
+        after: `${clamp(current + 2, 0, 48)}px`
       };
       break;
-    case "radius-md":
-      change = {
-        property: "borderRadius",
-        before: element.style.borderRadius,
-        after: "10px"
-      };
-      break;
-    case "radius-lg":
-      change = {
-        property: "borderRadius",
-        before: element.style.borderRadius,
-        after: "16px"
-      };
-      break;
+    }
     case "image-width-smaller": {
       const current = element.style.width || computed.width;
       const next = stepSize(current, -1);
@@ -396,4 +364,52 @@ function stepSize(value: string, direction: -1 | 1): string {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function roundTo(value: number, digits: number): number {
+  const m = Math.pow(10, digits);
+  return Math.round(value * m) / m;
+}
+
+function readPixelValue(value: string, fallback: number): number {
+  if (!value || value === "normal" || value === "auto") return fallback;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readFontWeight(value: string): number {
+  if (value === "normal") return 400;
+  if (value === "bold") return 700;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 400;
+}
+
+function readLineHeightRatio(computed: CSSStyleDeclaration): number {
+  const value = computed.lineHeight;
+  if (value === "normal") return 1.5;
+  const pxMatch = value.match(/^(-?\d+(?:\.\d+)?)px$/);
+  if (pxMatch) {
+    const lhPx = Number(pxMatch[1]);
+    const fsPx = readPixelValue(computed.fontSize, 16);
+    if (fsPx > 0) return lhPx / fsPx;
+  }
+  const parsed = Number.parseFloat(value);
+  if (Number.isFinite(parsed) && !value.endsWith("px") && !value.endsWith("%")) {
+    return parsed;
+  }
+  return 1.5;
+}
+
+function readLetterSpacingEm(computed: CSSStyleDeclaration): number {
+  const value = computed.letterSpacing;
+  if (value === "normal") return 0;
+  const pxMatch = value.match(/^(-?\d+(?:\.\d+)?)px$/);
+  if (pxMatch) {
+    const lsPx = Number(pxMatch[1]);
+    const fsPx = readPixelValue(computed.fontSize, 16);
+    if (fsPx > 0) return lsPx / fsPx;
+  }
+  const emMatch = value.match(/^(-?\d+(?:\.\d+)?)em$/);
+  if (emMatch) return Number(emMatch[1]);
+  return 0;
 }

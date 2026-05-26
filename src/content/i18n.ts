@@ -66,6 +66,21 @@ export type PanelLabels = {
   transparency: string;
   promptImageAIHint: string;
   promptImageUIReminder: string;
+  increaseWeight: string;
+  decreaseWeight: string;
+  increaseLineHeight: string;
+  decreaseLineHeight: string;
+  increaseLetterSpacing: string;
+  decreaseLetterSpacing: string;
+  increaseRadius: string;
+  decreaseRadius: string;
+  increaseMargin: string;
+  decreaseMargin: string;
+  increasePadding: string;
+  decreasePadding: string;
+  alignLeft: string;
+  alignCenter: string;
+  alignRight: string;
 };
 
 const englishLabels: PanelLabels = {
@@ -135,7 +150,22 @@ const englishLabels: PanelLabels = {
   restorePanel: "Restore Panel",
   transparency: "Transparency",
   promptImageAIHint: "If this prompt does not include an image file or asset path, please ask the user for the replacement image before changing this src.",
-  promptImageUIReminder: "Image reminder: This prompt references a replaced image. When sending it to AI, attach the image file or provide the asset path. The full data URL is intentionally not copied."
+  promptImageUIReminder: "Image reminder: This prompt references a replaced image. When sending it to AI, attach the image file or provide the asset path. The full data URL is intentionally not copied.",
+  increaseWeight: "Increase weight",
+  decreaseWeight: "Decrease weight",
+  increaseLineHeight: "Increase line height",
+  decreaseLineHeight: "Decrease line height",
+  increaseLetterSpacing: "Increase letter spacing",
+  decreaseLetterSpacing: "Decrease letter spacing",
+  increaseRadius: "Increase radius",
+  decreaseRadius: "Decrease radius",
+  increaseMargin: "Increase margin",
+  decreaseMargin: "Decrease margin",
+  increasePadding: "Increase padding",
+  decreasePadding: "Decrease padding",
+  alignLeft: "Align left",
+  alignCenter: "Align center",
+  alignRight: "Align right"
 };
 
 const chineseLabels: PanelLabels = {
@@ -205,7 +235,22 @@ const chineseLabels: PanelLabels = {
   restorePanel: "展开",
   transparency: "透明度",
   promptImageAIHint: "如果这份 prompt 没有同时提供图片文件或资源路径，请先向用户索要替换图片，再修改这个 src。",
-  promptImageUIReminder: "图片提醒：这份 prompt 提到了替换图片。发送给 AI 时，请额外附上图片文件，或提供项目中的图片路径。完整 data URL 已刻意不复制。"
+  promptImageUIReminder: "图片提醒：这份 prompt 提到了替换图片。发送给 AI 时，请额外附上图片文件，或提供项目中的图片路径。完整 data URL 已刻意不复制。",
+  increaseWeight: "增加字重",
+  decreaseWeight: "减小字重",
+  increaseLineHeight: "增大行距",
+  decreaseLineHeight: "减小行距",
+  increaseLetterSpacing: "增大字距",
+  decreaseLetterSpacing: "减小字距",
+  increaseRadius: "增大圆角",
+  decreaseRadius: "减小圆角",
+  increaseMargin: "增大外边距",
+  decreaseMargin: "减小外边距",
+  increasePadding: "增大内边距",
+  decreasePadding: "减小内边距",
+  alignLeft: "左对齐",
+  alignCenter: "居中对齐",
+  alignRight: "右对齐"
 };
 
 export function getPanelLabels(): PanelLabels {

@@ -77,33 +77,30 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     <div class="clickdeck-panel__section" data-section="weight" data-context="text">
       <div class="clickdeck-panel__section-title">${labels.weight}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("weight-light", labels.light)}
-        ${buttonMarkup("weight-normal", labels.normal)}
-        ${buttonMarkup("weight-bold", labels.bold)}
+        ${iconButtonMarkup("weight-decrease", `<span style="font-weight:300;">B-</span>`, labels.decreaseWeight)}
+        ${iconButtonMarkup("weight-increase", `<span style="font-weight:700;">B+</span>`, labels.increaseWeight)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="line-height" data-context="text">
       <div class="clickdeck-panel__section-title">${labels.lineHeight}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("lineheight-compact", labels.compact)}
-        ${buttonMarkup("lineheight-normal", labels.normal)}
-        ${buttonMarkup("lineheight-loose", labels.loose)}
+        ${iconButtonMarkup("lineheight-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16M8 9l4 -3l4 3M8 15l4 3l4 -3"/></svg>`, labels.decreaseLineHeight)}
+        ${iconButtonMarkup("lineheight-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16M8 3l4 -3l4 3M8 21l4 3l4 -3"/></svg>`, labels.increaseLineHeight)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="letter-spacing" data-context="text">
       <div class="clickdeck-panel__section-title">${labels.letterSpacing}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("letterspacing-tight", labels.tight)}
-        ${buttonMarkup("letterspacing-normal", labels.normal)}
-        ${buttonMarkup("letterspacing-wide", labels.wide)}
+        ${iconButtonMarkup("letterspacing-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h8M10 9l-3 3l3 3M14 9l3 3l-3 3M4 4v16M20 4v16"/></svg>`, labels.decreaseLetterSpacing)}
+        ${iconButtonMarkup("letterspacing-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M7 9l-3 3l3 3M17 9l3 3l-3 3M8 4v16M16 4v16"/></svg>`, labels.increaseLetterSpacing)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="alignment" data-context="text,container">
       <div class="clickdeck-panel__section-title">${labels.alignment}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("align-left", labels.left)}
-        ${buttonMarkup("align-center", labels.center)}
-        ${buttonMarkup("align-right", labels.right)}
+        ${iconButtonMarkup("align-left", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`, labels.alignLeft)}
+        ${iconButtonMarkup("align-center", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`, labels.alignCenter)}
+        ${iconButtonMarkup("align-right", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`, labels.alignRight)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="color" data-context="text">
@@ -126,23 +123,19 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     <div class="clickdeck-panel__section" data-section="radius" data-context="container">
       <div class="clickdeck-panel__section-title">${labels.radius}</div>
       <div class="clickdeck-panel__group">
-        ${buttonMarkup("radius-none", labels.none)}
-        ${buttonMarkup("radius-sm", labels.small)}
-        ${buttonMarkup("radius-md", labels.medium)}
-        ${buttonMarkup("radius-lg", labels.large)}
+        ${iconButtonMarkup("radius-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="0" ry="0"/></svg>`, labels.decreaseRadius)}
+        ${iconButtonMarkup("radius-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="8" ry="8"/></svg>`, labels.increaseRadius)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="spacing" data-context="text,container,image">
       <div class="clickdeck-panel__section-title">${labels.spacing}</div>
       <div class="clickdeck-panel__group" data-spacing-group="margin">
-        ${buttonMarkup("margin-compact", `${labels.margin} ${labels.compact}`)}
-        ${buttonMarkup("margin-normal", `${labels.margin} ${labels.normal}`)}
-        ${buttonMarkup("margin-loose", `${labels.margin} ${labels.loose}`)}
+        ${iconButtonMarkup("margin-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><path d="M12 2v4M12 22v-4M2 12h4M22 12h-4"/></svg>`, labels.decreaseMargin)}
+        ${iconButtonMarkup("margin-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/><path d="M12 6v-4M12 18v4M6 12h-4M18 12h4"/></svg>`, labels.increaseMargin)}
       </div>
       <div class="clickdeck-panel__group" data-spacing-group="padding">
-        ${buttonMarkup("padding-compact", `${labels.padding} ${labels.compact}`)}
-        ${buttonMarkup("padding-normal", `${labels.padding} ${labels.normal}`)}
-        ${buttonMarkup("padding-loose", `${labels.padding} ${labels.loose}`)}
+        ${iconButtonMarkup("padding-decrease", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20"/><rect x="8" y="8" width="8" height="8"/><path d="M12 2v6M12 22v-6M2 12h6M22 12h-6"/></svg>`, labels.decreasePadding)}
+        ${iconButtonMarkup("padding-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20"/><rect x="8" y="8" width="8" height="8"/><path d="M12 8v-6M12 16v6M8 12h-6M16 12h6"/></svg>`, labels.increasePadding)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="history" data-context="text,container,image">
@@ -459,6 +452,10 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
 
 function buttonMarkup(action: PanelAction, label: string, disabled = false): string {
   return `<button class="clickdeck-button" data-action="${action}" type="button"${disabled ? " disabled" : ""}>${label}</button>`;
+}
+
+function iconButtonMarkup(action: PanelAction, icon: string, label: string, disabled = false): string {
+  return `<button class="clickdeck-button clickdeck-button--action-icon" data-action="${action}" type="button" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"${disabled ? " disabled" : ""}>${icon}</button>`;
 }
 
 function escapeHtml(str: string): string {

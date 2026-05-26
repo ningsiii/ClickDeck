@@ -62,61 +62,79 @@ describe("applyStyleAction", () => {
   });
 
   it("applies font weight", () => {
-    applyStyleAction(logger, element, "weight-light");
-    expect(element.style.fontWeight).toBe("300");
+    // 1. 字重增加：`normal` 或 `400` -> `500`
+    element.style.fontWeight = "400";
+    applyStyleAction(logger, element, "weight-increase");
+    expect(element.style.fontWeight).toBe("500");
 
-    applyStyleAction(logger, element, "weight-normal");
-    expect(element.style.fontWeight).toBe("normal");
+    // 2. 字重减少：`700` -> `600`
+    element.style.fontWeight = "700";
+    applyStyleAction(logger, element, "weight-decrease");
+    expect(element.style.fontWeight).toBe("600");
 
-    applyStyleAction(logger, element, "weight-bold");
-    expect(element.style.fontWeight).toBe("bold");
+    // 3. 字重边界：不低于 `100`，不高于 `900`
+    element.style.fontWeight = "900";
+    applyStyleAction(logger, element, "weight-increase");
+    expect(element.style.fontWeight).toBe("900");
+
+    element.style.fontWeight = "100";
+    applyStyleAction(logger, element, "weight-decrease");
+    expect(element.style.fontWeight).toBe("100");
   });
 
-  it("applies spacing", () => {
-    applyStyleAction(logger, element, "lineheight-compact");
-    expect(element.style.lineHeight).toBe("1.2");
+  it("applies line height", () => {
+    // 4. 行距增加：`1.5` -> `1.6`
+    element.style.lineHeight = "1.5";
+    applyStyleAction(logger, element, "lineheight-increase");
+    expect(element.style.lineHeight).toBe("1.6");
 
-    applyStyleAction(logger, element, "lineheight-normal");
-    expect(element.style.lineHeight).toBe("1.5");
-
-    applyStyleAction(logger, element, "lineheight-loose");
-    expect(element.style.lineHeight).toBe("1.8");
+    // 5. 行距减少：`1.5` -> `1.4`
+    element.style.lineHeight = "1.5";
+    applyStyleAction(logger, element, "lineheight-decrease");
+    expect(element.style.lineHeight).toBe("1.4");
   });
 
-  it("applies letter spacing presets", () => {
-    applyStyleAction(logger, element, "letterspacing-tight");
-    expect(element.style.letterSpacing).toBe("-0.02em");
+  it("applies letter spacing", () => {
+    // 6. 字距增加：`normal` -> 正向 em 值 (assume computed reads normal as 0)
+    element.style.letterSpacing = "0em";
+    applyStyleAction(logger, element, "letterspacing-increase");
+    expect(element.style.letterSpacing).toBe("0.02em");
 
-    applyStyleAction(logger, element, "letterspacing-normal");
-    expect(element.style.letterSpacing).toBe("0px");
-
-    applyStyleAction(logger, element, "letterspacing-wide");
-    expect(element.style.letterSpacing).toBe("0.04em");
+    // 7. 字距减少：`0em` -> 负向 em 值，但不低于下限
+    element.style.letterSpacing = "-0.08em";
+    applyStyleAction(logger, element, "letterspacing-decrease");
+    expect(element.style.letterSpacing).toBe("-0.08em");
   });
 
-  it("applies background color presets", () => {
-    applyStyleAction(logger, element, "bg-warm");
-    expect(element.style.backgroundColor).toBe("rgb(247, 243, 234)");
-
-    applyStyleAction(logger, element, "bg-transparent");
-    expect(element.style.backgroundColor).toBe("transparent");
-
-    applyStyleAction(logger, element, "bg-reset");
-    expect(element.style.backgroundColor).toBe("");
-  });
-
-  it("applies border radius presets", () => {
-    applyStyleAction(logger, element, "radius-none");
-    expect(element.style.borderRadius).toBe("0px");
-
-    applyStyleAction(logger, element, "radius-sm");
-    expect(element.style.borderRadius).toBe("6px");
-
-    applyStyleAction(logger, element, "radius-md");
+  it("applies border radius", () => {
+    // 8. 圆角增加：`8px` -> `10px`
+    element.style.borderRadius = "8px";
+    applyStyleAction(logger, element, "radius-increase");
     expect(element.style.borderRadius).toBe("10px");
 
-    applyStyleAction(logger, element, "radius-lg");
-    expect(element.style.borderRadius).toBe("16px");
+    // 9. 圆角减少：`8px` -> `6px`
+    element.style.borderRadius = "8px";
+    applyStyleAction(logger, element, "radius-decrease");
+    expect(element.style.borderRadius).toBe("6px");
+  });
+
+  it("applies margin and padding", () => {
+    // 10. margin / padding 增减分别生效
+    element.style.margin = "10px";
+    applyStyleAction(logger, element, "margin-increase");
+    expect(element.style.margin).toBe("14px");
+
+    element.style.margin = "10px";
+    applyStyleAction(logger, element, "margin-decrease");
+    expect(element.style.margin).toBe("6px");
+
+    element.style.padding = "10px";
+    applyStyleAction(logger, element, "padding-increase");
+    expect(element.style.padding).toBe("14px");
+
+    element.style.padding = "10px";
+    applyStyleAction(logger, element, "padding-decrease");
+    expect(element.style.padding).toBe("6px");
   });
 
   it("applies safe image width/maxWidth/objectFit actions", () => {

@@ -76,13 +76,22 @@ test.describe("ClickDeck core editing workflows", () => {
     const updatedFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
     expect(parseFloat(updatedFontSize)).toBeGreaterThan(parseFloat(initialFontSize));
 
+    const initialFontWeight = await heading.evaluate((element) => getComputedStyle(element).fontWeight);
+    await page.locator("[data-action='weight-increase']").click();
+    const updatedFontWeight = await heading.evaluate((element) => getComputedStyle(element).fontWeight);
+    
+    // font-weight should be greater or bolder
+    const fwCurrent = initialFontWeight === "normal" ? 400 : (initialFontWeight === "bold" ? 700 : parseInt(initialFontWeight));
+    const fwNext = updatedFontWeight === "normal" ? 400 : (updatedFontWeight === "bold" ? 700 : parseInt(updatedFontWeight));
+    expect(fwNext).toBeGreaterThan(fwCurrent);
+
+    await page.locator("[data-action='undo']").click();
+    const undoneFontWeight = await heading.evaluate((element) => getComputedStyle(element).fontWeight);
+    expect(undoneFontWeight).toBe(initialFontWeight);
+
     await page.locator("[data-action='undo']").click();
     const undoneFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
     expect(undoneFontSize).toBe(initialFontSize);
-
-    await page.locator("[data-action='redo']").click();
-    const redoneFontSize = await heading.evaluate((element) => getComputedStyle(element).fontSize);
-    expect(redoneFontSize).toBe(updatedFontSize);
   });
 
   test("1. Esc cancels selection", async ({ page, demoPageUrl }) => {

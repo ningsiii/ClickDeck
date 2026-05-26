@@ -244,6 +244,19 @@ function injectBaseStyles(rootId: string): void {
       background: transparent;
     }
 
+    .clickdeck-button--action-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .clickdeck-button--action-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
     .clickdeck-button--icon {
       min-height: 24px;
       width: 24px;
