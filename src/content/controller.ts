@@ -131,31 +131,33 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
         return;
       }
 
-      const restoreMessage = labels.active.startsWith("已")
-        ? "检测到此页面有上次保存的 ClickDeck 修改，是否恢复？"
-        : "Found saved ClickDeck edits for this page. Restore now?";
-      const shouldRestore = confirm(restoreMessage);
-      if (!shouldRestore) {
-        return;
-      }
-
-      const hydrated = hydratePersistedPatches(payload.patches, logger);
-      if (hydrated.length === 0) {
-        logger.warn("No persisted patches could be restored");
-        return;
-      }
-
-      // Apply patches in order and rebuild history so undo can step back.
-      for (const patch of hydrated) {
-        applyPatchValue(patch, patch.after);
-        state.patches.push(patch);
-        history.undoStack.push(patch);
-      }
-      history.redoStack.length = 0;
-      refreshHistoryButtons();
-      updateOutline();
-
-      logger.info("Restored persisted page edits", { restored: hydrated.length, total: payload.patches.length });
+      panel?.showSavedEditsNotice({
+        count: payload.patches.length,
+        onRestore: () => {
+          const hydrated = hydratePersistedPatches(payload.patches, logger);
+          if (hydrated.length === 0) {
+            logger.warn("No persisted patches could be restored");
+          } else {
+            for (const patch of hydrated) {
+              applyPatchValue(patch, patch.after);
+              state.patches.push(patch);
+              history.undoStack.push(patch);
+            }
+            history.redoStack.length = 0;
+            refreshHistoryButtons();
+            updateOutline();
+            logger.info("Restored persisted page edits", { restored: hydrated.length, total: payload.patches.length });
+          }
+          panel?.hideSavedEditsNotice();
+        },
+        onDismiss: () => {
+          panel?.hideSavedEditsNotice();
+        },
+        onClear: () => {
+          clearPersistedPatches();
+          panel?.hideSavedEditsNotice();
+        }
+      });
     });
   }
 

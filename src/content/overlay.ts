@@ -292,6 +292,28 @@ function injectBaseStyles(rootId: string): void {
       justify-content: flex-end;
     }
 
+    .clickdeck-notice {
+      background: #fff3df;
+      border: 1px solid #e8d5b0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 14px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .clickdeck-notice__title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #3d2f24;
+    }
+
+    .clickdeck-notice__actions {
+      display: flex;
+      gap: 6px;
+    }
+
     @media print {
       [data-clickdeck="true"] {
         display: none !important;

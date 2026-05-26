@@ -23,6 +23,13 @@ export type PromptPreviewOptions = {
 
 export type SelectionContext = "none" | "text" | "image" | "container";
 
+export type SavedEditsNoticeOptions = {
+  count: number;
+  onRestore: () => void;
+  onDismiss: () => void;
+  onClear: () => void;
+};
+
 export type ClickDeckPanel = {
   element: HTMLDivElement;
   destroy: () => void;
@@ -31,6 +38,8 @@ export type ClickDeckPanel = {
   setReplaceImageAvailability: (enabled: boolean) => void;
   setSelectionContext: (context: SelectionContext) => void;
   showPromptPreview: (options: PromptPreviewOptions) => void;
+  showSavedEditsNotice: (options: SavedEditsNoticeOptions) => void;
+  hideSavedEditsNotice: () => void;
 };
 
 export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
@@ -365,6 +374,35 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
 
       render();
       element.appendChild(overlay);
+    },
+    showSavedEditsNotice: (options: SavedEditsNoticeOptions) => {
+      let notice = element.querySelector(".clickdeck-notice");
+      if (notice) {
+        notice.remove();
+      }
+
+      notice = document.createElement("div");
+      notice.className = "clickdeck-notice";
+      notice.innerHTML = `
+        <div class="clickdeck-notice__title">${labels.savedEditsFound} (${options.count})</div>
+        <div class="clickdeck-notice__actions">
+          <button class="clickdeck-button clickdeck-button--primary" data-notice-action="restore" type="button">${labels.restore}</button>
+          <button class="clickdeck-button" data-notice-action="dismiss" type="button">${labels.dismiss}</button>
+          <button class="clickdeck-button" data-notice-action="clear" type="button">${labels.clear}</button>
+        </div>
+      `;
+
+      notice.querySelector("[data-notice-action='restore']")?.addEventListener("click", () => options.onRestore());
+      notice.querySelector("[data-notice-action='dismiss']")?.addEventListener("click", () => options.onDismiss());
+      notice.querySelector("[data-notice-action='clear']")?.addEventListener("click", () => options.onClear());
+
+      const header = element.querySelector(".clickdeck-panel__header");
+      if (header && header.nextSibling) {
+        header.parentNode?.insertBefore(notice, header.nextSibling);
+      }
+    },
+    hideSavedEditsNotice: () => {
+      element.querySelector(".clickdeck-notice")?.remove();
     }
   };
 }

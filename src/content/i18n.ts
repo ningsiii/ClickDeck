@@ -57,6 +57,10 @@ export type PanelLabels = {
   promptCopied: string;
   promptClose: string;
   finish: string;
+  savedEditsFound: string;
+  restore: string;
+  dismiss: string;
+  clear: string;
 };
 
 const englishLabels: PanelLabels = {
@@ -117,7 +121,11 @@ const englishLabels: PanelLabels = {
   promptCopy: "Copy",
   promptCopied: "Copied!",
   promptClose: "Close",
-  finish: "Finish"
+  finish: "Finish",
+  savedEditsFound: "Saved edits found",
+  restore: "Restore",
+  dismiss: "Dismiss",
+  clear: "Clear"
 };
 
 const chineseLabels: PanelLabels = {
@@ -178,7 +186,11 @@ const chineseLabels: PanelLabels = {
   promptCopy: "复制",
   promptCopied: "已复制！",
   promptClose: "关闭",
-  finish: "完成"
+  finish: "完成",
+  savedEditsFound: "发现已保存的修改",
+  restore: "恢复",
+  dismiss: "忽略",
+  clear: "清空"
 };
 
 export function getPanelLabels(): PanelLabels {
