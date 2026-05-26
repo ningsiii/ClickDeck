@@ -8,7 +8,7 @@ function buildModeCss(mode: PdfExportMode): string {
   }
   if (mode === "slides") {
     return `
-      @page { size: 16in 9in; margin: 0; }
+      @page { size: 16in 9in landscape; margin: 0; }
       @media print {
         html, body {
           width: 16in; min-height: 9in;
@@ -30,7 +30,10 @@ function buildModeCss(mode: PdfExportMode): string {
           break-after: auto !important; page-break-after: auto !important;
         }
         .nav-dots, .nav-dot { display: none !important; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
       }
     `.trim();
   }
@@ -66,7 +69,7 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
     clone.insertBefore(head, clone.firstChild);
   }
 
-  // Remove any stale clickdeck print iframes that may have been left in the DOM
+  // Remove stale print iframes that may have been cloned
   clone.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
 
   // <base> tag so relative URLs resolve against the original page
@@ -87,34 +90,40 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
 }
 
 /**
- * Prints by writing into a hidden iframe.
+ * Prints by creating a hidden iframe, writing the serialized page HTML into it
+ * via srcdoc, then asking the background service worker to call
+ * iframe.contentWindow.print() via executeScript({ world: "MAIN" }).
  *
- * Why iframe instead of window.open() or executeScript + window.print():
- *  - window.open(): Chrome blocks auto window.print() in popups (non-user-gesture), → 0 MB PDF.
- *  - executeScript + same-tab window.print(): Chrome's print pipeline retains state after the
- *    first dialog; the second call corrupts the generated PDF.
- *  - Hidden iframe: each call creates a fresh iframe document written directly, with no
- *    cross-origin restrictions and no state shared across invocations.
- *    iframe.contentWindow.print() IS treated as a user-gesture-proxied call because
- *    it originates from the same user action that triggered the content script handler.
+ * WHY MAIN WORLD:
+ * Content scripts run in Chrome's Isolated World. Calling iframe.contentWindow.print()
+ * from an Isolated World is unreliable in Chrome — it produces 0 MB PDFs or "print
+ * failed" errors. Using executeScript({ world: "MAIN" }) is the only reliable way to
+ * trigger printing from an extension, as proven by the original first-print success.
+ *
+ * WHY NEW IFRAME EACH TIME:
+ * Calling window.print() via executeScript on the SAME tab after a previous print
+ * produces corrupted PDFs because Chrome's print pipeline retains internal state.
+ * A fresh iframe has no prior print state.
  */
 export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger): void {
   logger.info("PDF export note: enable background graphics/colors in the print dialog for best results.");
   logger.info(`Triggering PDF export in ${mode} mode`);
 
-  // Clean up any stale print iframes from a previous export that didn't clean up properly.
-  // This prevents Chrome from showing "Print failed" when two print jobs overlap.
+  // Clean up stale print iframes (prevents "Print failed" from overlapping jobs)
   document.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
 
   try {
     const html = buildPrintHtml(mode, document);
 
-    // Create a hidden iframe with realistic print dimensions.
-    // Chrome's PDF generator uses the iframe viewport for layout; 1×1 px produces blank output.
+    // Unique ID so the service worker can find this specific iframe via executeScript
+    const frameId = `clickdeck-print-iframe-${Date.now()}`;
+
     const iframe = document.createElement("iframe");
-    iframe.setAttribute("data-clickdeck", "true");       // excluded from HTML export
+    iframe.id = frameId;
+    iframe.setAttribute("data-clickdeck", "true");             // excluded from HTML export
     iframe.setAttribute("data-clickdeck-print-iframe", "true"); // tracked for cleanup
-    // Off-screen but full-width so Chrome can render content correctly before printing
+    // Full-size viewport off-screen: Chrome's PDF generator uses the iframe viewport
+    // dimensions to lay out the content. A 1×1 px iframe produces a blank PDF.
     iframe.style.cssText = [
       "position:fixed",
       "top:0",
@@ -127,36 +136,34 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
     ].join(";");
     document.body.appendChild(iframe);
 
-    // Use srcdoc instead of document.write().
-    // Chrome's print pipeline handles srcdoc iframes correctly; document.write() on file://
-    // parent pages can produce blank output in Chrome's PDF generator.
+    // srcdoc is preferred over document.write() — Chrome's print pipeline handles
+    // srcdoc iframes correctly on file:// parent pages.
     iframe.srcdoc = html;
 
-    // Wait for the iframe to finish loading, then print it
     iframe.addEventListener("load", () => {
-      try {
-        iframe.contentWindow?.print();
-      } catch (printErr) {
-        logger.error("PDF export: iframe print failed", { printErr });
-      }
+      // Ask the service worker to call iframe.contentWindow.print() in the MAIN world.
+      // This is required because calling print() from the Isolated World (content script)
+      // does not trigger Chrome's PDF generator reliably.
+      chrome.runtime.sendMessage({
+        type: "CLICKDECK_PRINT_IFRAME",
+        iframeId: frameId,
+      });
 
-      // IMPORTANT: Do NOT remove the iframe immediately on afterprint.
-      // Chrome fires afterprint when the print dialog CLOSES, not when the PDF file
-      // is finished being written to disk. Removing the iframe too early causes
-      // Chrome to lose the document reference mid-write, producing a 0 MB file.
-      // Edge fires afterprint after the file is written (hence the delay users notice).
-      // We delay removal by 30 s to give Chrome enough time to complete the write.
+      // Schedule cleanup. Chrome fires afterprint when the dialog CLOSES, not when
+      // the PDF file is fully written. We delay removal by 30 s so Chrome has time
+      // to finish writing the file before we remove the document reference.
       let cleaned = false;
       const cleanup = () => {
         if (!cleaned) {
           cleaned = true;
-          iframe.remove();
+          document.getElementById(frameId)?.remove();
         }
       };
+      // afterprint fires in the iframe's own window context — listen there
       iframe.contentWindow?.addEventListener("afterprint", () => {
         setTimeout(cleanup, 30_000);
       }, { once: true });
-      // Hard fallback: remove after 3 minutes regardless
+      // Hard fallback in case afterprint never fires (e.g. user presses Esc)
       setTimeout(cleanup, 180_000);
     }, { once: true });
 

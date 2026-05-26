@@ -15,19 +15,43 @@ chrome.action.onClicked.addListener(async (tab) => {
 // Dynamic <script> injection is blocked by CSP on most sites.
 // Using scripting.executeScript with world: "MAIN" is the correct MV3 approach.
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.type !== "CLICKDECK_PRINT") {
-    return;
-  }
   const tabId = sender.tab?.id;
   if (!tabId) {
-    console.warn("[ClickDeck] CLICKDECK_PRINT received but sender tab id is missing");
+    console.warn("[ClickDeck] print message received but sender tab id is missing");
     return;
   }
-  chrome.scripting.executeScript({
-    target: { tabId },
-    world: "MAIN",
-    func: () => window.print(),
-  }).catch((err) => {
-    console.warn("[ClickDeck] executeScript for print failed", err);
-  });
+
+  // Legacy: print the current tab's own window (kept for compatibility)
+  if (msg.type === "CLICKDECK_PRINT") {
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: () => window.print(),
+    }).catch((err) => {
+      console.warn("[ClickDeck] executeScript for print failed", err);
+    });
+  }
+
+  // Primary path: print via a specific iframe (fresh iframe = no print-pipeline state).
+  // Called from the content script after the print iframe's load event fires.
+  // Must run in MAIN world — calling iframe.contentWindow.print() from the Isolated
+  // World (content script) is unreliable in Chrome and produces 0 MB PDFs.
+  if (msg.type === "CLICKDECK_PRINT_IFRAME" && msg.iframeId) {
+    const iframeId: string = msg.iframeId;
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      args: [iframeId],
+      func: (id: string) => {
+        const iframe = document.getElementById(id) as HTMLIFrameElement | null;
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.print();
+        } else {
+          console.warn("[ClickDeck] print iframe not found:", id);
+        }
+      },
+    }).catch((err) => {
+      console.warn("[ClickDeck] executeScript for iframe print failed", err);
+    });
+  }
 });

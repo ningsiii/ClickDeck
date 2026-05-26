@@ -22,9 +22,9 @@ describe("buildPrintHtml", () => {
     expect(html).not.toContain("size: 16in 9in");
   });
 
-  it("slides mode: contains 16:9 @page, .slide constraints, .deck overflow reset, .nav-dots hide", () => {
+  it("slides mode: contains 16:9 landscape @page, slide constraints, deck overflow reset, nav-dots hide", () => {
     const html = buildPrintHtml("slides", document);
-    expect(html).toContain("size: 16in 9in");
+    expect(html).toContain("16in 9in landscape");
     expect(html).toContain("width: 16in !important");
     expect(html).toContain("height: 9in !important");
     expect(html).toContain(".deck");
@@ -36,7 +36,7 @@ describe("buildPrintHtml", () => {
 
   it("long-page mode: no 16:9 CSS, base print CSS still present", () => {
     const html = buildPrintHtml("long-page", document);
-    expect(html).not.toContain("size: 16in 9in");
+    expect(html).not.toContain("16in 9in");
     expect(html).not.toContain("width: 16in !important");
     expect(html).toContain("break-inside: avoid");
   });
@@ -50,31 +50,33 @@ describe("buildPrintHtml", () => {
 });
 
 // ---------------------------------------------------------------------------
-// exportPdfSnapshot — smoke tests with iframe mock
+// exportPdfSnapshot — smoke tests
 // ---------------------------------------------------------------------------
+
+// Mock chrome.runtime (not available in jsdom)
+const sendMessageMock = vi.fn();
+vi.stubGlobal("chrome", {
+  runtime: { sendMessage: sendMessageMock },
+});
+
 describe("exportPdfSnapshot", () => {
   let logger: ClickDeckLogger;
-
-  // Minimal iframe stub — now using srcdoc instead of document.write
   let capturedSrcdoc = "";
-  const mockContentWindow = {
-    print: vi.fn(),
-    addEventListener: vi.fn(),
-  };
+
+  const mockContentWindow = { addEventListener: vi.fn() };
 
   beforeEach(() => {
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     vi.useFakeTimers();
     capturedSrcdoc = "";
-    mockContentWindow.print.mockClear();
+    sendMessageMock.mockClear();
     mockContentWindow.addEventListener.mockClear();
 
-    // Stub createElement to intercept iframe creation
+    // Stub createElement to capture iframe creation
     const origCreate = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       if (tag === "iframe") {
         const el = origCreate("div") as unknown as Record<string, unknown>;
-        // Capture srcdoc assignment via property descriptor
         Object.defineProperty(el, "srcdoc", {
           set(val: string) { capturedSrcdoc = val; },
           get() { return capturedSrcdoc; },
@@ -99,27 +101,29 @@ describe("exportPdfSnapshot", () => {
     document.body.innerHTML = "";
   });
 
-  it("writes HTML into iframe srcdoc for a4 mode", async () => {
+  it("sets iframe srcdoc containing A4 CSS for a4 mode", async () => {
     exportPdfSnapshot("a4", logger);
     await Promise.resolve();
     expect(capturedSrcdoc).toContain("size: A4");
   });
 
-  it("writes HTML into iframe srcdoc for slides mode", async () => {
+  it("sets iframe srcdoc containing 16:9 landscape CSS for slides mode", async () => {
     exportPdfSnapshot("slides", logger);
     await Promise.resolve();
-    expect(capturedSrcdoc).toContain("16in 9in");
+    expect(capturedSrcdoc).toContain("16in 9in landscape");
   });
 
-  it("writes HTML into iframe srcdoc for long-page mode", async () => {
+  it("sets iframe srcdoc for long-page mode", async () => {
     exportPdfSnapshot("long-page", logger);
     await Promise.resolve();
     expect(capturedSrcdoc).toContain("break-inside: avoid");
   });
 
-  it("calls contentWindow.print() after load", async () => {
+  it("sends CLICKDECK_PRINT_IFRAME message to service worker after load", async () => {
     exportPdfSnapshot("a4", logger);
     await Promise.resolve();
-    expect(mockContentWindow.print).toHaveBeenCalled();
+    expect(sendMessageMock).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "CLICKDECK_PRINT_IFRAME", iframeId: expect.stringContaining("clickdeck-print-iframe") })
+    );
   });
 });
