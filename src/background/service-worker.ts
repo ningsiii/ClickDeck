@@ -84,6 +84,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 // This is passive observation — does not modify any download behavior.
 
 const recentDownloads: Array<{
+  id: number;
   filename: string;
   fileSize: number;
   startTime: number | null;
@@ -95,17 +96,18 @@ const recentDownloads: Array<{
 }> = [];
 
 chrome.downloads.onChanged.addListener((delta) => {
-  // Only track PDF-related downloads
-  const filename = delta.filename?.current || "";
-  const isPdf = filename.endsWith(".pdf") || filename.includes("clickdeck-debug");
+  let record = recentDownloads.find(r => r.id === delta.id);
 
-  if (!isPdf && !delta.filename) return;
+  if (!record) {
+    // New download event - must have a filename to be tracked
+    if (!delta.filename?.current) return;
+    const filename = delta.filename.current;
+    const isPdf = filename.endsWith(".pdf") || filename.includes("clickdeck-debug");
+    if (!isPdf) return;
 
-  // Find or create record
-  let record = recentDownloads.find(r => r.filename === filename);
-  if (!record && delta.filename?.current) {
     record = {
-      filename: delta.filename.current,
+      id: delta.id,
+      filename: filename,
       fileSize: 0,
       startTime: Date.now(),
       endTime: null,
@@ -115,7 +117,6 @@ chrome.downloads.onChanged.addListener((delta) => {
       sessionId: null,
     };
     recentDownloads.push(record);
-    // Keep only last 20
     while (recentDownloads.length > 20) recentDownloads.shift();
   }
 
