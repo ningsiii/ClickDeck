@@ -8,6 +8,8 @@ coverage/
 .vite/
 playwright-report/
 test-results/
+test-diagnostic/
+fixtures/
 
 # Logs
 *.log

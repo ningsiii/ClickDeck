@@ -1,4 +1,12 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
+import {
+  startDebugSession,
+  installIframeMessageListener,
+  registerSession,
+  unregisterSession,
+  buildIframeMonitorScript,
+  downloadDebugReport,
+} from "./debug-session";
 
 export type PdfExportMode = "long-page" | "a4" | "slides";
 
@@ -113,31 +121,63 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document, bodyBgColor?:
  * A fresh iframe has no prior print state.
  */
 export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger): void {
-  const t0 = performance.now();
-  console.log(`[TRACE_PDF] 0ms - 触发导出模式: ${mode}`);
+  // ── Debug session init ──
+  installIframeMessageListener();
+  const session = startDebugSession(mode);
+  registerSession(session);
+  const sid = session.sessionId;
+
+  console.log(`[TRACE_PDF] 0ms - 触发导出模式: ${mode} (session: ${sid})`);
 
   logger.info("PDF export note: enable background graphics/colors in the print dialog for best results.");
-  logger.info(`Triggering PDF export in ${mode} mode`);
+  logger.info(`Triggering PDF export in ${mode} mode (session: ${sid})`);
 
-  // Clean up stale print iframes (prevents "Print failed" from overlapping jobs)
+  // ── Step: cleanup stale iframes ──
+  const cleanupStart = performance.now();
   document.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
-  console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 清理旧的 Iframe 完成`);
+  session.step("cleanup-old-iframes", {
+    startTime: 0,
+    endTime: performance.now() - cleanupStart,
+    detail: "removed stale print iframes",
+  });
 
   try {
+    // ── Step: read computed styles ──
+    const styleStart = performance.now();
     const bodyBg = window.getComputedStyle(document.body).backgroundColor;
-    console.log(`[TRACE_PDF] getComputedStyle(body).backgroundColor = "${bodyBg}" (如果是 rgba(0,0,0,0) 则变量解析失败)`);
-    const html = buildPrintHtml(mode, document, bodyBg);
-    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - buildPrintHtml 完成 (HTML 长度: ${html.length})`);
+    session.step("read-computed-styles", {
+      startTime: styleStart - cleanupStart,
+      endTime: performance.now() - cleanupStart,
+      detail: `body.backgroundColor="${bodyBg}"`,
+      meta: { bodyBgColor: bodyBg },
+    });
+    console.log(`[TRACE_PDF] getComputedStyle(body).backgroundColor = "${bodyBg}"`);
 
-    // Unique ID so the service worker can find this specific iframe via executeScript
+    // ── Step: build print HTML ──
+    const buildStart = performance.now();
+    const html = buildPrintHtml(mode, document, bodyBg);
+    session.step("build-print-html", {
+      startTime: buildStart - cleanupStart,
+      endTime: performance.now() - cleanupStart,
+      detail: `HTML length: ${html.length} chars`,
+      meta: { htmlLength: html.length },
+    });
+    console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - buildPrintHtml 完成 (HTML 长度: ${html.length})`);
+
+    // ── Step: inject iframe monitor script into srcdoc ──
+    const monitorScript = buildIframeMonitorScript(sid);
+    // Insert the monitor script right before </body> (or at end if no </body>)
+    const htmlWithMonitor = html.replace(/<\/body>\s*<\/html>\s*$/i, monitorScript + "\n</body></html>")
+      || html + monitorScript;
+
+    // ── Step: create iframe ──
+    const createStart = performance.now();
     const frameId = `clickdeck-print-iframe-${Date.now()}`;
 
     const iframe = document.createElement("iframe");
     iframe.id = frameId;
-    iframe.setAttribute("data-clickdeck", "true");             // excluded from HTML export
-    iframe.setAttribute("data-clickdeck-print-iframe", "true"); // tracked for cleanup
-    // Full-size viewport off-screen: Chrome's PDF generator uses the iframe viewport
-    // dimensions to lay out the content. A 1×1 px iframe produces a blank PDF.
+    iframe.setAttribute("data-clickdeck", "true");
+    iframe.setAttribute("data-clickdeck-print-iframe", "true");
     const iframeWidth = mode === "slides" ? "1920px" : "794px";
     const iframeHeight = mode === "slides" ? "1080px" : "1123px";
     iframe.style.cssText = [
@@ -151,48 +191,159 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
       "pointer-events:none",
     ].join(";");
     document.body.appendChild(iframe);
-    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 新建 Iframe 注入 DOM (尺寸: ${iframeWidth}x${iframeHeight}, id: ${frameId})`);
 
-    // srcdoc is preferred over document.write() — Chrome's print pipeline handles
-    // srcdoc iframes correctly on file:// parent pages.
-    iframe.srcdoc = html;
-    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - Iframe 设置 srcdoc 完毕，开始等待 load 事件`);
+    session.step("create-iframe", {
+      startTime: createStart - cleanupStart,
+      endTime: performance.now() - cleanupStart,
+      detail: `iframe injected: ${iframeWidth}x${iframeHeight}, id=${frameId}`,
+      meta: { frameId, iframeWidth, iframeHeight },
+    });
+    console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - 新建 Iframe 注入 DOM (尺寸: ${iframeWidth}x${iframeHeight}, id: ${frameId})`);
+
+    // ── Step: set srcdoc ──
+    const srcdocStart = performance.now();
+    iframe.srcdoc = htmlWithMonitor;
+    session.step("set-srcdoc", {
+      startTime: srcdocStart - cleanupStart,
+      endTime: performance.now() - cleanupStart,
+      detail: `srcdoc set, waiting for load event (HTML with monitor: ${htmlWithMonitor.length} chars)`,
+      meta: { srcdocLength: htmlWithMonitor.length },
+    });
+    console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - Iframe 设置 srcdoc 完毕，开始等待 load 事件`);
+
+    // ── Step: wait for iframe load ──
+    const loadWaitStart = performance.now();
+
+    // Timeout: if iframe doesn't load in 30s, mark as timeout
+    const loadTimeout = setTimeout(() => {
+      session.step("iframe-load", {
+        startTime: loadWaitStart - cleanupStart,
+        endTime: 30000,
+        status: "timeout",
+        detail: "iframe load event not fired within 30s",
+      });
+      session.warn("IFRAME_LOAD_TIMEOUT", "iframe load event not fired within 30s");
+      session.finalize("TIMEOUT");
+      downloadDebugReport(session.build());
+      unregisterSession(sid);
+    }, 30_000);
 
     iframe.addEventListener("load", () => {
-      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - Iframe 触发 onload 事件`);
+      clearTimeout(loadTimeout);
+      const loadTime = performance.now() - cleanupStart;
+      session.step("iframe-load", {
+        startTime: loadWaitStart - cleanupStart,
+        endTime: loadTime,
+        detail: `iframe load event fired`,
+      });
+      console.log(`[TRACE_PDF] ${loadTime.toFixed(1)}ms - Iframe 触发 onload 事件`);
 
-      // Ask the service worker to call iframe.contentWindow.print() in the MAIN world.
-      // This is required because calling print() from the Isolated World (content script)
-      // does not trigger Chrome's PDF generator reliably.
+      // ── Step: send print message to service worker ──
+      const msgStart = performance.now();
       chrome.runtime.sendMessage({
         type: "CLICKDECK_PRINT_IFRAME",
         iframeId: frameId,
+        debugSessionId: sid,
       });
-      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 已向 Service Worker 发送 CLICKDECK_PRINT_IFRAME 消息 (iframeId: ${frameId})`);
+      session.step("send-print-message", {
+        startTime: msgStart - cleanupStart,
+        endTime: performance.now() - cleanupStart,
+        detail: `CLICKDECK_PRINT_IFRAME sent (iframeId=${frameId})`,
+        meta: { frameId },
+      });
+      console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - 已向 Service Worker 发送 CLICKDECK_PRINT_IFRAME 消息`);
 
-      // Schedule cleanup. Chrome fires afterprint when the dialog CLOSES, not when
-      // the PDF file is fully written. We delay removal by 30 s so Chrome has time
-      // to finish writing the file before we remove the document reference.
+      // ── Step: register afterprint listener ──
       let cleaned = false;
+      let afterprintFired = false;
+      let reportDownloaded = false;
+
+      // Download the debug report immediately (don't wait for iframe cleanup)
+      const downloadReport = () => {
+        if (reportDownloaded) return;
+        reportDownloaded = true;
+        session.finalize(afterprintFired ? "SUCCESS" : "USER_CANCELLED");
+        const report = session.build();
+        console.log(`[DEBUG_SESSION] ${sid} — 准备下载 debug-report.json，检查下载文件夹`);
+        downloadDebugReport(report);
+        unregisterSession(sid);
+      };
+
       const cleanup = () => {
         if (!cleaned) {
           cleaned = true;
           document.getElementById(frameId)?.remove();
-          console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 执行 iframe 销毁完成 (id: ${frameId})`);
+          session.step("cleanup-iframe", {
+            detail: `iframe removed (afterprintFired=${afterprintFired})`,
+            meta: { afterprintFired },
+          });
+          console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - 执行 iframe 销毁完成`);
+          // Ensure report is downloaded even if afterprint never fired
+          downloadReport();
         }
       };
-      // afterprint fires in the iframe's own window context — listen there
+
+      // afterprint
       iframe.contentWindow?.addEventListener("afterprint", () => {
-        console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 捕获到 afterprint 事件 (用户点击了保存或取消)`);
+        afterprintFired = true;
+        const afterprintTime = performance.now() - cleanupStart;
+        session.step("afterprint", {
+          detail: "afterprint event fired (user closed print dialog)",
+        });
+        console.log(`[TRACE_PDF] ${afterprintTime.toFixed(1)}ms - 捕获到 afterprint 事件`);
+
+        // Wait a short moment to allow the browser's download manager to finalize the file.
+        // Then query the service worker for the PDF download record to get its final size.
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ type: "CLICKDECK_QUERY_DOWNLOADS" })
+            .then((res: { downloads?: any[] }) => {
+              const downloads = res.downloads || [];
+              // Find the most recent PDF download that happened after our session started
+              const recentPdf = downloads.find((d) => 
+                d.filename.endsWith(".pdf") && 
+                d.startTime >= session.startTime - 10000
+              );
+              
+              if (recentPdf) {
+                session.setDownload(recentPdf);
+                if (recentPdf.fileSize === 0) {
+                  session.finalize("EMPTY_PDF");
+                }
+              }
+            })
+            .finally(() => {
+              downloadReport();
+            });
+        }, 1500);
+
+        // Still delay iframe removal to let Chrome finish writing the PDF
         setTimeout(cleanup, 30_000);
       }, { once: true });
-      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 已注册 afterprint 监听器`);
-      // Hard fallback in case afterprint never fires (e.g. user presses Esc)
-      setTimeout(cleanup, 180_000);
+
+      session.step("register-afterprint-listener", {
+        detail: "afterprint listener registered, report downloads immediately, iframe cleanup after 30s",
+      });
+      console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - 已注册 afterprint 监听器`);
+
+      // Hard fallback: if afterprint never fires (e.g. user presses Esc), download report after 10s
+      setTimeout(() => {
+        if (!afterprintFired && !reportDownloaded) {
+          session.warn("HARD_FALLBACK", "10s timeout — afterprint never fired, user may have cancelled");
+          downloadReport();
+        }
+        if (!cleaned) {
+          setTimeout(cleanup, 5_000); // cleanup 5s after report
+        }
+      }, 10_000);
     }, { once: true });
 
   } catch (err) {
-    console.error(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - PDF 导出异常`, err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[TRACE_PDF] PDF 导出异常`, err);
+    session.step("exception", { status: "error", detail: errMsg });
+    session.finalize("FAILED");
+    downloadDebugReport(session.build());
+    unregisterSession(sid);
     logger.error("PDF export failed", { err });
   }
 }
