@@ -55,7 +55,7 @@ const BASE_PRINT_CSS = `
  * Builds a complete, self-contained HTML string for printing.
  * Exported for unit testing.
  */
-export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
+export function buildPrintHtml(mode: PdfExportMode, doc: Document, bodyBgColor?: string): string {
   const clone = doc.documentElement.cloneNode(true) as HTMLElement;
 
   // Remove ClickDeck UI and any previously injected print styles
@@ -84,7 +84,8 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
   head.prepend(baseEl);
 
   // Inject print CSS
-  const css = [buildModeCss(mode), BASE_PRINT_CSS].filter(Boolean).join("\n");
+  const dynamicBgCss = bodyBgColor ? `@media print { html, body { background-color: ${bodyBgColor} !important; } }` : "";
+  const css = [buildModeCss(mode), BASE_PRINT_CSS, dynamicBgCss].filter(Boolean).join("\n");
   const styleEl = document.createElement("style");
   styleEl.textContent = css;
   head.appendChild(styleEl);
@@ -123,7 +124,8 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
   console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 清理旧的 Iframe 完成`);
 
   try {
-    const html = buildPrintHtml(mode, document);
+    const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+    const html = buildPrintHtml(mode, document, bodyBg);
     console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - buildPrintHtml 完成 (HTML 长度: ${html.length})`);
 
     // Unique ID so the service worker can find this specific iframe via executeScript
