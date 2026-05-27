@@ -49,12 +49,11 @@ const BASE_PRINT_CSS = `
     *::before,
     *::after {
       background-image: none !important;
-    }
-    html, body {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       color-adjust: exact !important;
     }
+
     section, article, figure, blockquote,
     .card, .panel, .page, .slide,
     [data-card], [data-panel] {
