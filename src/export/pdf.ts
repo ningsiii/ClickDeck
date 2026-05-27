@@ -13,7 +13,6 @@ function buildModeCss(mode: PdfExportMode): string {
         html, body {
           width: 16in; min-height: 9in;
           margin: 0 !important; padding: 0 !important;
-          background: transparent !important;
         }
         .deck, .deck-container, [data-deck] {
           width: 16in !important; height: auto !important;
@@ -30,10 +29,6 @@ function buildModeCss(mode: PdfExportMode): string {
           break-after: auto !important; page-break-after: auto !important;
         }
         .nav-dots, .nav-dot { display: none !important; }
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
       }
     `.trim();
   }
@@ -42,6 +37,11 @@ function buildModeCss(mode: PdfExportMode): string {
 
 const BASE_PRINT_CSS = `
   @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
     section, article, figure, blockquote,
     .card, .panel, .page, .slide,
     [data-card], [data-panel] {
@@ -112,14 +112,19 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document): string {
  * A fresh iframe has no prior print state.
  */
 export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger): void {
+  const t0 = performance.now();
+  console.log(`[TRACE_PDF] 0ms - 触发导出模式: ${mode}`);
+
   logger.info("PDF export note: enable background graphics/colors in the print dialog for best results.");
   logger.info(`Triggering PDF export in ${mode} mode`);
 
   // Clean up stale print iframes (prevents "Print failed" from overlapping jobs)
   document.querySelectorAll("[data-clickdeck-print-iframe='true']").forEach(el => el.remove());
+  console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 清理旧的 Iframe 完成`);
 
   try {
     const html = buildPrintHtml(mode, document);
+    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - buildPrintHtml 完成 (HTML 长度: ${html.length})`);
 
     // Unique ID so the service worker can find this specific iframe via executeScript
     const frameId = `clickdeck-print-iframe-${Date.now()}`;
@@ -130,23 +135,29 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
     iframe.setAttribute("data-clickdeck-print-iframe", "true"); // tracked for cleanup
     // Full-size viewport off-screen: Chrome's PDF generator uses the iframe viewport
     // dimensions to lay out the content. A 1×1 px iframe produces a blank PDF.
+    const iframeWidth = mode === "slides" ? "1920px" : "794px";
+    const iframeHeight = mode === "slides" ? "1080px" : "1123px";
     iframe.style.cssText = [
       "position:fixed",
       "top:0",
       "left:-10000px",
-      "width:" + (mode === "slides" ? "1920px" : "794px"),
-      "height:" + (mode === "slides" ? "1080px" : "1123px"),
+      "width:" + iframeWidth,
+      "height:" + iframeHeight,
       "border:none",
       "visibility:hidden",
       "pointer-events:none",
     ].join(";");
     document.body.appendChild(iframe);
+    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 新建 Iframe 注入 DOM (尺寸: ${iframeWidth}x${iframeHeight}, id: ${frameId})`);
 
     // srcdoc is preferred over document.write() — Chrome's print pipeline handles
     // srcdoc iframes correctly on file:// parent pages.
     iframe.srcdoc = html;
+    console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - Iframe 设置 srcdoc 完毕，开始等待 load 事件`);
 
     iframe.addEventListener("load", () => {
+      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - Iframe 触发 onload 事件`);
+
       // Ask the service worker to call iframe.contentWindow.print() in the MAIN world.
       // This is required because calling print() from the Isolated World (content script)
       // does not trigger Chrome's PDF generator reliably.
@@ -154,6 +165,7 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
         type: "CLICKDECK_PRINT_IFRAME",
         iframeId: frameId,
       });
+      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 已向 Service Worker 发送 CLICKDECK_PRINT_IFRAME 消息 (iframeId: ${frameId})`);
 
       // Schedule cleanup. Chrome fires afterprint when the dialog CLOSES, not when
       // the PDF file is fully written. We delay removal by 30 s so Chrome has time
@@ -163,17 +175,21 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
         if (!cleaned) {
           cleaned = true;
           document.getElementById(frameId)?.remove();
+          console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 执行 iframe 销毁完成 (id: ${frameId})`);
         }
       };
       // afterprint fires in the iframe's own window context — listen there
       iframe.contentWindow?.addEventListener("afterprint", () => {
+        console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 捕获到 afterprint 事件 (用户点击了保存或取消)`);
         setTimeout(cleanup, 30_000);
       }, { once: true });
+      console.log(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - 已注册 afterprint 监听器`);
       // Hard fallback in case afterprint never fires (e.g. user presses Esc)
       setTimeout(cleanup, 180_000);
     }, { once: true });
 
   } catch (err) {
+    console.error(`[TRACE_PDF] ${(performance.now() - t0).toFixed(1)}ms - PDF 导出异常`, err);
     logger.error("PDF export failed", { err });
   }
 }
