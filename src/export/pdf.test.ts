@@ -19,6 +19,11 @@ describe("buildPrintHtml", () => {
     expect(html).toContain("size: A4");
     expect(html).toContain("margin: 16mm");
     expect(html).toContain("break-inside: avoid");
+    expect(html).toContain("thead");
+    expect(html).toContain("display: table-header-group");
+    expect(html).toContain("canvas");
+    expect(html).toContain("max-width: 100% !important");
+    expect(html).not.toContain("background-image: none !important");
     expect(html).not.toContain("size: 16in 9in");
   });
 
@@ -32,6 +37,8 @@ describe("buildPrintHtml", () => {
     expect(html).toContain(".nav-dots");
     expect(html).toContain("display: none !important");
     expect(html).toContain("break-inside: avoid");
+    expect(html).toContain("background-image: none !important");
+    expect(html).not.toContain("display: table-header-group");
   });
 
   it("long-page mode: no 16:9 CSS, base print CSS still present", () => {
@@ -39,12 +46,23 @@ describe("buildPrintHtml", () => {
     expect(html).not.toContain("16in 9in");
     expect(html).not.toContain("width: 16in !important");
     expect(html).toContain("break-inside: avoid");
+    expect(html).toContain("thead");
+    expect(html).toContain("display: table-header-group");
+    expect(html).toContain("canvas");
+    expect(html).toContain("max-width: 100% !important");
+    expect(html).not.toContain("background-image: none !important");
+  });
+
+  it("long-page and A4 preserve backgrounds while slides keep the isolated slide policy", () => {
+    expect(buildPrintSnapshot("long-page", document).strategy.backgroundPolicy).toBe("preserve-backgrounds");
+    expect(buildPrintSnapshot("a4", document).strategy.backgroundPolicy).toBe("preserve-backgrounds");
+    expect(buildPrintSnapshot("slides", document).strategy.backgroundPolicy).toBe("strip-background-images");
   });
 
   it("removes ClickDeck UI elements from output", () => {
     document.body.innerHTML = '<div data-clickdeck="true">UI</div><p id="content">Content</p>';
     const html = buildPrintHtml("long-page", document);
-    expect(html).not.toContain('data-clickdeck="true"');
+    expect(html).not.toContain('<div data-clickdeck="true">UI</div>');
     expect(html).toContain("Content");
   });
 
@@ -64,15 +82,16 @@ describe("buildPrintHtml", () => {
     expect(html).toContain("16in 9in landscape");
     expect(html).toContain("Content");
     expect(html).not.toContain("<script");
-    expect(html).not.toContain('data-clickdeck="true"');
+    expect(html).not.toContain('<div data-clickdeck="true">UI</div>');
+    expect(html).not.toContain('<div id="clickdeck-style"></div>');
     expect(strategy).toMatchObject({
       printIframeSize: { width: "1920px", height: "1080px" },
       scriptRemovedCount: 1,
       clickDeckUiRemovedCount: 2,
       bodyBgColor: "rgb(1, 2, 3)",
-      backgroundPolicy: "strip-background-images",
       pageSizePolicy: "slides-16-9",
     });
+    expect(strategy.backgroundPolicy).toBe("strip-background-images");
     expect(strategy.printCssLength).toBeGreaterThan(0);
   });
 });

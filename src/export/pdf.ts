@@ -11,39 +11,6 @@ import type { BackgroundPolicy, PageSizePolicy, PrintStrategyContext } from "./d
 
 export type PdfExportMode = "long-page" | "a4" | "slides";
 
-function buildModeCss(mode: PdfExportMode): string {
-  if (mode === "a4") {
-    return "@page { size: A4; margin: 16mm; }";
-  }
-  if (mode === "slides") {
-    return `
-      @page { size: 16in 9in landscape; margin: 0; }
-      @media print {
-        html, body {
-          width: 16in; min-height: 9in;
-          margin: 0 !important; padding: 0 !important;
-        }
-        .deck, .deck-container, [data-deck] {
-          width: 16in !important; height: auto !important;
-          overflow: visible !important; scroll-snap-type: none !important;
-        }
-        .slide, [data-slide], [aria-roledescription="slide"] {
-          width: 16in !important; height: 9in !important; min-height: 9in !important;
-          margin: 0 !important;
-          break-after: page !important; page-break-after: always !important;
-          break-inside: avoid !important; page-break-inside: avoid !important;
-          overflow: hidden !important;
-        }
-        .slide:last-of-type, [data-slide]:last-of-type {
-          break-after: auto !important; page-break-after: auto !important;
-        }
-        .nav-dots, .nav-dot { display: none !important; }
-      }
-    `.trim();
-  }
-  return "";
-}
-
 function getPageSizePolicy(mode: PdfExportMode): PageSizePolicy {
   if (mode === "a4") return "a4";
   if (mode === "slides") return "slides-16-9";
@@ -56,25 +23,137 @@ function getBackgroundPolicy(css: string): BackgroundPolicy {
   return "unknown";
 }
 
-const BASE_PRINT_CSS = `
+function buildCommonPrintCss(): string {
+  return `
   @media print {
     *,
     *::before,
     *::after {
-      background-image: none !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       color-adjust: exact !important;
     }
 
-    section, article, figure, blockquote,
-    .card, .panel, .page, .slide,
-    [data-card], [data-panel] {
+    [data-clickdeck="true"],
+    #clickdeck-pdf-style,
+    #clickdeck-style {
+      display: none !important;
+    }
+  }
+  `.trim();
+}
+
+function buildReportPrintCss(): string {
+  return `
+  @media print {
+    img,
+    svg,
+    canvas {
+      max-width: 100% !important;
+    }
+
+    img,
+    svg {
+      height: auto !important;
+    }
+
+    canvas,
+    figure,
+    blockquote,
+    .chart,
+    .chart-box,
+    [data-chart] {
       break-inside: avoid;
       page-break-inside: avoid;
     }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tfoot {
+      display: table-footer-group;
+    }
+
+    tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .cards,
+    .card-grid,
+    .register,
+    #register,
+    [data-card-grid],
+    [data-register] {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+
+    .card,
+    .panel,
+    [data-card],
+    [data-panel] {
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12) !important;
+    }
   }
-`.trim();
+  `.trim();
+}
+
+function buildLongPagePrintCss(): string {
+  return buildReportPrintCss();
+}
+
+function buildA4PrintCss(): string {
+  return `
+  @page { size: A4; margin: 16mm; }
+  ${buildReportPrintCss()}
+  `.trim();
+}
+
+function buildSlidesPrintCss(): string {
+  return `
+  @page { size: 16in 9in landscape; margin: 0; }
+  @media print {
+    *,
+    *::before,
+    *::after {
+      background-image: none !important;
+    }
+
+    html, body {
+      width: 16in; min-height: 9in;
+      margin: 0 !important; padding: 0 !important;
+    }
+    .deck, .deck-container, [data-deck] {
+      width: 16in !important; height: auto !important;
+      overflow: visible !important; scroll-snap-type: none !important;
+    }
+    .slide, [data-slide], [aria-roledescription="slide"] {
+      width: 16in !important; height: 9in !important; min-height: 9in !important;
+      margin: 0 !important;
+      break-after: page !important; page-break-after: always !important;
+      break-inside: avoid !important; page-break-inside: avoid !important;
+      overflow: hidden !important;
+    }
+    .slide:last-of-type, [data-slide]:last-of-type {
+      break-after: auto !important; page-break-after: auto !important;
+    }
+    .nav-dots, .nav-dot { display: none !important; }
+  }
+  `.trim();
+}
+
+function buildModeCss(mode: PdfExportMode): string {
+  if (mode === "a4") return buildA4PrintCss();
+  if (mode === "slides") return buildSlidesPrintCss();
+  return buildLongPagePrintCss();
+}
 
 /**
  * Builds a complete, self-contained HTML string for printing.
@@ -117,7 +196,7 @@ export function buildPrintSnapshot(
 
   // Inject print CSS
   const dynamicBgCss = bodyBgColor ? `@media print { html, body { background-color: ${bodyBgColor} !important; } }` : "";
-  const css = [buildModeCss(mode), BASE_PRINT_CSS, dynamicBgCss].filter(Boolean).join("\n");
+  const css = [buildCommonPrintCss(), buildModeCss(mode), dynamicBgCss].filter(Boolean).join("\n");
   const styleEl = document.createElement("style");
   styleEl.textContent = css;
   head.appendChild(styleEl);
