@@ -273,6 +273,10 @@
               把 <b>clickdeck-debug-*.json</b> 拖到这里。<br />
               <small>不会上传网络，只在本地解析。</small>
             </div>
+            <div class="btns" style="justify-content:flex-start;margin-top:10px;">
+              <button id="btnPickDebug" class="primary">选择 debug JSON</button>
+            </div>
+            <input id="pickDebugFile" type="file" accept="application/json" style="display:none" />
             <div style="margin-top:12px" class="drop">
               <div><b>自动填充字段</b></div>
               <div class="faint">sessionId / exportMode / url / title / domNodeCount / imageCount / canvasCount / tableCount / download</div>
@@ -381,6 +385,8 @@
         rows: document.getElementById("rows"),
         count: document.getElementById("count"),
         dropZone: document.getElementById("dropZone"),
+        btnPickDebug: document.getElementById("btnPickDebug"),
+        pickDebugFile: document.getElementById("pickDebugFile"),
         importFile: document.getElementById("importFile"),
       };
 
@@ -626,6 +632,17 @@
         ev.preventDefault();
         els.dropZone.style.borderColor = "rgba(255,255,255,0.22)";
         handleFiles(ev.dataTransfer.files);
+      });
+
+      // Fallback: click to pick a debug JSON file (drag/drop can be blocked depending on source or browser).
+      els.btnPickDebug.addEventListener("click", () => {
+        els.pickDebugFile.click();
+      });
+      els.pickDebugFile.addEventListener("change", () => {
+        const f = els.pickDebugFile.files && els.pickDebugFile.files[0];
+        if (!f) return;
+        handleFiles([f]);
+        els.pickDebugFile.value = "";
       });
 
       document.getElementById("btnExportJson").addEventListener("click", () => {
