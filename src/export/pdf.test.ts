@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { buildPrintHtml, exportPdfSnapshot } from "./pdf";
+import { buildPrintHtml, buildPrintSnapshot, exportPdfSnapshot } from "./pdf";
 import type { ClickDeckLogger } from "../diagnostics/logger";
 
 // ---------------------------------------------------------------------------
@@ -46,6 +46,34 @@ describe("buildPrintHtml", () => {
     const html = buildPrintHtml("long-page", document);
     expect(html).not.toContain('data-clickdeck="true"');
     expect(html).toContain("Content");
+  });
+
+  it("returns print strategy metadata without changing the generated print HTML contract", () => {
+    document.head.innerHTML = "<script src='/app.js'></script>";
+    document.body.innerHTML = [
+      '<div data-clickdeck="true">UI</div>',
+      '<div id="clickdeck-style"></div>',
+      "<p>Content</p>",
+    ].join("");
+
+    const { html, strategy } = buildPrintSnapshot("slides", document, "rgb(1, 2, 3)", {
+      width: "1920px",
+      height: "1080px",
+    });
+
+    expect(html).toContain("16in 9in landscape");
+    expect(html).toContain("Content");
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain('data-clickdeck="true"');
+    expect(strategy).toMatchObject({
+      printIframeSize: { width: "1920px", height: "1080px" },
+      scriptRemovedCount: 1,
+      clickDeckUiRemovedCount: 2,
+      bodyBgColor: "rgb(1, 2, 3)",
+      backgroundPolicy: "strip-background-images",
+      pageSizePolicy: "slides-16-9",
+    });
+    expect(strategy.printCssLength).toBeGreaterThan(0);
   });
 });
 

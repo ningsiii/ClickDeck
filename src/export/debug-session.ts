@@ -24,6 +24,8 @@ const DEBUG_PDF = false;
 
 export type ExportMode = "long-page" | "a4" | "slides";
 export type ExportResult = "SUCCESS" | "FAILED" | "EMPTY_PDF" | "TIMEOUT" | "USER_CANCELLED" | "UNKNOWN";
+export type PageSizePolicy = "long-page" | "a4" | "slides-16-9";
+export type BackgroundPolicy = "strip-background-images" | "preserve-backgrounds" | "unknown";
 
 export interface BrowserContext {
   userAgent: string;
@@ -50,8 +52,14 @@ export interface HtmlContext {
   domNodeCount: number;
   imageCount: number;
   canvasCount: number;
+  largeCanvasCount: number;
   svgCount: number;
   iframeCount: number;
+  tableCount: number;
+  sectionCount: number;
+  cardLikeCount: number;
+  fixedElementCount: number;
+  stickyElementCount: number;
   pageWidth: number;
   pageHeight: number;
   bodyBgColor: string;
@@ -60,6 +68,30 @@ export interface HtmlContext {
   cssVariableBg: string | null;
   linkCount: number;
   styleSheetCount: number;
+  externalStylesheetCount: number;
+  externalScriptCount: number;
+  hasPrintCss: boolean | "unknown";
+  unreadableStyleSheetCount: number;
+}
+
+export interface PrintStrategyContext {
+  printIframeSize: {
+    width: string;
+    height: string;
+  } | null;
+  scriptRemovedCount: number;
+  clickDeckUiRemovedCount: number;
+  printCssLength: number;
+  bodyBgColor: string;
+  backgroundPolicy: BackgroundPolicy;
+  pageSizePolicy: PageSizePolicy;
+}
+
+export interface ManualTestGuidance {
+  note: string;
+  pdfFileNamePattern: string;
+  debugFileNamePattern: string;
+  allowedResults: Array<"ok" | "slow" | "color-lost" | "pagination-bad" | "freeze" | "empty" | "cancelled">;
 }
 
 export interface TimelineEntry {
@@ -107,6 +139,8 @@ export interface DebugReport {
   exportMode: ExportMode;
   browser: BrowserContext;
   html: HtmlContext;
+  printStrategy: PrintStrategyContext | null;
+  manualTestGuidance: ManualTestGuidance;
   timeline: TimelineEntry[];
   iframeEvents: IframeInternalEvent[];
   warnings: WarningEntry[];
@@ -115,8 +149,6 @@ export interface DebugReport {
 }
 
 // ── Session implementation ───────────────────────────────────────────
-
-let sessionCounter = 0;
 
 function generateSessionId(): string {
   const now = new Date();
@@ -154,14 +186,40 @@ function collectBrowserContext(): BrowserContext {
   };
 }
 
-function collectHtmlContext(doc: Document): HtmlContext {
+function isExternalUrl(url: string | null, origin: string): boolean {
+  if (!url) return false;
+  try {
+    return new URL(url, window.location.href).origin !== origin;
+  } catch {
+    return false;
+  }
+}
+
+function hasPrintRule(rule: CSSRule): boolean {
+  const mediaRule = typeof CSSMediaRule !== "undefined" && rule instanceof CSSMediaRule
+    ? rule
+    : null;
+  if (mediaRule && Array.from(mediaRule.media).some(item => item.toLowerCase() === "print")) {
+    return true;
+  }
+  if (typeof CSSPageRule !== "undefined" && rule instanceof CSSPageRule) {
+    return true;
+  }
+  return rule.cssText.includes("@media print") || rule.cssText.includes("@page");
+}
+
+export function collectHtmlContext(doc: Document): HtmlContext {
   const body = doc.body;
   const computedBg = window.getComputedStyle(body).backgroundColor;
   const computedColor = window.getComputedStyle(body).color;
+  const loc = doc.location;
+  const origin = loc?.origin ?? "unknown";
 
   // Try to read the raw CSS background shorthand from stylesheets
   let bodyBgShorthand = "";
   let cssVarBg: string | null = null;
+  let hasPrintCss: boolean | "unknown" = false;
+  let unreadableStyleSheetCount = 0;
   try {
     for (const sheet of Array.from(doc.styleSheets)) {
       try {
@@ -170,9 +228,13 @@ function collectHtmlContext(doc: Document): HtmlContext {
             const bg = rule.style.background;
             if (bg) bodyBgShorthand = bg;
           }
+          if (!hasPrintCss && hasPrintRule(rule)) {
+            hasPrintCss = true;
+          }
         }
       } catch {
-        // cross-origin stylesheet, skip
+        unreadableStyleSheetCount += 1;
+        if (!hasPrintCss) hasPrintCss = "unknown";
       }
     }
     // Try to read --bg variable from :root
@@ -181,21 +243,48 @@ function collectHtmlContext(doc: Document): HtmlContext {
     // ignore
   }
 
-  const loc = doc.location;
   const fileName = loc?.pathname?.split("/").pop() || "unknown";
+  const allElements = Array.from(doc.querySelectorAll<HTMLElement>("*"));
+  let fixedElementCount = 0;
+  let stickyElementCount = 0;
+
+  for (const el of allElements) {
+    try {
+      const position = window.getComputedStyle(el).position;
+      if (position === "fixed") fixedElementCount += 1;
+      if (position === "sticky") stickyElementCount += 1;
+    } catch {
+      // Ignore elements whose computed style cannot be read.
+    }
+  }
+
+  const canvasElements = Array.from(doc.querySelectorAll<HTMLCanvasElement>("canvas"));
+  const largeCanvasCount = canvasElements.filter(canvas => {
+    const width = canvas.width || canvas.clientWidth;
+    const height = canvas.height || canvas.clientHeight;
+    return width * height > 800 * 600;
+  }).length;
+  const cardLikeElements = new Set<Element>();
+  doc.querySelectorAll(".card, [data-card], .panel, [data-panel]").forEach(el => cardLikeElements.add(el));
 
   return {
     url: loc?.href ?? "unknown",
-    origin: loc?.origin ?? "unknown",
+    origin,
     protocol: loc?.protocol ?? "unknown",
     hostname: loc?.hostname ?? "unknown",
     fileName,
     title: doc.title,
-    domNodeCount: doc.querySelectorAll("*").length,
+    domNodeCount: allElements.length,
     imageCount: doc.querySelectorAll("img").length,
-    canvasCount: doc.querySelectorAll("canvas").length,
+    canvasCount: canvasElements.length,
+    largeCanvasCount,
     svgCount: doc.querySelectorAll("svg").length,
     iframeCount: doc.querySelectorAll("iframe").length,
+    tableCount: doc.querySelectorAll("table").length,
+    sectionCount: doc.querySelectorAll("section").length,
+    cardLikeCount: cardLikeElements.size,
+    fixedElementCount,
+    stickyElementCount,
     pageWidth: doc.documentElement.scrollWidth,
     pageHeight: doc.documentElement.scrollHeight,
     bodyBgColor: computedBg,
@@ -204,6 +293,12 @@ function collectHtmlContext(doc: Document): HtmlContext {
     cssVariableBg: cssVarBg,
     linkCount: doc.querySelectorAll("link").length,
     styleSheetCount: doc.styleSheets.length,
+    externalStylesheetCount: Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel~="stylesheet"][href]'))
+      .filter(link => isExternalUrl(link.href, origin)).length,
+    externalScriptCount: Array.from(doc.querySelectorAll<HTMLScriptElement>("script[src]"))
+      .filter(script => isExternalUrl(script.src, origin)).length,
+    hasPrintCss,
+    unreadableStyleSheetCount,
   };
 }
 
@@ -232,6 +327,9 @@ export interface DebugSession {
   /** Record download information (set from service worker) */
   setDownload(record: DownloadRecord): void;
 
+  /** Record print strategy information gathered while building the print iframe */
+  setPrintStrategy(strategy: PrintStrategyContext): void;
+
   /** Set the final result */
   finalize(result: ExportResult): void;
 
@@ -254,8 +352,10 @@ export function startDebugSession(mode: ExportMode): DebugSession {
   const iframeEvents: IframeInternalEvent[] = [];
   const warnings: WarningEntry[] = [];
   let downloadRecord: DownloadRecord | null = null;
+  let printStrategy: PrintStrategyContext | null = null;
   let finalResult: ExportResult = "UNKNOWN";
   let gitCommit: string | null = null;
+  let visualSuccessWarningWritten = false;
 
   console.log(`[DEBUG_SESSION] ${sessionId} started — mode=${mode}, browser=${browser.isChrome ? "Chrome" : browser.isEdge ? "Edge" : "Other"}, html=${html.fileName}, domNodes=${html.domNodeCount}`);
 
@@ -292,7 +392,19 @@ export function startDebugSession(mode: ExportMode): DebugSession {
       downloadRecord = record;
     },
 
+    setPrintStrategy(strategy) {
+      printStrategy = strategy;
+    },
+
     finalize(result) {
+      if (result === "SUCCESS" && !visualSuccessWarningWritten) {
+        visualSuccessWarningWritten = true;
+        warnings.push({
+          time: performance.now() - t0,
+          code: "VISUAL_RESULT_UNVERIFIED",
+          message: "SUCCESS only means the browser print flow completed and no 0-byte PDF was detected. It does not verify PDF visual fidelity, colors, or pagination.",
+        });
+      }
       finalResult = result;
     },
 
@@ -312,6 +424,13 @@ export function startDebugSession(mode: ExportMode): DebugSession {
         exportMode: mode,
         browser,
         html,
+        printStrategy,
+        manualTestGuidance: {
+          note: "Chrome extensions cannot force the final Save as PDF filename or read the print dialog background graphics switch. Use these names when manually saving and comparing PDF/debug artifacts.",
+          pdfFileNamePattern: "clickdeck-pdf-test__<fixture-name>__<mode>__<YYYYMMDD-HHMMSS>__<result>.pdf",
+          debugFileNamePattern: "clickdeck-debug__<fixture-name>__<mode>__<YYYYMMDD-HHMMSS>.json",
+          allowedResults: ["ok", "slow", "color-lost", "pagination-bad", "freeze", "empty", "cancelled"],
+        },
         timeline,
         iframeEvents,
         warnings,

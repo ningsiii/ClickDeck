@@ -7,6 +7,7 @@ import {
   buildIframeMonitorScript,
   downloadDebugReport,
 } from "./debug-session";
+import type { BackgroundPolicy, PageSizePolicy, PrintStrategyContext } from "./debug-session";
 
 export type PdfExportMode = "long-page" | "a4" | "slides";
 
@@ -43,6 +44,18 @@ function buildModeCss(mode: PdfExportMode): string {
   return "";
 }
 
+function getPageSizePolicy(mode: PdfExportMode): PageSizePolicy {
+  if (mode === "a4") return "a4";
+  if (mode === "slides") return "slides-16-9";
+  return "long-page";
+}
+
+function getBackgroundPolicy(css: string): BackgroundPolicy {
+  if (css.includes("background-image: none")) return "strip-background-images";
+  if (css.includes("print-color-adjust")) return "preserve-backgrounds";
+  return "unknown";
+}
+
 const BASE_PRINT_CSS = `
   @media print {
     *,
@@ -67,19 +80,26 @@ const BASE_PRINT_CSS = `
  * Builds a complete, self-contained HTML string for printing.
  * Exported for unit testing.
  */
-export function buildPrintHtml(mode: PdfExportMode, doc: Document, bodyBgColor?: string): string {
+export function buildPrintSnapshot(
+  mode: PdfExportMode,
+  doc: Document,
+  bodyBgColor?: string,
+  printIframeSize: PrintStrategyContext["printIframeSize"] = null
+): { html: string; strategy: PrintStrategyContext } {
   const clone = doc.documentElement.cloneNode(true) as HTMLElement;
 
   // Remove ClickDeck UI and any previously injected print styles
-  clone.querySelectorAll(
-    "[data-clickdeck='true'], #clickdeck-pdf-style, #clickdeck-style"
-  ).forEach(el => el.remove());
+  const clickDeckUi = clone.querySelectorAll("[data-clickdeck='true'], #clickdeck-pdf-style, #clickdeck-style");
+  const clickDeckUiRemovedCount = clickDeckUi.length;
+  clickDeckUi.forEach(el => el.remove());
 
   // IMPORTANT: Remove all <script> tags.
   // The cloned HTML is placed into an about:srcdoc iframe. Scripts like Vite's HMR
   // client or other extensions (e.g., Immersive Translate) will throw errors
   // (like wss://srcdoc/ws failed) and can hang the print pipeline or cause 0MB PDFs.
-  clone.querySelectorAll("script").forEach(el => el.remove());
+  const scripts = clone.querySelectorAll("script");
+  const scriptRemovedCount = scripts.length;
+  scripts.forEach(el => el.remove());
 
   let head = clone.querySelector("head");
   if (!head) {
@@ -105,7 +125,26 @@ export function buildPrintHtml(mode: PdfExportMode, doc: Document, bodyBgColor?:
   const doctype = doc.doctype
     ? `<!DOCTYPE ${doc.doctype.name}>`
     : "<!DOCTYPE html>";
-  return `${doctype}\n${clone.outerHTML}`;
+  return {
+    html: `${doctype}\n${clone.outerHTML}`,
+    strategy: {
+      printIframeSize,
+      scriptRemovedCount,
+      clickDeckUiRemovedCount,
+      printCssLength: css.length,
+      bodyBgColor: bodyBgColor ?? "",
+      backgroundPolicy: getBackgroundPolicy(css),
+      pageSizePolicy: getPageSizePolicy(mode),
+    },
+  };
+}
+
+/**
+ * Builds a complete, self-contained HTML string for printing.
+ * Exported for unit testing.
+ */
+export function buildPrintHtml(mode: PdfExportMode, doc: Document, bodyBgColor?: string): string {
+  return buildPrintSnapshot(mode, doc, bodyBgColor).html;
 }
 
 /**
@@ -159,12 +198,18 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
 
     // ── Step: build print HTML ──
     const buildStart = performance.now();
-    const html = buildPrintHtml(mode, document, bodyBg);
+    const iframeWidth = mode === "slides" ? "1920px" : "794px";
+    const iframeHeight = mode === "slides" ? "1080px" : "1123px";
+    const { html, strategy } = buildPrintSnapshot(mode, document, bodyBg, {
+      width: iframeWidth,
+      height: iframeHeight,
+    });
+    session.setPrintStrategy(strategy);
     session.step("build-print-html", {
       startTime: buildStart - cleanupStart,
       endTime: performance.now() - cleanupStart,
       detail: `HTML length: ${html.length} chars`,
-      meta: { htmlLength: html.length },
+      meta: { htmlLength: html.length, printStrategy: strategy },
     });
     console.log(`[TRACE_PDF] ${(performance.now() - cleanupStart).toFixed(1)}ms - buildPrintHtml 完成 (HTML 长度: ${html.length})`);
 
@@ -182,8 +227,6 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
     iframe.id = frameId;
     iframe.setAttribute("data-clickdeck", "true");
     iframe.setAttribute("data-clickdeck-print-iframe", "true");
-    const iframeWidth = mode === "slides" ? "1920px" : "794px";
-    const iframeHeight = mode === "slides" ? "1080px" : "1123px";
     iframe.style.cssText = [
       "position:fixed",
       "top:0",
@@ -261,12 +304,13 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
       let cleaned = false;
       let afterprintFired = false;
       let reportDownloaded = false;
+      let terminalResult: "EMPTY_PDF" | null = null;
 
       // Download the debug report immediately (don't wait for iframe cleanup)
       const downloadReport = () => {
         if (reportDownloaded) return;
         reportDownloaded = true;
-        session.finalize(afterprintFired ? "SUCCESS" : "USER_CANCELLED");
+        session.finalize(terminalResult ?? (afterprintFired ? "SUCCESS" : "USER_CANCELLED"));
         const report = session.build();
         console.log(`[DEBUG_SESSION] ${sid} — 准备下载 debug-report.json，检查下载文件夹`);
         downloadDebugReport(report);
@@ -311,9 +355,21 @@ export function exportPdfSnapshot(mode: PdfExportMode, logger: ClickDeckLogger):
               if (recentPdf) {
                 session.setDownload(recentPdf);
                 if (recentPdf.fileSize === 0) {
-                  session.finalize("EMPTY_PDF");
+                  terminalResult = "EMPTY_PDF";
                 }
+              } else {
+                session.warn(
+                  "DOWNLOAD_RECORD_MISSING",
+                  "No recent PDF download record was found after afterprint. The print dialog may have been cancelled, the browser may still be rendering, or the download could not be observed."
+                );
               }
+            })
+            .catch((err) => {
+              session.warn(
+                "DOWNLOAD_QUERY_FAILED",
+                "Failed to query browser downloads after afterprint.",
+                { error: err instanceof Error ? err.message : String(err) }
+              );
             })
             .finally(() => {
               downloadReport();
