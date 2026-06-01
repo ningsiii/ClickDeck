@@ -427,6 +427,19 @@ function injectBaseStyles(rootId: string): void {
         display: none !important;
       }
     }
+
+    .clickdeck-presenting [data-clickdeck="true"],
+    .clickdeck-presenting .clickdeck-panel,
+    .clickdeck-presenting .clickdeck-outline,
+    .clickdeck-exporting [data-clickdeck="true"],
+    .clickdeck-exporting .clickdeck-panel,
+    .clickdeck-exporting .clickdeck-outline {
+      display: none !important;
+    }
+
+    .clickdeck-presenting {
+      overflow: hidden !important;
+    }
   `;
   document.documentElement.append(style);
 }

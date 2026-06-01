@@ -93,6 +93,9 @@ export type PanelLabels = {
   alignLeft: string;
   alignCenter: string;
   alignRight: string;
+  present: string;
+  noSlides: string;
+  exportLongImage: string;
 };
 
 const englishLabels: PanelLabels = {
@@ -189,7 +192,10 @@ const englishLabels: PanelLabels = {
   decreasePadding: "Decrease padding",
   alignLeft: "Align left",
   alignCenter: "Align center",
-  alignRight: "Align right"
+  alignRight: "Align right",
+  present: "Present",
+  noSlides: "No slides detected",
+  exportLongImage: "Export long image"
 };
 
 const chineseLabels: PanelLabels = {
@@ -286,7 +292,10 @@ const chineseLabels: PanelLabels = {
   decreasePadding: "减小内边距",
   alignLeft: "左对齐",
   alignCenter: "居中对齐",
-  alignRight: "右对齐"
+  alignRight: "右对齐",
+  present: "演示",
+  noSlides: "未检测到可演示分页",
+  exportLongImage: "导出长图"
 };
 
 export function getPanelLabels(): PanelLabels {

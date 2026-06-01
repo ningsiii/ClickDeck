@@ -12,6 +12,8 @@ export type PanelAction =
   | "export-pdf-long"
   | "export-pdf-a4"
   | "export-pdf-slides"
+  | "present"
+  | "export-long-image"
   | "replace-image"
   | `color:${string}`;
 
@@ -38,6 +40,7 @@ export type ClickDeckPanel = {
   setHistoryAvailability: (canUndo: boolean, canRedo: boolean) => void;
   setReplaceImageAvailability: (enabled: boolean) => void;
   setSelectionContext: (context: SelectionContext) => void;
+  setPresentationAvailability: (hasSlides: boolean) => void;
   showPromptPreview: (options: PromptPreviewOptions) => void;
   showSavedEditsNotice: (options: SavedEditsNoticeOptions) => void;
   hideSavedEditsNotice: () => void;
@@ -187,7 +190,11 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     <div class="clickdeck-panel__section" data-section="finish">
       <div class="clickdeck-panel__section-title">${labels.finish}</div>
       <div class="clickdeck-panel__group">
+        ${buttonMarkup("export-long-image", labels.exportLongImage)}
+      </div>
+      <div class="clickdeck-panel__group">
         ${buttonMarkup("export-html", labels.exportHtmlButton)}
+        ${buttonMarkup("present", labels.present, true)}
       </div>
       ${
         SHOW_LEGACY_PDF_EXPORT
@@ -304,6 +311,7 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
   let undoAvailable = false;
   let redoAvailable = false;
   let canReplaceImage = false;
+  let canPresent = false;
   let currentContext: SelectionContext = "none";
 
   const updateContextUI = (): void => {
@@ -324,7 +332,12 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
 
     element.querySelectorAll<HTMLButtonElement>("[data-action]").forEach((button) => {
       const action = button.dataset.action as PanelAction;
-      if (action === "close" || action === "copy-diagnostics" || action === "copy-ai-prompt" || action === "export-html" || action.startsWith("export-pdf-")) {
+      if (action === "close" || action === "copy-diagnostics" || action === "copy-ai-prompt" || action === "export-html" || action === "export-long-image" || action.startsWith("export-pdf-")) {
+        return;
+      }
+      if (action === "present") {
+        button.disabled = !canPresent;
+        button.title = canPresent ? "" : labels.noSlides;
         return;
       }
       if (action === "undo") {
@@ -367,6 +380,10 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     },
     setSelectionContext: (context) => {
       currentContext = context;
+      updateContextUI();
+    },
+    setPresentationAvailability: (hasSlides) => {
+      canPresent = hasSlides;
       updateContextUI();
     },
     showPromptPreview: (options: PromptPreviewOptions) => {

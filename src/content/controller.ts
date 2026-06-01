@@ -24,6 +24,8 @@ import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
 import { exportPdfSnapshot } from "../export/pdf";
 import { buildAiEditPrompt } from "../export/change-summary";
+import { detectPresentationSlides, createPresentationController, type PresentationController } from "./presentation-mode";
+import { exportLongImageSnapshot } from "../export/long-image";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -39,6 +41,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let selectedElement: HTMLElement | null = null;
   let overlay: ClickDeckOverlay | null = null;
   let panel: ClickDeckPanel | null = null;
+  let presentationController: PresentationController | null = null;
   let editingElement: HTMLElement | null = null;
   let originalText: string = "";
   const pageHref = window.location.href;
@@ -456,6 +459,11 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    if (action === "export-long-image") {
+      exportLongImageSnapshot(logger);
+      return;
+    }
+
     if (action === "export-pdf-long") {
       exportPdfSnapshot("long-page", logger);
       return;
@@ -468,6 +476,13 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
     if (action === "export-pdf-slides") {
       exportPdfSnapshot("slides", logger);
+      return;
+    }
+
+    if (action === "present") {
+      if (presentationController) {
+        presentationController.enter().catch(err => logger.error("Failed to enter presentation mode", err));
+      }
       return;
     }
 
@@ -616,6 +631,15 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     panel.setReplaceImageAvailability(false);
     panel.setSelectionContext("none");
 
+    const slides = detectPresentationSlides();
+    if (slides.length >= 2) {
+      presentationController = createPresentationController({ slides, logger });
+      panel.setPresentationAvailability(true);
+    } else {
+      presentationController = null;
+      panel.setPresentationAvailability(false);
+    }
+
     window.addEventListener("mousemove", handleMouseMove, true);
     window.addEventListener("click", handleClick, true);
     window.addEventListener("scroll", updateOutline, true);
@@ -639,6 +663,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     setSelectedElement(state, null);
     panel?.setReplaceImageAvailability(false);
     panel?.setSelectionContext("none");
+
+    presentationController?.destroy();
+    presentationController = null;
 
     window.removeEventListener("mousemove", handleMouseMove, true);
     window.removeEventListener("click", handleClick, true);

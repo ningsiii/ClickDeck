@@ -18,7 +18,7 @@
 // Chrome's "Developer mode" toggle (which only affects unpacked extension
 // loading). This is a pure code-level switch controlled at build time.
 //
-const DEBUG_PDF = false;
+const DEBUG_PDF = true;
 
 // ── Types ────────────────────────────────────────────────────────────
 

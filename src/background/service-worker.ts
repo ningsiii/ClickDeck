@@ -172,4 +172,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+
+  if (msg.type === "CLICKDECK_CAPTURE_VISIBLE_TAB") {
+    // Requires activeTab and host permissions
+    chrome.tabs.captureVisibleTab(
+      _sender.tab?.windowId || chrome.windows.WINDOW_ID_CURRENT,
+      { format: "png" }
+    ).then((dataUrl) => {
+      sendResponse({ dataUrl });
+    }).catch((err) => {
+      console.warn("[ClickDeck] captureVisibleTab failed", err);
+      sendResponse({ error: err instanceof Error ? err.message : String(err) });
+    });
+    return true; // indicates asynchronous response
+  }
 });

@@ -313,4 +313,24 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(content).toBeVisible();
     await expect(floatBtn).toBeHidden();
   });
+
+  test("8. Long image export", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    const exportBtn = page.locator("[data-action='export-long-image']");
+    
+    // Mock the capture API via our exposed flag
+    await page.evaluate(() => {
+      (window as any).__MOCK_CAPTURE_VISIBLE_TAB = true;
+    });
+
+    await exportBtn.click();
+    
+    // The UI should hide (clickdeck-exporting added)
+    await expect(page.locator("html")).toHaveClass(/clickdeck-exporting/);
+    
+    // Eventually the export finishes and UI is restored
+    await expect(page.locator("html")).not.toHaveClass(/clickdeck-exporting/, { timeout: 10000 });
+  });
 });
