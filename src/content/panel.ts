@@ -12,6 +12,9 @@ export type PanelAction =
   | "export-pdf-long"
   | "export-pdf-a4"
   | "export-pdf-slides"
+  | "export-image-pdf-long"
+  | "export-image-pdf-a4"
+  | "export-image-pdf-slides"
   | "present"
   | "export-long-image"
   | "replace-image"
@@ -205,6 +208,12 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       </div>`
           : ""
       }
+      <div class="clickdeck-panel__section-title">${labels.pdfGroup}</div>
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("export-image-pdf-long", labels.exportImagePdfLong, false, labels.imagePdfTooltip)}
+        ${buttonMarkup("export-image-pdf-a4", labels.exportImagePdfA4, false, labels.imagePdfTooltip)}
+        ${buttonMarkup("export-image-pdf-slides", labels.exportImagePdfSlides, false, labels.imagePdfTooltip)}
+      </div>
       <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
         ${buttonMarkup("copy-ai-prompt", labels.copyAiPrompt)}
       </div>

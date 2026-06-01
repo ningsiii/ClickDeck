@@ -41,6 +41,11 @@ export type PanelLabels = {
   exportPdfLong: string;
   exportPdfA4: string;
   exportPdfSlides: string;
+  exportImagePdfLong: string;
+  exportImagePdfA4: string;
+  exportImagePdfSlides: string;
+  imagePdfTooltip: string;
+  pdfGroup: string;
   imageMax100: string;
   imageContain: string;
   imageCover: string;
@@ -142,6 +147,11 @@ const englishLabels: PanelLabels = {
   exportPdfLong: "PDF Long",
   exportPdfA4: "PDF A4",
   exportPdfSlides: "PDF 16:9",
+  exportImagePdfLong: "Image PDF Long",
+  exportImagePdfA4: "Image PDF A4",
+  exportImagePdfSlides: "Image PDF 16:9",
+  imagePdfTooltip: "High fidelity layout preservation, but text is not selectable.",
+  pdfGroup: "PDF (Print)",
   imageMax100: "Max 100%",
   imageContain: "Contain",
   imageCover: "Cover",
@@ -243,6 +253,11 @@ const chineseLabels: PanelLabels = {
   exportPdfLong: "PDF 长页",
   exportPdfA4: "PDF A4",
   exportPdfSlides: "PDF 16:9",
+  exportImagePdfLong: "图片 PDF 长页",
+  exportImagePdfA4: "图片 PDF A4",
+  exportImagePdfSlides: "图片 PDF 16:9",
+  imagePdfTooltip: "布局高保真还原，但文字不可复制",
+  pdfGroup: "PDF 导出",
   imageMax100: "最大 100%",
   imageContain: "完整显示",
   imageCover: "填满裁切",

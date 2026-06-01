@@ -26,6 +26,7 @@ import { exportPdfSnapshot } from "../export/pdf";
 import { buildAiEditPrompt } from "../export/change-summary";
 import { detectPresentationSlides, createPresentationController, type PresentationController } from "./presentation-mode";
 import { exportLongImageSnapshot } from "../export/long-image";
+import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSlidesSnapshot } from "../export/image-pdf";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -476,6 +477,21 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
     if (action === "export-pdf-slides") {
       exportPdfSnapshot("slides", logger);
+      return;
+    }
+
+    if (action === "export-image-pdf-long") {
+      exportImagePdfLongSnapshot(logger);
+      return;
+    }
+
+    if (action === "export-image-pdf-a4") {
+      exportImagePdfA4Snapshot(logger);
+      return;
+    }
+
+    if (action === "export-image-pdf-slides") {
+      exportImagePdfSlidesSnapshot(logger);
       return;
     }
 
