@@ -69,53 +69,105 @@ export function buildIntentPrompt(
     const { operation, sourceContext } = input;
     const region = sourceContext.region;
 
+    if (operation.action === "move" && !input.targetContext) {
+      return { ok: false, reason: "empty", message: options.language === "zh" ? "移动操作缺少目标区域。" : "Move operation is missing target region." };
+    }
+
     lines.push(`Operation ${i + 1}`);
     lines.push(`Action: ${operation.action}`);
     lines.push(`User intent: "${region.userIntent}"`);
     lines.push("");
 
-    lines.push("Primary target:");
-    lines.push(`- Page mode: ${region.pageMode}`);
-    lines.push(`- Main anchor: ${region.anchor.kind}${region.anchor.locator?.descriptor ? ` (${region.anchor.locator.descriptor})` : ""}`);
-    
-    if (region.relativeBox) {
-      lines.push(`- Region: ${formatRect(region.relativeBox)} (relative to anchor, %)`);
-    } else {
-      lines.push(`- Region: ${formatRect(region.viewportBox)} (viewport px)`);
-    }
-    lines.push("");
+    if (operation.action === "move") {
+      lines.push("Source region A:");
+      lines.push(`- Page mode: ${region.pageMode}`);
+      lines.push(`- Main anchor: ${region.anchor.kind}${region.anchor.locator?.descriptor ? ` (${region.anchor.locator.descriptor})` : ""}`);
+      if (region.relativeBox) {
+        lines.push(`- Region: ${formatRect(region.relativeBox)} (relative to anchor, %)`);
+      } else {
+        lines.push(`- Region: ${formatRect(region.viewportBox)} (viewport px)`);
+      }
+      lines.push("");
 
-    lines.push("What is inside the region:");
-    if (sourceContext.empty) {
-      lines.push("This appears to be an empty visual area.");
-    } else {
-      sourceContext.candidates.slice(0, 3).forEach(c => {
-        lines.push(`- ${summarizeVisualUnit(c.unit)}`);
-        if (c.unit.kind === "image") hasImageReplacement = true;
-      });
-    }
-    lines.push("");
+      lines.push("What is inside Source region A:");
+      if (sourceContext.empty) {
+        lines.push("This appears to be an empty visual area.");
+      } else {
+        sourceContext.candidates.slice(0, 3).forEach(c => {
+          lines.push(`- ${summarizeVisualUnit(c.unit)}`);
+          if (c.unit.kind === "image") hasImageReplacement = true;
+        });
+      }
+      lines.push("");
 
-    lines.push("Nearby references:");
-    if (sourceContext.nearby.length === 0) {
-      lines.push("None found.");
-    } else {
-      sourceContext.nearby.slice(0, 4).forEach(n => {
+      const targetRegion = input.targetContext!.region;
+      lines.push("Target region B:");
+      lines.push(`- Page mode: ${targetRegion.pageMode}`);
+      lines.push(`- Main anchor: ${targetRegion.anchor.kind}${targetRegion.anchor.locator?.descriptor ? ` (${targetRegion.anchor.locator.descriptor})` : ""}`);
+      if (targetRegion.relativeBox) {
+        lines.push(`- Region: ${formatRect(targetRegion.relativeBox)} (relative to anchor, %)`);
+      } else {
+        lines.push(`- Region: ${formatRect(targetRegion.viewportBox)} (viewport px)`);
+      }
+      lines.push("");
+
+      lines.push("What is inside Target region B / Nearby references:");
+      if (input.targetContext!.empty) {
+        lines.push("This appears to be an empty visual area.");
+      } else {
+        input.targetContext!.candidates.slice(0, 3).forEach(c => {
+          lines.push(`- ${summarizeVisualUnit(c.unit)}`);
+        });
+      }
+      input.targetContext!.nearby.slice(0, 4).forEach(n => {
         lines.push(`- ${n.direction}: ${n.summary}`);
       });
-    }
-    lines.push("");
+      lines.push("");
 
-    lines.push("Style reference:");
-    const styleFacts = extractStyleFacts(sourceContext);
-    if (styleFacts.length === 0) {
-      lines.push("Use surrounding context to match style.");
     } else {
-      styleFacts.forEach(fact => {
-        lines.push(`- ${fact}`);
-      });
+      lines.push("Primary target:");
+      lines.push(`- Page mode: ${region.pageMode}`);
+      lines.push(`- Main anchor: ${region.anchor.kind}${region.anchor.locator?.descriptor ? ` (${region.anchor.locator.descriptor})` : ""}`);
+      
+      if (region.relativeBox) {
+        lines.push(`- Region: ${formatRect(region.relativeBox)} (relative to anchor, %)`);
+      } else {
+        lines.push(`- Region: ${formatRect(region.viewportBox)} (viewport px)`);
+      }
+      lines.push("");
+
+      lines.push("What is inside the region:");
+      if (sourceContext.empty) {
+        lines.push("This appears to be an empty visual area.");
+      } else {
+        sourceContext.candidates.slice(0, 3).forEach(c => {
+          lines.push(`- ${summarizeVisualUnit(c.unit)}`);
+          if (c.unit.kind === "image") hasImageReplacement = true;
+        });
+      }
+      lines.push("");
+
+      lines.push("Nearby references:");
+      if (sourceContext.nearby.length === 0) {
+        lines.push("None found.");
+      } else {
+        sourceContext.nearby.slice(0, 4).forEach(n => {
+          lines.push(`- ${n.direction}: ${n.summary}`);
+        });
+      }
+      lines.push("");
+
+      lines.push("Style reference:");
+      const styleFacts = extractStyleFacts(sourceContext);
+      if (styleFacts.length === 0) {
+        lines.push("Use surrounding context to match style.");
+      } else {
+        styleFacts.forEach(fact => {
+          lines.push(`- ${fact}`);
+        });
+      }
+      lines.push("");
     }
-    lines.push("");
 
     // Action specific instructions
     lines.push("Allowed changes:");
@@ -127,12 +179,16 @@ export function buildIntentPrompt(
       lines.push("Replace the contents inside the source region exactly according to user intent.");
     } else if (operation.action === "restyle") {
       lines.push("Modify the CSS styles of the target region or its immediate contents.");
+    } else if (operation.action === "move") {
+      lines.push("Move the contents of Source region A to Target region B. You may adjust minor local spacing to fit the target area.");
     }
     lines.push("");
 
     lines.push("Do not change:");
     if (operation.action === "delete") {
       lines.push("Do not redesign the whole slide/page or modify unrelated content.");
+    } else if (operation.action === "move") {
+      lines.push("Do not convert this into a full redesign. Do not move unrelated content unless it's strictly necessary to make room. Do not modify other slides/pages.");
     } else {
       lines.push("Do not modify unrelated content or layout outside the target region.");
     }

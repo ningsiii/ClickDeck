@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { buildIntentPrompt, IntentPromptInput } from "./intent-prompt";
-import { RegionContext } from "../content/region-context";
 
 function mockRegionContext(
-  action: "add" | "delete" | "replace" | "restyle",
+  action: "add" | "delete" | "replace" | "restyle" | "move",
   userIntent: string,
   empty: boolean,
   candidates: any[] = [],
@@ -101,6 +100,51 @@ describe("Intent Prompt Builder", () => {
     if (result.ok) {
       expect(result.prompt).toContain("Operation 1");
       expect(result.prompt).toContain("Operation 2");
+    }
+  });
+
+  it("handles move operation with both source and target", () => {
+    const input = mockRegionContext("move", "Move this to there", false);
+    // Add targetContext
+    input.targetContext = {
+      region: {
+        id: "r2",
+        action: "move",
+        userIntent: "Move this to there",
+        pageMode: "slide",
+        viewportBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
+        documentBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
+        anchor: { kind: "slide", confidence: "high" },
+        createdAt: Date.now()
+      },
+      candidates: [],
+      nearby: [{ direction: "above", summary: "[Title]" } as any],
+      empty: true,
+      confidence: "medium"
+    };
+
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const prompt = result.prompt;
+      expect(prompt).toContain('Action: move');
+      expect(prompt).toContain('Source region A:');
+      expect(prompt).toContain('What is inside Source region A:');
+      expect(prompt).toContain('Target region B:');
+      expect(prompt).toContain('What is inside Target region B / Nearby references:');
+      expect(prompt).toContain('- above: [Title]');
+      expect(prompt).toContain('Move the contents of Source region A to Target region B');
+      expect(prompt).toContain('Do not convert this into a full redesign');
+    }
+  });
+
+  it("returns error if move operation is missing targetContext", () => {
+    const input = mockRegionContext("move", "Move this to there", false);
+    
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain("missing target region");
     }
   });
 });
