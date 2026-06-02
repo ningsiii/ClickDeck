@@ -12,6 +12,13 @@ export type ElementLocator = {
   nthOfTypePath: string;
   siblingIndex: number;
   parentDescriptor?: string;
+  backgroundImageHint?: string;
+  semanticRole?: string;
+  semanticAncestor?: string;
+  previousSiblingDescriptor?: string;
+  nextSiblingDescriptor?: string;
+  selectorStability?: "high" | "medium" | "low";
+  selectorStabilityReason?: string;
 };
 
 export type SelectedElementState = {

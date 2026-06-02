@@ -27,6 +27,11 @@ export function createElementLocator(element: HTMLElement): ElementLocator {
   if (textSnippet) descriptorParts.push(`"${textSnippet}"`);
   const descriptor = descriptorParts.join(" ");
 
+  const cssPath = buildCssPath(element);
+  const nthOfTypePath = buildNthOfTypePath(element);
+
+  const { stability, reason } = assessSelectorStability(element, { cssPath, nthOfTypePath });
+
   return {
     descriptor,
     tagName,
@@ -35,11 +40,99 @@ export function createElementLocator(element: HTMLElement): ElementLocator {
     imageHint,
     classHint,
     idHint,
-    cssPath: buildCssPath(element),
-    nthOfTypePath: buildNthOfTypePath(element),
+    cssPath,
+    nthOfTypePath,
     siblingIndex,
-    parentDescriptor: pickParentDescriptor(element)
+    parentDescriptor: pickParentDescriptor(element),
+    backgroundImageHint: pickBackgroundImageHint(element),
+    semanticRole: pickSemanticRole(element),
+    semanticAncestor: pickSemanticAncestor(element),
+    previousSiblingDescriptor: pickSiblingDescriptor(element, true),
+    nextSiblingDescriptor: pickSiblingDescriptor(element, false),
+    selectorStability: stability,
+    selectorStabilityReason: reason
   };
+}
+
+function pickBackgroundImageHint(element: HTMLElement): string | undefined {
+  try {
+    const style = window.getComputedStyle(element);
+    const bg = style.getPropertyValue("background-image");
+    if (!bg || bg === "none" || bg === "initial") return undefined;
+    if (bg.length > 100) return `${bg.slice(0, 97)}...`;
+    return bg;
+  } catch {
+    return undefined;
+  }
+}
+
+function pickSemanticRole(element: HTMLElement): string | undefined {
+  const tagName = element.tagName.toLowerCase();
+  if (/^h[1-6]$/.test(tagName)) return "heading";
+  if (tagName === "p") return "paragraph";
+  if (tagName === "img" || tagName === "svg") return "image";
+  if (tagName === "button") return "button";
+  if (tagName === "a") return "link";
+  if (tagName === "input" || tagName === "textarea" || tagName === "select") return "input";
+  if (tagName === "table") return "tableLike";
+  
+  const className = (typeof element.className === "string" ? element.className : "").toLowerCase();
+  if (className.includes("card")) return "cardLike";
+  if (className.includes("section") || className.includes("container") || className.includes("wrapper")) return "sectionLike";
+  if (className.includes("chart") || className.includes("graph")) return "chartLike";
+  
+  return undefined;
+}
+
+function pickSemanticAncestor(element: HTMLElement): string | undefined {
+  let curr = element.parentElement;
+  while (curr && curr !== document.body && curr !== document.documentElement) {
+    const role = pickSemanticRole(curr);
+    if (role === "cardLike" || role === "sectionLike") {
+      const titleNode = curr.querySelector("h1, h2, h3, h4, h5, h6, .title, .header");
+      if (titleNode && titleNode.textContent?.trim()) {
+        const titleText = titleNode.textContent.trim();
+        return `${role} ("${titleText.length > 20 ? titleText.slice(0, 17) + "..." : titleText}")`;
+      }
+      return role;
+    }
+    const slideCtx = getSlideContext(curr);
+    if (slideCtx && slideCtx !== describeElement(curr)) {
+      return slideCtx;
+    }
+    curr = curr.parentElement;
+  }
+  return undefined;
+}
+
+function pickSiblingDescriptor(element: HTMLElement, isPrevious: boolean): string | undefined {
+  const sibling = isPrevious ? element.previousElementSibling : element.nextElementSibling;
+  if (!sibling || !(sibling instanceof HTMLElement)) return undefined;
+  return describeElement(sibling);
+}
+
+function assessSelectorStability(element: HTMLElement, _paths: { cssPath: string; nthOfTypePath: string }): { stability: "high" | "medium" | "low"; reason: string } {
+  if (element.id) {
+    return { stability: "high", reason: "Has ID" };
+  }
+  
+  const role = pickSemanticRole(element);
+  const classHint = pickStableClassHint(element);
+  
+  if (classHint && role) {
+    return { stability: "high", reason: "Has stable class and semantic role" };
+  }
+  
+  const dataAttrs = Array.from(element.attributes).filter(a => a.name.startsWith("data-") || a.name.startsWith("aria-"));
+  if (dataAttrs.length > 0) {
+    return { stability: "high", reason: "Has data/aria attributes" };
+  }
+  
+  if (element.textContent?.trim() || role || classHint) {
+    return { stability: "medium", reason: "Has some semantic/content hints but relies on nth-of-type" };
+  }
+  
+  return { stability: "low", reason: "Pure nth-of-type chain without text or semantics" };
 }
 
 export function canAutoStartTextEditing(element: HTMLElement): boolean {

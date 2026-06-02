@@ -65,6 +65,73 @@ describe("createElementLocator", () => {
 
     expect(locator.classHint).toBe(".some-class");
   });
+
+  it("extracts backgroundImageHint", () => {
+    document.body.innerHTML = `
+      <div id="bg" style="background-image: url('test.png')"></div>
+    `;
+    const div = document.getElementById("bg") as HTMLElement;
+    
+    // jsdom doesn't fully support getComputedStyle on inline styles for backgroundImage perfectly
+    // but we can mock window.getComputedStyle temporarily
+    const originalGetComputedStyle = window.getComputedStyle;
+    window.getComputedStyle = () => ({
+      getPropertyValue: (prop: string) => prop === "background-image" ? "url('test.png')" : ""
+    }) as any;
+
+    const locator = createElementLocator(div);
+    expect(locator.backgroundImageHint).toBe("url('test.png')");
+
+    window.getComputedStyle = originalGetComputedStyle;
+  });
+
+  it("infers semanticRole based on tags and classes", () => {
+    document.body.innerHTML = `
+      <h2 id="heading">Title</h2>
+      <button id="btn">Click</button>
+      <div id="card" class="product-card"></div>
+    `;
+    const h2 = document.getElementById("heading") as HTMLElement;
+    const btn = document.getElementById("btn") as HTMLElement;
+    const card = document.getElementById("card") as HTMLElement;
+
+    expect(createElementLocator(h2).semanticRole).toBe("heading");
+    expect(createElementLocator(btn).semanticRole).toBe("button");
+    expect(createElementLocator(card).semanticRole).toBe("cardLike");
+  });
+
+  it("extracts semanticAncestor and sibling descriptors", () => {
+    document.body.innerHTML = `
+      <section class="section" aria-label="Features">
+        <h2 id="title">Features Title</h2>
+        <p id="p1">P1</p>
+        <p id="p2">P2</p>
+        <p id="p3">P3</p>
+      </section>
+    `;
+    const p2 = document.getElementById("p2") as HTMLElement;
+    const locator = createElementLocator(p2);
+
+    expect(locator.semanticAncestor).toContain("sectionLike");
+    expect(locator.semanticAncestor).toContain("Features Title");
+    expect(locator.previousSiblingDescriptor).toBe("p#p1");
+    expect(locator.nextSiblingDescriptor).toBe("p#p3");
+  });
+
+  it("assesses selector stability", () => {
+    document.body.innerHTML = `
+      <div id="stable-id"></div>
+      <div>Just some text here</div>
+      <div><span><i></i></span></div>
+    `;
+    const idEl = document.getElementById("stable-id") as HTMLElement;
+    const mediumEl = document.querySelectorAll("div")[1] as HTMLElement;
+    const badEl = document.querySelector("i") as HTMLElement;
+
+    expect(createElementLocator(idEl).selectorStability).toBe("high");
+    expect(createElementLocator(mediumEl).selectorStability).toBe("medium");
+    expect(createElementLocator(badEl).selectorStability).toBe("low");
+  });
 });
 
 describe("canAutoStartTextEditing", () => {
