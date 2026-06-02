@@ -104,6 +104,18 @@ export type PanelLabels = {
   noSlides: string;
   exportLongImage: string;
   advanced: string;
+  
+  // Intent draft UI
+  addIntent: string;
+  intentActionAdd: string;
+  intentActionDelete: string;
+  intentActionReplace: string;
+  intentActionRestyle: string;
+  intentPlaceholder: string;
+  save: string;
+  cancel: string;
+  delete: string;
+  drawRegionHint: string;
 };
 
 const englishLabels: PanelLabels = {
@@ -211,7 +223,19 @@ const englishLabels: PanelLabels = {
   present: "Present",
   noSlides: "No slides detected",
   exportLongImage: "Export long image",
-  advanced: "Advanced"
+  advanced: "Advanced",
+  
+  // Intent draft UI
+  addIntent: "Add intent",
+  intentActionAdd: "Add",
+  intentActionDelete: "Delete",
+  intentActionReplace: "Replace",
+  intentActionRestyle: "Restyle",
+  intentPlaceholder: "Enter your instructions for AI...",
+  save: "Save",
+  cancel: "Cancel",
+  delete: "Delete",
+  drawRegionHint: "Drag to draw a region for AI editing"
 };
 
 const chineseLabels: PanelLabels = {
@@ -319,7 +343,19 @@ const chineseLabels: PanelLabels = {
   present: "演示",
   noSlides: "未检测到可演示分页",
   exportLongImage: "导出长图",
-  advanced: "高级选项"
+  advanced: "高级选项",
+  
+  // Intent draft UI
+  addIntent: "添加意图",
+  intentActionAdd: "添加",
+  intentActionDelete: "删除",
+  intentActionReplace: "替换",
+  intentActionRestyle: "调整样式",
+  intentPlaceholder: "输入你想让 AI 做的操作...",
+  save: "保存",
+  cancel: "取消",
+  delete: "删除",
+  drawRegionHint: "拖拽框选，告诉 AI 在哪操作"
 };
 
 export function getPanelLabels(): PanelLabels {

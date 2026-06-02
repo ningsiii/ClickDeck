@@ -27,6 +27,11 @@ import { buildAiEditPrompt } from "../export/change-summary";
 import { detectPresentationSlides, createPresentationController, type PresentationController } from "./presentation-mode";
 import { exportLongImageSnapshot } from "../export/long-image";
 import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSlidesSnapshot } from "../export/image-pdf";
+import { createIntentOverlay, type IntentOverlay } from "./intent-overlay";
+import { createIntentDraftPanel, type IntentDraftPanel } from "./intent-draft-panel";
+import { createIntentRegion, type IntentOperation } from "./intent-region";
+import { collectVisualUnits } from "./visual-units";
+import { buildRegionContext } from "./region-context";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -42,6 +47,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let selectedElement: HTMLElement | null = null;
   let overlay: ClickDeckOverlay | null = null;
   let panel: ClickDeckPanel | null = null;
+  let intentOverlay: IntentOverlay | null = null;
+  let intentDraftPanel: IntentDraftPanel | null = null;
+  let currentIntentOperation: IntentOperation | null = null;
   let presentationController: PresentationController | null = null;
   let editingElement: HTMLElement | null = null;
   let originalText: string = "";
@@ -252,7 +260,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handleMouseMove(event: MouseEvent): void {
-    if (!active) {
+    if (!active || intentOverlay) {
       return;
     }
 
@@ -268,7 +276,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handleClick(event: MouseEvent): void {
-    if (!active) {
+    if (!active || intentOverlay) {
       return;
     }
 
@@ -611,6 +619,99 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    if (action === "add-intent") {
+      if (intentOverlay) return; // already in intent mode
+      
+      // Stop regular hover/select while drawing intent
+      clearSelection("escape");
+
+      intentOverlay = createIntentOverlay(
+        "clickdeck-intent-overlay-root",
+        (rect) => {
+          // Finished drawing
+          intentOverlay?.destroy();
+          intentOverlay = null;
+          
+          // Build Region Context
+          // Build Region Context
+          const units = collectVisualUnits();
+          const region = createIntentRegion({
+            action: "add",
+            userIntent: "",
+            viewportBox: rect
+          });
+          // context can be computed later if needed for prompt export:
+          // const context = buildRegionContext(region, units);
+
+          // Prepare drafting
+          currentIntentOperation = {
+            id: `op-${Date.now()}`,
+            action: "add",
+            source: region,
+            createdAt: Date.now()
+          };
+
+          if (!intentDraftPanel) {
+            intentDraftPanel = createIntentDraftPanel(
+              (action, intentText) => {
+                if (currentIntentOperation) {
+                  currentIntentOperation.action = action;
+                  currentIntentOperation.source.action = action;
+                  currentIntentOperation.source.userIntent = intentText;
+                  intentDraftPanel?.showSaved(currentIntentOperation);
+                }
+              },
+              () => {
+                intentDraftPanel?.hide();
+                currentIntentOperation = null;
+              },
+              () => {
+                intentDraftPanel?.hide();
+                currentIntentOperation = null;
+              },
+              () => {
+                if (currentIntentOperation) {
+                  // scroll into view
+                  const docBox = currentIntentOperation.source.documentBox;
+                  window.scrollTo({
+                    top: docBox.top - window.innerHeight / 2 + docBox.height / 2,
+                    behavior: "smooth"
+                  });
+                  // Highlight momentarily
+                  const highlight = document.createElement("div");
+                  highlight.style.position = "absolute";
+                  highlight.style.left = `${docBox.left}px`;
+                  highlight.style.top = `${docBox.top}px`;
+                  highlight.style.width = `${docBox.width}px`;
+                  highlight.style.height = `${docBox.height}px`;
+                  highlight.style.backgroundColor = "rgba(59, 130, 246, 0.2)";
+                  highlight.style.border = "2px solid #3b82f6";
+                  highlight.style.zIndex = "2147483646";
+                  highlight.style.pointerEvents = "none";
+                  document.body.appendChild(highlight);
+                  setTimeout(() => {
+                    highlight.style.transition = "opacity 0.5s";
+                    highlight.style.opacity = "0";
+                    setTimeout(() => highlight.remove(), 500);
+                  }, 1000);
+                }
+              }
+            );
+          }
+          
+          intentDraftPanel.showEditing();
+        },
+        () => {
+          // Cancelled
+          intentOverlay?.destroy();
+          intentOverlay = null;
+        },
+        labels.drawRegionHint
+      );
+      
+      return;
+    }
+
     handleStyleAction(action as StyleAction);
   }
 
@@ -694,6 +795,11 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     panel = null;
     overlay?.destroy();
     overlay = null;
+    intentOverlay?.destroy();
+    intentOverlay = null;
+    intentDraftPanel?.destroy();
+    intentDraftPanel = null;
+    currentIntentOperation = null;
 
     logger.info("ClickDeck deactivated");
   }

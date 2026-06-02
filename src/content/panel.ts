@@ -18,6 +18,7 @@ export type PanelAction =
   | "present"
   | "export-long-image"
   | "replace-image"
+  | "add-intent"
   | `color:${string}`;
 
 export type PromptPreviewOptions = {
@@ -77,6 +78,11 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
         </span>
       </div>
     <div class="clickdeck-panel__hint">${labels.selectHint}</div>
+    <div class="clickdeck-panel__section" data-section="intent" data-context="none,text,container,image">
+      <div class="clickdeck-panel__group">
+        ${buttonMarkup("add-intent", labels.addIntent, true)}
+      </div>
+    </div>
     <div class="clickdeck-panel__section" data-section="typography" data-context="text">
       <div class="clickdeck-panel__section-title">${labels.typography}</div>
       <div class="clickdeck-panel__group">
