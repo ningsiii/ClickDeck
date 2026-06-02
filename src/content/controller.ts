@@ -29,9 +29,10 @@ import { exportLongImageSnapshot } from "../export/long-image";
 import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSlidesSnapshot } from "../export/image-pdf";
 import { createIntentOverlay, type IntentOverlay } from "./intent-overlay";
 import { createIntentDraftPanel, type IntentDraftPanel } from "./intent-draft-panel";
+import { buildIntentPrompt, type IntentPromptInput } from "../export/intent-prompt";
 import { createIntentRegion, type IntentOperation } from "./intent-region";
 import { collectVisualUnits } from "./visual-units";
-import { buildRegionContext } from "./region-context";
+import { buildRegionContext, type RegionContext } from "./region-context";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -49,7 +50,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let panel: ClickDeckPanel | null = null;
   let intentOverlay: IntentOverlay | null = null;
   let intentDraftPanel: IntentDraftPanel | null = null;
-  let currentIntentOperation: IntentOperation | null = null;
+  let intentDrafts: { operation: IntentOperation; context: RegionContext }[] = [];
   let presentationController: PresentationController | null = null;
   let editingElement: HTMLElement | null = null;
   let originalText: string = "";
@@ -436,19 +437,49 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       const effective = getEffectivePatches();
       const page = { url: pageHref, title: document.title };
 
-      const resultEn = buildAiEditPrompt(effective, { language: "en", page });
-      if (!resultEn.ok) {
-        logger.info("No effective edits to summarize for AI prompt");
+      const intentInputs: IntentPromptInput[] = intentDrafts.map(d => ({
+        operation: d.operation,
+        sourceContext: d.context
+      }));
+
+      const patchResultEn = buildAiEditPrompt(effective, { language: "en", page });
+      const intentResultEn = buildIntentPrompt(intentInputs, { language: "en", page });
+
+      if (!patchResultEn.ok && !intentResultEn.ok) {
+        logger.info("No effective edits or intents to summarize for AI prompt");
         alert(labels.noEdits);
         return;
       }
 
-      const resultZh = buildAiEditPrompt(effective, { language: "zh", page });
+      let finalEn = "";
+      let finalZh = "";
+      let hasImageReplacement = false;
+
+      if (intentResultEn.ok) {
+        finalEn += intentResultEn.prompt;
+        hasImageReplacement = hasImageReplacement || intentResultEn.hasImageReplacement;
+      }
+      if (patchResultEn.ok) {
+        if (finalEn) finalEn += "\n\n---\n\n";
+        finalEn += patchResultEn.prompt;
+        hasImageReplacement = hasImageReplacement || patchResultEn.hasImageReplacement;
+      }
+
+      const patchResultZh = buildAiEditPrompt(effective, { language: "zh", page });
+      const intentResultZh = buildIntentPrompt(intentInputs, { language: "zh", page });
+      
+      if (intentResultZh.ok) {
+        finalZh += intentResultZh.prompt;
+      }
+      if (patchResultZh.ok) {
+        if (finalZh) finalZh += "\n\n---\n\n";
+        finalZh += patchResultZh.prompt;
+      }
 
       panel?.showPromptPreview({
-        promptEn: resultEn.prompt,
-        promptZh: resultZh.ok ? resultZh.prompt : resultEn.prompt,
-        hasImageReplacement: resultEn.hasImageReplacement,
+        promptEn: finalEn,
+        promptZh: finalZh || finalEn,
+        hasImageReplacement,
         onCopy: (value, lang) => {
           if (!value.trim()) {
             logger.info("Copy cancelled: empty prompt");
@@ -640,66 +671,71 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
             userIntent: "",
             viewportBox: rect
           });
-          // context can be computed later if needed for prompt export:
-          // const context = buildRegionContext(region, units);
+          const context = buildRegionContext(region, units);
 
           // Prepare drafting
-          currentIntentOperation = {
+          const operation: IntentOperation = {
             id: `op-${Date.now()}`,
             action: "add",
             source: region,
             createdAt: Date.now()
           };
+          
+          intentDrafts.push({ operation, context });
 
           if (!intentDraftPanel) {
             intentDraftPanel = createIntentDraftPanel(
-              (action, intentText) => {
-                if (currentIntentOperation) {
-                  currentIntentOperation.action = action;
-                  currentIntentOperation.source.action = action;
-                  currentIntentOperation.source.userIntent = intentText;
-                  intentDraftPanel?.showSaved(currentIntentOperation);
+              (op) => {
+                // saved
+                const idx = intentDrafts.findIndex(d => d.operation.id === op.id);
+                if (idx !== -1) {
+                  intentDrafts[idx].operation = op;
                 }
               },
-              () => {
-                intentDraftPanel?.hide();
-                currentIntentOperation = null;
-              },
-              () => {
-                intentDraftPanel?.hide();
-                currentIntentOperation = null;
-              },
-              () => {
-                if (currentIntentOperation) {
-                  // scroll into view
-                  const docBox = currentIntentOperation.source.documentBox;
-                  window.scrollTo({
-                    top: docBox.top - window.innerHeight / 2 + docBox.height / 2,
-                    behavior: "smooth"
-                  });
-                  // Highlight momentarily
-                  const highlight = document.createElement("div");
-                  highlight.style.position = "absolute";
-                  highlight.style.left = `${docBox.left}px`;
-                  highlight.style.top = `${docBox.top}px`;
-                  highlight.style.width = `${docBox.width}px`;
-                  highlight.style.height = `${docBox.height}px`;
-                  highlight.style.backgroundColor = "rgba(59, 130, 246, 0.2)";
-                  highlight.style.border = "2px solid #3b82f6";
-                  highlight.style.zIndex = "2147483646";
-                  highlight.style.pointerEvents = "none";
-                  document.body.appendChild(highlight);
-                  setTimeout(() => {
-                    highlight.style.transition = "opacity 0.5s";
-                    highlight.style.opacity = "0";
-                    setTimeout(() => highlight.remove(), 500);
-                  }, 1000);
+              (opId) => {
+                // canceled
+                intentDrafts = intentDrafts.filter(d => d.operation.id !== opId);
+                if (intentDrafts.length === 0) {
+                  intentDraftPanel?.hide();
                 }
+              },
+              (opId) => {
+                // deleted
+                intentDrafts = intentDrafts.filter(d => d.operation.id !== opId);
+                if (intentDrafts.length === 0) {
+                  intentDraftPanel?.hide();
+                }
+              },
+              (op) => {
+                // highlight
+                const docBox = op.source.documentBox;
+                window.scrollTo({
+                  top: docBox.top - window.innerHeight / 2 + docBox.height / 2,
+                  behavior: "smooth"
+                });
+                const highlight = document.createElement("div");
+                highlight.style.position = "absolute";
+                highlight.style.left = `${docBox.left}px`;
+                highlight.style.top = `${docBox.top}px`;
+                highlight.style.width = `${docBox.width}px`;
+                highlight.style.height = `${docBox.height}px`;
+                highlight.style.backgroundColor = "rgba(59, 130, 246, 0.2)";
+                highlight.style.border = "2px solid #3b82f6";
+                highlight.style.zIndex = "2147483646";
+                highlight.style.pointerEvents = "none";
+                document.body.appendChild(highlight);
+                setTimeout(() => {
+                  highlight.style.transition = "opacity 0.5s";
+                  highlight.style.opacity = "0";
+                  setTimeout(() => highlight.remove(), 500);
+                }, 1000);
               }
             );
+            document.body.appendChild(intentDraftPanel.element);
           }
           
-          intentDraftPanel.showEditing();
+          intentDraftPanel.show();
+          intentDraftPanel.addDraft(operation);
         },
         () => {
           // Cancelled
@@ -799,7 +835,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     intentOverlay = null;
     intentDraftPanel?.destroy();
     intentDraftPanel = null;
-    currentIntentOperation = null;
+    intentDrafts = [];
 
     logger.info("ClickDeck deactivated");
   }

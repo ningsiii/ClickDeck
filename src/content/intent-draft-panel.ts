@@ -6,16 +6,16 @@ const STYLE_ID = "clickdeck-intent-draft-style";
 export type IntentDraftPanel = {
   element: HTMLDivElement;
   destroy: () => void;
-  showEditing: () => void;
-  showSaved: (operation: IntentOperation) => void;
+  addDraft: (operation: IntentOperation) => void;
   hide: () => void;
+  show: () => void;
 };
 
 export function createIntentDraftPanel(
-  onSave: (action: IntentOperation["action"], intentText: string) => void,
-  onCancel: () => void,
-  onDelete: () => void,
-  onHighlight: () => void
+  onSave: (operation: IntentOperation) => void,
+  onCancel: (operationId: string) => void,
+  onDelete: (operationId: string) => void,
+  onHighlight: (operation: IntentOperation) => void
 ): IntentDraftPanel {
   injectBaseStyles();
   const labels = getPanelLabels();
@@ -23,84 +23,59 @@ export function createIntentDraftPanel(
   const element = document.createElement("div");
   element.className = "clickdeck-intent-draft clickdeck-intent-draft--hidden";
   element.dataset.clickdeck = "true";
-
-  // HTML structure
-  element.innerHTML = `
-    <div class="clickdeck-intent-draft__editing" style="display: none;">
-      <select class="clickdeck-intent-draft__action-select">
-        <option value="add">${labels.intentActionAdd}</option>
-        <option value="replace">${labels.intentActionReplace}</option>
-        <option value="restyle">${labels.intentActionRestyle}</option>
-        <option value="delete">${labels.intentActionDelete}</option>
-      </select>
-      <textarea class="clickdeck-intent-draft__textarea" placeholder="${labels.intentPlaceholder}"></textarea>
-      <div class="clickdeck-intent-draft__actions">
-        <button class="clickdeck-button clickdeck-button--outline" data-action="cancel" type="button">${labels.cancel}</button>
-        <button class="clickdeck-button clickdeck-button--primary" data-action="save" type="button">${labels.save}</button>
-      </div>
-    </div>
-    <div class="clickdeck-intent-draft__saved" style="display: none;">
-      <div class="clickdeck-intent-draft__saved-content">
-        <span class="clickdeck-intent-draft__saved-action"></span>
-        <span class="clickdeck-intent-draft__saved-text"></span>
-      </div>
-      <button class="clickdeck-button clickdeck-button--icon clickdeck-button--danger" data-action="delete" type="button" title="${labels.delete}" aria-label="${labels.delete}">✕</button>
-    </div>
-  `;
-
-  const editingView = element.querySelector(".clickdeck-intent-draft__editing") as HTMLElement;
-  const savedView = element.querySelector(".clickdeck-intent-draft__saved") as HTMLElement;
   
-  const actionSelect = element.querySelector(".clickdeck-intent-draft__action-select") as HTMLSelectElement;
-  const textarea = element.querySelector(".clickdeck-intent-draft__textarea") as HTMLTextAreaElement;
-  
-  const savedActionSpan = element.querySelector(".clickdeck-intent-draft__saved-action") as HTMLElement;
-  const savedTextSpan = element.querySelector(".clickdeck-intent-draft__saved-text") as HTMLElement;
+  const cardsContainer = document.createElement("div");
+  cardsContainer.className = "clickdeck-intent-draft__cards";
+  element.appendChild(cardsContainer);
 
-  const btnCancel = element.querySelector('button[data-action="cancel"]') as HTMLButtonElement;
-  const btnSave = element.querySelector('button[data-action="save"]') as HTMLButtonElement;
-  const btnDelete = element.querySelector('button[data-action="delete"]') as HTMLButtonElement;
+  const cards = new Map<string, HTMLDivElement>();
 
-  btnCancel.addEventListener("click", () => {
-    onCancel();
-  });
+  function createCardDOM(operation: IntentOperation) {
+    const card = document.createElement("div");
+    card.className = "clickdeck-intent-draft__card";
+    
+    card.innerHTML = `
+      <div class="clickdeck-intent-draft__editing" style="display: flex;">
+        <select class="clickdeck-intent-draft__action-select">
+          <option value="add">${labels.intentActionAdd}</option>
+          <option value="replace">${labels.intentActionReplace}</option>
+          <option value="restyle">${labels.intentActionRestyle}</option>
+          <option value="delete">${labels.intentActionDelete}</option>
+        </select>
+        <textarea class="clickdeck-intent-draft__textarea" placeholder="${labels.intentPlaceholder}"></textarea>
+        <div class="clickdeck-intent-draft__actions">
+          <button class="clickdeck-button clickdeck-button--outline" data-action="cancel" type="button">${labels.cancel}</button>
+          <button class="clickdeck-button clickdeck-button--primary" data-action="save" type="button">${labels.save}</button>
+        </div>
+      </div>
+      <div class="clickdeck-intent-draft__saved" style="display: none;">
+        <div class="clickdeck-intent-draft__saved-content">
+          <span class="clickdeck-intent-draft__saved-action"></span>
+          <span class="clickdeck-intent-draft__saved-text"></span>
+        </div>
+        <button class="clickdeck-button clickdeck-button--icon clickdeck-button--danger" data-action="delete" type="button" title="${labels.delete}" aria-label="${labels.delete}">✕</button>
+      </div>
+    `;
 
-  btnSave.addEventListener("click", () => {
-    const action = actionSelect.value as IntentOperation["action"];
-    const text = textarea.value.trim();
-    if (!text && action !== "delete") {
-      textarea.focus();
-      return;
-    }
-    onSave(action, text);
-  });
+    const editingView = card.querySelector(".clickdeck-intent-draft__editing") as HTMLElement;
+    const savedView = card.querySelector(".clickdeck-intent-draft__saved") as HTMLElement;
+    
+    const actionSelect = card.querySelector(".clickdeck-intent-draft__action-select") as HTMLSelectElement;
+    const textarea = card.querySelector(".clickdeck-intent-draft__textarea") as HTMLTextAreaElement;
+    
+    const savedActionSpan = card.querySelector(".clickdeck-intent-draft__saved-action") as HTMLElement;
+    const savedTextSpan = card.querySelector(".clickdeck-intent-draft__saved-text") as HTMLElement;
 
-  btnDelete.addEventListener("click", (e) => {
-    e.stopPropagation(); // prevent triggering onHighlight
-    onDelete();
-  });
+    const btnCancel = card.querySelector('button[data-action="cancel"]') as HTMLButtonElement;
+    const btnSave = card.querySelector('button[data-action="save"]') as HTMLButtonElement;
+    const btnDelete = card.querySelector('button[data-action="delete"]') as HTMLButtonElement;
 
-  savedView.addEventListener("click", () => {
-    onHighlight();
-  });
+    actionSelect.value = operation.action;
+    textarea.value = operation.source.userIntent;
 
-  return {
-    element,
-    destroy: () => {
-      element.remove();
-    },
-    showEditing: () => {
-      element.classList.remove("clickdeck-intent-draft--hidden");
-      editingView.style.display = "flex";
-      savedView.style.display = "none";
-      textarea.value = "";
-      textarea.focus();
-    },
-    showSaved: (operation: IntentOperation) => {
-      element.classList.remove("clickdeck-intent-draft--hidden");
-      editingView.style.display = "none";
-      savedView.style.display = "flex";
-      
+    let isSaved = false;
+
+    const updateSavedView = () => {
       let actionLabel = "";
       if (operation.action === "add") actionLabel = labels.intentActionAdd;
       else if (operation.action === "delete") actionLabel = labels.intentActionDelete;
@@ -108,15 +83,90 @@ export function createIntentDraftPanel(
       else if (operation.action === "restyle") actionLabel = labels.intentActionRestyle;
 
       savedActionSpan.textContent = `[${actionLabel}]`;
-      // No Move yet for MVP intent draft panel
-      
-      // Fallback intent text to action name if empty (e.g., delete)
       savedTextSpan.textContent = operation.source.userIntent || actionLabel;
+      
+      editingView.style.display = "none";
+      savedView.style.display = "flex";
+    };
+
+    btnCancel.addEventListener("click", () => {
+      if (isSaved) {
+        // Revert to saved view
+        actionSelect.value = operation.action;
+        textarea.value = operation.source.userIntent;
+        editingView.style.display = "none";
+        savedView.style.display = "flex";
+      } else {
+        // Remove entirely
+        card.remove();
+        cards.delete(operation.id);
+        onCancel(operation.id);
+        updateContainerVisibility();
+      }
+    });
+
+    btnSave.addEventListener("click", () => {
+      const action = actionSelect.value as IntentOperation["action"];
+      const text = textarea.value.trim();
+      if (!text && action !== "delete") {
+        textarea.focus();
+        return;
+      }
+      operation.action = action;
+      operation.source.action = action;
+      operation.source.userIntent = text;
+      isSaved = true;
+      updateSavedView();
+      onSave(operation);
+    });
+
+    btnDelete.addEventListener("click", (e) => {
+      e.stopPropagation();
+      card.remove();
+      cards.delete(operation.id);
+      onDelete(operation.id);
+      updateContainerVisibility();
+    });
+
+    savedView.addEventListener("click", () => {
+      // Toggle back to editing mode? Or just highlight?
+      // Requirement: "每条草稿可折叠、展开、删除", let's allow clicking to highlight, and double click to edit, OR click to edit and have a highlight button?
+      // Actually clicking the saved view can just open it for editing, and we trigger highlight.
+      editingView.style.display = "flex";
+      savedView.style.display = "none";
+      textarea.focus();
+      onHighlight(operation);
+    });
+
+    cardsContainer.appendChild(card);
+    cards.set(operation.id, card);
+    updateContainerVisibility();
+    textarea.focus();
+  }
+
+  function updateContainerVisibility() {
+    if (cards.size === 0) {
+      element.classList.add("clickdeck-intent-draft--hidden");
+    } else {
+      element.classList.remove("clickdeck-intent-draft--hidden");
+    }
+  }
+
+  return {
+    element,
+    destroy: () => {
+      element.remove();
+    },
+    addDraft: (operation: IntentOperation) => {
+      createCardDOM(operation);
     },
     hide: () => {
       element.classList.add("clickdeck-intent-draft--hidden");
-      editingView.style.display = "none";
-      savedView.style.display = "none";
+    },
+    show: () => {
+      if (cards.size > 0) {
+        element.classList.remove("clickdeck-intent-draft--hidden");
+      }
     }
   };
 }
