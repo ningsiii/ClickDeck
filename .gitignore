@@ -44,3 +44,7 @@ docs/豆包.md
 docs/工程*
 docs/执行*
 docs/assets/logo*-original.png
+/scripts
+/chrome-store-assets
+/chrome-store-screenshots
+/.claude

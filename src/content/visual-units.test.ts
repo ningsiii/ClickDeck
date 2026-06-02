@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 import {
   collectVisualUnits,
-  findVisualUnitsInBox,
   rectsOverlap,
   calculateOverlap,
   isCenterInBox
