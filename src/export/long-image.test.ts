@@ -64,9 +64,15 @@ describe("exportLongImageSnapshot", () => {
       drawImage: vi.fn(),
     }) as any);
     HTMLCanvasElement.prototype.toDataURL = vi.fn(() => "data:image/png;base64,mocked");
+    HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+      callback(new Blob(["mocked"], { type: "image/png" }));
+    });
 
     // Mock download link
     HTMLAnchorElement.prototype.click = vi.fn();
+    URL.createObjectURL = vi.fn(() => "blob:mocked");
+    URL.revokeObjectURL = vi.fn();
+    window.alert = vi.fn();
     
     document.documentElement.classList.remove("clickdeck-exporting");
   });
@@ -107,7 +113,51 @@ describe("exportLongImageSnapshot", () => {
     await exportLongImageSnapshot(mockLogger);
     
     expect(mockLogger.error).toHaveBeenCalledWith("Long image export failed", expect.any(Object));
+    expect(window.alert).toHaveBeenCalledWith("长图导出失败：Simulated capture failure");
     expect(document.documentElement.classList.contains("clickdeck-exporting")).toBe(false);
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 100);
+  });
+
+  it("downloads the stitched image as a blob URL instead of a large data URL", async () => {
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 800, writable: true });
+
+    await exportLongImageSnapshot(mockLogger);
+
+    expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalledWith(expect.any(Function), "image/png");
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+  });
+
+  it("stops when canvas exceeds MAX_CANVAS_PIXELS", async () => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 3, writable: true });
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 20000, writable: true });
+    Object.defineProperty(window, 'innerWidth', { value: 2000, writable: true });
+    // 2000 * 3 * 20000 * 3 = 360,000,000 > 80_000_000
+
+    await exportLongImageSnapshot(mockLogger);
+
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("过长"));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining("MAX_CANVAS_PIXELS"));
+    expect(sentMessages.length).toBe(0); // Should not start capturing
+  });
+
+  it("handles MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota error and retries", async () => {
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 800, writable: true });
+    
+    let attempts = 0;
+    (global as any).chrome.runtime.sendMessage = vi.fn((_msg, callback) => {
+      attempts++;
+      if (attempts === 1) {
+        callback({ error: "This request exceeds the MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota." });
+      } else {
+        callback({ dataUrl: "data:image/png;base64,mocked" });
+      }
+    });
+    
+    await exportLongImageSnapshot(mockLogger);
+    
+    expect(attempts).toBe(2);
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining("quota error"));
+    expect(document.documentElement.classList.contains("clickdeck-exporting")).toBe(false);
   });
 });

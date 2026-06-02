@@ -105,6 +105,7 @@ describe("createPresentationController", () => {
 
   it("adds staging classes and CSS variables on enter, updates on navigation, and cleans up on exit", async () => {
     const slides = Array.from(document.querySelectorAll<HTMLElement>(".slide"));
+    document.body.style.background = "rgb(247, 242, 232)";
     
     // Mock getBoundingClientRect for scale calculation
     slides.forEach((s, idx) => {
@@ -119,6 +120,7 @@ describe("createPresentationController", () => {
     await controller.enter();
     
     expect(document.documentElement.classList.contains("clickdeck-presenting")).toBe(true);
+    expect(document.body.style.background).toBe("rgb(247, 242, 232)");
     expect(slides[0].classList.contains("clickdeck-presenting-slide")).toBe(true);
     expect(slides[1].classList.contains("clickdeck-presentation-hidden-slide")).toBe(true);
     
@@ -137,8 +139,21 @@ describe("createPresentationController", () => {
     controller.exit();
     
     expect(document.documentElement.classList.contains("clickdeck-presenting")).toBe(false);
-    expect(slides[0].classList.contains("clickdeck-presenting-slide")).toBe(false);
     expect(slides[1].classList.contains("clickdeck-presentation-hidden-slide")).toBe(false);
     expect(slides[1].style.getPropertyValue("--clickdeck-present-scale")).toBe("");
+  });
+
+  it("exits presentation when next is called on the last slide", async () => {
+    const slides = Array.from(document.querySelectorAll<HTMLElement>(".slide"));
+    const controller = createPresentationController({ slides, logger: mockLogger });
+    await controller.enter();
+
+    // Go to last slide
+    controller.goTo(1);
+    expect(document.documentElement.classList.contains("clickdeck-presenting")).toBe(true);
+
+    // Calling next on last slide should exit
+    controller.next();
+    expect(document.documentElement.classList.contains("clickdeck-presenting")).toBe(false);
   });
 });

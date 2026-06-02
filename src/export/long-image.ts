@@ -1,17 +1,7 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
+import { detectScrollTarget, throttledCaptureViewport, wait } from "./utils";
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
+const MAX_CANVAS_PIXELS = 80_000_000;
 
 function downloadDataUrl(dataUrl: string, filename: string): void {
   const a = document.createElement("a");
@@ -22,9 +12,44 @@ function downloadDataUrl(dataUrl: string, filename: string): void {
   document.body.removeChild(a);
 }
 
+function canvasToBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Failed to encode long image canvas"));
+        return;
+      }
+      resolve(blob);
+    }, type);
+  });
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  if (!URL.createObjectURL) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        downloadDataUrl(reader.result, filename);
+      }
+    };
+    reader.readAsDataURL(blob);
+    return;
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
 export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<void> {
-  const originalScrollX = window.scrollX;
-  const originalScrollY = window.scrollY;
+  logger.info("Long image export started");
+  const scrollTarget = detectScrollTarget();
+  logger.info("Scroll target detected");
 
   try {
     // 1. Hide UI
@@ -34,10 +59,16 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
     // but we might need a short delay to let hiding take effect.
     await wait(100);
 
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const totalHeight = document.documentElement.scrollHeight;
+    const viewportHeight = scrollTarget.getClientHeight();
+    const viewportWidth = scrollTarget.getClientWidth();
+    const totalHeight = scrollTarget.getScrollHeight();
     const dpr = window.devicePixelRatio || 1;
+    
+    if (viewportWidth * dpr * totalHeight * dpr > MAX_CANVAS_PIXELS) {
+      logger.warn("Long image canvas exceeds MAX_CANVAS_PIXELS, aborting export");
+      alert("当前页面过长，长图导出可能导致浏览器卡死。请改用图片 PDF A4，或缩小浏览器缩放比例后重试。");
+      return;
+    }
     
     const screenshots: { img: HTMLImageElement, y: number }[] = [];
     
@@ -45,43 +76,28 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
     
     // 2. Loop to capture
     while (currentY < totalHeight) {
-      window.scrollTo(0, currentY);
+      scrollTarget.setScrollTop(currentY);
       
       // Wait for rendering and any lazy loads or scroll events
       await wait(300);
       
-      // Request screenshot from background
-      const response = await new Promise<{ dataUrl?: string, error?: string }>((resolve) => {
-        if ((window as any).__MOCK_CAPTURE_VISIBLE_TAB) {
-          resolve({ dataUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==" });
-          return;
-        }
-        chrome.runtime.sendMessage({ type: "CLICKDECK_CAPTURE_VISIBLE_TAB" }, resolve);
-      });
+      // Request screenshot from background using throttled utility
+      const img = await throttledCaptureViewport(logger);
       
-      if (response.error || !response.dataUrl) {
-        throw new Error(response.error || "No dataUrl returned from captureVisibleTab");
-      }
-      
-      const img = await loadImage(response.dataUrl);
-      
-      // In case scroll went beyond bounds, browser clamps it. 
-      // We should use actual window.scrollY to place it on the canvas correctly.
-      const actualY = window.scrollY;
+      const actualY = scrollTarget.getScrollTop();
       
       screenshots.push({ img, y: actualY });
-      logger.info(`Captured screen at Y=${actualY}`);
+      logger.info(`Captured fragment at Y=${actualY}`);
       
       // Advance by one viewport height
       currentY += viewportHeight;
       
-      // If actualY + viewportHeight >= totalHeight, we reached the bottom
       if (actualY + viewportHeight >= totalHeight) {
         break;
       }
     }
     
-    logger.info(`Stitching ${screenshots.length} screenshots`);
+    logger.info("Stitching started");
     
     // 3. Stitch images
     const canvas = document.createElement("canvas");
@@ -99,19 +115,20 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
       ctx.drawImage(img, 0, y * dpr, viewportWidth * dpr, viewportHeight * dpr);
     }
     
-    const finalDataUrl = canvas.toDataURL("image/png");
-    
-    // 4. Download
+    logger.info("Encoding long image");
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `clickdeck-long-image-${timestamp}.png`;
-    downloadDataUrl(finalDataUrl, filename);
+    const blob = await canvasToBlob(canvas, "image/png");
+    logger.info("Download triggered");
+    downloadBlob(blob, filename);
     
     logger.info("Long image export successful");
   } catch (error) {
     logger.error("Long image export failed", { error: error instanceof Error ? error.message : String(error) });
+    alert(`长图导出失败：${error instanceof Error ? error.message : String(error)}`);
   } finally {
     // 5. Restore
     document.documentElement.classList.remove("clickdeck-exporting");
-    window.scrollTo(originalScrollX, originalScrollY);
+    scrollTarget.restore();
   }
 }

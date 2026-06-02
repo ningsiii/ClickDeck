@@ -85,6 +85,8 @@ export function createPresentationController(options: {
   function next() {
     if (currentIndex < slides.length - 1) {
       goTo(currentIndex + 1);
+    } else {
+      exit();
     }
   }
 
