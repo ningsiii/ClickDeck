@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "ClickDeck",
+    "description": "Chrome 中显示的扩展名称。"
+  },
+  "extDescription": {
+    "message": "可视化微调当前 HTML 页面并导出。",
+    "description": "Chrome 中显示的扩展描述。"
+  },
+  "actionDefaultTitle": {
+    "message": "打开或关闭 ClickDeck",
+    "description": "工具栏按钮标题。"
+  }
+}

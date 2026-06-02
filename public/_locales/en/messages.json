@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "ClickDeck",
+    "description": "Extension name shown in Chrome."
+  },
+  "extDescription": {
+    "message": "Visually fine-tune the current HTML page and export it.",
+    "description": "Extension description shown in Chrome."
+  },
+  "actionDefaultTitle": {
+    "message": "Toggle ClickDeck",
+    "description": "Toolbar action title."
+  }
+}
