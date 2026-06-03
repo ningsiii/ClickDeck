@@ -24,6 +24,7 @@ import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
 import { buildAiEditPrompt } from "../export/change-summary";
 import { detectPresentationSlides, createPresentationController, type PresentationController } from "./presentation-mode";
+import { collectPresentationDiagnostics } from "./presentation-diagnostics";
 import { exportLongImageSnapshot } from "../export/long-image";
 import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSlidesSnapshot } from "../export/image-pdf";
 import { createIntentOverlay, type IntentOverlay } from "./intent-overlay";
@@ -947,6 +948,8 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     // Minimal internal hook for clearing saved edits without adding UI.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__clickdeckClearSavedEdits = clearPersistedPatches;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__CLICKDECK_COLLECT_PRESENTATION_DIAGNOSTICS__ = () => collectPresentationDiagnostics();
     tryRestorePersistedPatches();
   }
 
@@ -980,6 +983,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     intentDraftPanel = null;
     intentDrafts.forEach(removeIntentDraftMarkers);
     intentDrafts = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).__CLICKDECK_COLLECT_PRESENTATION_DIAGNOSTICS__;
 
     logger.info("ClickDeck deactivated");
   }
