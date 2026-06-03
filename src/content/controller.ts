@@ -22,7 +22,6 @@ import { createPanel, type ClickDeckPanel, type PanelAction, type SelectionConte
 import { getEditableTarget, getTabSwitchTarget } from "./selection";
 import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
-import { exportPdfSnapshot } from "../export/pdf";
 import { buildAiEditPrompt } from "../export/change-summary";
 import { detectPresentationSlides, createPresentationController, type PresentationController } from "./presentation-mode";
 import { exportLongImageSnapshot } from "../export/long-image";
@@ -610,21 +609,6 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
     if (action === "export-long-image") {
       exportLongImageSnapshot(logger);
-      return;
-    }
-
-    if (action === "export-pdf-long") {
-      exportPdfSnapshot("long-page", logger);
-      return;
-    }
-
-    if (action === "export-pdf-a4") {
-      exportPdfSnapshot("a4", logger);
-      return;
-    }
-
-    if (action === "export-pdf-slides") {
-      exportPdfSnapshot("slides", logger);
       return;
     }
 

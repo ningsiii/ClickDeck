@@ -1,6 +1,6 @@
 {
   "name": "clickdeck",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Visually fine-tune the current HTML page and export it.",
   "private": true,
   "license": "MIT",
@@ -20,8 +20,5 @@
     "typescript": "^5.9.3",
     "vite": "^7.2.4",
     "vitest": "^4.0.13"
-  },
-  "dependencies": {
-    "jspdf": "^4.2.1"
   }
 }

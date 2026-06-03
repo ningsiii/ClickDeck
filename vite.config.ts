@@ -4,7 +4,7 @@ export default defineConfig({
   build: {
     emptyOutDir: true,
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       input: {
         background: "src/background/service-worker.ts",

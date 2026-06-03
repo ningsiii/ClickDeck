@@ -9,9 +9,6 @@ export type PanelAction =
   | "copy-diagnostics"
   | "copy-ai-prompt"
   | "export-html"
-  | "export-pdf-long"
-  | "export-pdf-a4"
-  | "export-pdf-slides"
   | "export-image-pdf-long"
   | "export-image-pdf-a4"
   | "export-image-pdf-slides"
@@ -54,9 +51,6 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
   const labels = getPanelLabels();
   const panelLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo2-panel.png") : "brand/logo2-panel.png";
   const collapsedLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo-collapsed.png") : "brand/logo-collapsed.png";
-  // Legacy browser-print PDF export is paused. Keep the code path for debugging/rollback,
-  // but hide the end-user buttons by default. See roadmap task 44A.
-  const SHOW_LEGACY_PDF_EXPORT = false;
   const element = document.createElement("div");
   element.className = "clickdeck-panel";
   element.dataset.clickdeck = "true";
@@ -228,15 +222,6 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
         ${buttonMarkup("export-html", labels.exportHtmlButton, false, labels.exportHtmlDesc)}
         ${buttonMarkup("present", labels.present, true)}
       </div>
-      ${
-        SHOW_LEGACY_PDF_EXPORT
-          ? `<div class="clickdeck-panel__group">
-        ${buttonMarkup("export-pdf-long", labels.exportPdfLong)}
-        ${buttonMarkup("export-pdf-a4", labels.exportPdfA4)}
-        ${buttonMarkup("export-pdf-slides", labels.exportPdfSlides)}
-      </div>`
-          : ""
-      }
       <div class="clickdeck-panel__section-title">${labels.pdfGroup}</div>
       <div class="clickdeck-panel__group">
         ${buttonMarkup("export-image-pdf-long", labels.exportImagePdfLong, false, labels.imagePdfTooltip)}
@@ -245,7 +230,7 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       </div>
     </div>
     <div class="clickdeck-panel__footer">
-      <span>v1.2.0</span>
+      <span>v1.2.1</span>
       <a href="https://github.com/ningsiii/ClickDeck/issues" target="_blank" rel="noopener noreferrer">Feedback</a>
       <a href="https://github.com/ningsiii/ClickDeck" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
@@ -396,7 +381,7 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
 
     element.querySelectorAll<HTMLButtonElement>("[data-action]").forEach((button) => {
       const action = button.dataset.action as PanelAction;
-      if (pageLevelActions.has(action) || action.startsWith("export-pdf-")) {
+      if (pageLevelActions.has(action)) {
         return;
       }
       if (action === "present") {

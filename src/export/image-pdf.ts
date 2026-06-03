@@ -1,33 +1,12 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
 import { detectPresentationSlides } from "../content/presentation-mode";
 import { detectScrollTarget, throttledCaptureViewport, wait } from "./utils";
-
-type JsPdfConstructor = new (options: {
-  orientation: "portrait" | "landscape";
-  unit: "px";
-  format: [number, number];
-  compress: boolean;
-}) => {
-  addImage: (...args: unknown[]) => void;
-  addPage: () => void;
-  save: (filename: string) => void;
-};
+import { downloadPdfBlob, imageElementToJpegDataUrl, SimpleImagePdf } from "./simple-image-pdf";
 
 declare global {
   interface Window {
-    jspdf?: {
-      jsPDF: JsPdfConstructor;
-    };
     __MOCK_CAPTURE_VISIBLE_TAB?: boolean;
   }
-}
-
-function getJsPDF(): JsPdfConstructor {
-  const jsPDF = window.jspdf?.jsPDF;
-  if (!jsPDF) {
-    throw new Error("jsPDF runtime is not loaded");
-  }
-  return jsPDF;
 }
 
 // Long-page MVP: limit max height to reduce PDF reader and memory failures.
@@ -48,13 +27,8 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
       alert("当前网页总高度超过推荐阈值，图片 PDF 可能无法被部分阅读器打开或导致内存溢出。建议改用 A4 分页模式导出。");
     }
 
-    const jsPDF = getJsPDF();
-    const pdf = new jsPDF({
-      orientation: viewportWidth > totalHeight ? "landscape" : "portrait",
-      unit: "px",
-      format: [viewportWidth, totalHeight],
-      compress: true
-    });
+    const pdf = new SimpleImagePdf();
+    const pageIndex = pdf.addPage(viewportWidth, totalHeight);
 
     let currentY = 0;
 
@@ -65,7 +39,15 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
       const img = await throttledCaptureViewport(logger);
       const actualY = scrollTarget.getScrollTop();
 
-      pdf.addImage(img, "PNG", 0, actualY, viewportWidth, viewportHeight);
+      const jpeg = imageElementToJpegDataUrl(img);
+      pdf.addJpegImage(pageIndex, jpeg.dataUrl, {
+        pixelWidth: jpeg.pixelWidth,
+        pixelHeight: jpeg.pixelHeight,
+        x: 0,
+        y: actualY,
+        width: viewportWidth,
+        height: viewportHeight
+      });
       logger.info(`Appended screen fragment to PDF at Y=${actualY}`);
 
       currentY += viewportHeight;
@@ -75,7 +57,7 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    pdf.save(`clickdeck-image-long-${timestamp}.pdf`);
+    downloadPdfBlob(pdf.toBlob(), `clickdeck-image-long-${timestamp}.pdf`);
     logger.info("Image PDF Long export successful");
   } catch (error) {
     logger.error("Image PDF Long export failed", { error: error instanceof Error ? error.message : String(error) });
@@ -98,13 +80,7 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
     const dpr = window.devicePixelRatio || 1;
     const a4Height = viewportWidth * 1.414;
 
-    const jsPDF = getJsPDF();
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "px",
-      format: [viewportWidth, a4Height],
-      compress: true
-    });
+    const pdf = new SimpleImagePdf();
 
     const a4Canvas = document.createElement("canvas");
     a4Canvas.width = viewportWidth * dpr;
@@ -117,7 +93,6 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
 
     let currentY = 0;
     let currentA4Page = 0;
-    let isFirstPage = true;
     let pageHasContent = false;
 
     const clearPageCanvas = (): void => {
@@ -129,12 +104,16 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
       if (!pageHasContent) {
         return;
       }
-      if (!isFirstPage) {
-        pdf.addPage();
-      }
-      isFirstPage = false;
       const pageDataUrl = a4Canvas.toDataURL("image/jpeg", 0.9);
-      pdf.addImage(pageDataUrl, "JPEG", 0, 0, viewportWidth, a4Height);
+      const pageIndex = pdf.addPage(viewportWidth, a4Height);
+      pdf.addJpegImage(pageIndex, pageDataUrl, {
+        pixelWidth: a4Canvas.width,
+        pixelHeight: a4Canvas.height,
+        x: 0,
+        y: 0,
+        width: viewportWidth,
+        height: a4Height
+      });
       logger.info(`Appended A4 page ${currentA4Page + 1} to PDF`);
 
       currentA4Page++;
@@ -179,7 +158,7 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
     a4Canvas.height = 0;
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    pdf.save(`clickdeck-image-a4-${timestamp}.pdf`);
+    downloadPdfBlob(pdf.toBlob(), `clickdeck-image-a4-${timestamp}.pdf`);
     logger.info("Image PDF A4 export successful");
   } catch (error) {
     logger.error("Image PDF A4 export failed", { error: error instanceof Error ? error.message : String(error) });
@@ -226,13 +205,7 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
     const pdfWidth = 1920;
     const pdfHeight = 1080;
 
-    const jsPDF = getJsPDF();
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "px",
-      format: [pdfWidth, pdfHeight],
-      compress: true
-    });
+    const pdf = new SimpleImagePdf();
 
     let isFirstPage = true;
 
@@ -288,9 +261,6 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
 
       const slideDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
-      if (!isFirstPage) {
-        pdf.addPage();
-      }
       isFirstPage = false;
 
       const drawScale = Math.min(pdfWidth / cropWidth, pdfHeight / cropHeight);
@@ -299,7 +269,15 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
       const drawX = (pdfWidth - drawWidth) / 2;
       const drawY = (pdfHeight - drawHeight) / 2;
 
-      pdf.addImage(slideDataUrl, "JPEG", drawX, drawY, drawWidth, drawHeight);
+      const pageIndex = pdf.addPage(pdfWidth, pdfHeight);
+      pdf.addJpegImage(pageIndex, slideDataUrl, {
+        pixelWidth: canvas.width,
+        pixelHeight: canvas.height,
+        x: drawX,
+        y: drawY,
+        width: drawWidth,
+        height: drawHeight
+      });
       logger.info(`Appended slide ${i + 1} to PDF`);
 
       canvas.width = 0;
@@ -313,7 +291,7 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    pdf.save(`clickdeck-image-slides-${timestamp}.pdf`);
+    downloadPdfBlob(pdf.toBlob(), `clickdeck-image-slides-${timestamp}.pdf`);
     logger.info("Image PDF Slides export successful");
   } catch (error) {
     logger.error("Image PDF Slides export failed", { error: error instanceof Error ? error.message : String(error) });

@@ -5,15 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { exportImagePdfA4Snapshot, exportImagePdfLongSnapshot } from "./image-pdf";
 import type { ClickDeckLogger } from "../diagnostics/logger";
 
-type MockPdf = {
-  addImage: ReturnType<typeof vi.fn>;
-  addPage: ReturnType<typeof vi.fn>;
-  save: ReturnType<typeof vi.fn>;
-};
-
 describe("image PDF export", () => {
   let logger: ClickDeckLogger;
-  let pdf: MockPdf;
 
   beforeEach(() => {
     logger = {
@@ -23,20 +16,11 @@ describe("image PDF export", () => {
       debug: vi.fn(),
     } as unknown as ClickDeckLogger;
 
-    pdf = {
-      addImage: vi.fn(),
-      addPage: vi.fn(),
-      save: vi.fn(),
-    };
-
-    window.jspdf = {
-      jsPDF: vi.fn(function () {
-        return pdf;
-      }) as any,
-    };
-
     window.__MOCK_CAPTURE_VISIBLE_TAB = true;
     window.alert = vi.fn();
+    URL.createObjectURL = vi.fn(() => "blob:clickdeck-pdf");
+    URL.revokeObjectURL = vi.fn();
+    HTMLAnchorElement.prototype.click = vi.fn();
     Object.defineProperty(window, "scrollTo", {
       value: vi.fn((_x: number, y: number) => {
         Object.defineProperty(window, "scrollY", { value: y, writable: true, configurable: true });
@@ -64,7 +48,7 @@ describe("image PDF export", () => {
       fillRect: vi.fn(),
       drawImage: vi.fn(),
     })) as any;
-    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => "data:image/jpeg;base64,mocked");
+    HTMLCanvasElement.prototype.toDataURL = vi.fn(() => "data:image/jpeg;base64,/9j/");
     document.documentElement.classList.remove("clickdeck-exporting");
   });
 
@@ -73,9 +57,10 @@ describe("image PDF export", () => {
 
     await exportImagePdfA4Snapshot(logger);
 
-    expect(pdf.addImage).toHaveBeenCalledTimes(1);
-    expect(pdf.addPage).not.toHaveBeenCalled();
-    expect(pdf.save).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith("Appended A4 page 1 to PDF");
+    expect(logger.info).not.toHaveBeenCalledWith("Appended A4 page 2 to PDF");
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
   });
 
   it("adds a second A4 page only when content spills past the first page", async () => {
@@ -83,9 +68,10 @@ describe("image PDF export", () => {
 
     await exportImagePdfA4Snapshot(logger);
 
-    expect(pdf.addImage).toHaveBeenCalledTimes(2);
-    expect(pdf.addPage).toHaveBeenCalledTimes(1);
-    expect(pdf.save).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith("Appended A4 page 1 to PDF");
+    expect(logger.info).toHaveBeenCalledWith("Appended A4 page 2 to PDF");
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
   });
 
   it("shows a readable warning for oversized long-page PDFs", async () => {
