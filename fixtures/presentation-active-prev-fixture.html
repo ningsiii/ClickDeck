@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickDeck Active Prev Fixture</title>
+  <style>
+    body { margin: 0; font-family: Georgia, "Times New Roman", serif; background: #101820; color: #f8efe0; }
+    .stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    .slide { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity 180ms ease; }
+    .slide.active { opacity: 1; z-index: 2; }
+    .slide.prev { opacity: 0; z-index: 1; }
+    .card { width: min(920px, 78vw); padding: 72px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); }
+    h1 { font-size: 72px; line-height: 1; margin: 0 0 20px; }
+    p { font-size: 28px; margin: 0; }
+    .nav-dots { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); display: flex; gap: 14px; }
+    .nav-dot { width: 14px; height: 14px; border-radius: 999px; border: 0; background: rgba(255,255,255,.36); }
+    .nav-dot.active { width: 42px; background: #ff7a18; }
+    .counter { position: fixed; right: 32px; top: 28px; font: 700 18px/1 sans-serif; }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="slide active" id="ap-slide-1">
+      <article class="card"><h1>第一屏</h1><p>active/prev 叠片型 fixture。</p></article>
+    </section>
+    <section class="slide" id="ap-slide-2">
+      <article class="card"><h1>第二屏</h1><p>第二页文本必须在演示模式里可见。</p></article>
+    </section>
+    <section class="slide" id="ap-slide-3">
+      <article class="card"><h1>第三屏</h1><p>页码和底部点应同步。</p></article>
+    </section>
+  </main>
+  <div class="counter"><span id="currentSlide">1</span>/<span id="totalSlides">3</span></div>
+  <nav class="nav-dots" aria-label="slide navigation">
+    <button class="nav-dot active" data-index="0" aria-label="slide 1"></button>
+    <button class="nav-dot" data-index="1" aria-label="slide 2"></button>
+    <button class="nav-dot" data-index="2" aria-label="slide 3"></button>
+  </nav>
+</body>
+</html>

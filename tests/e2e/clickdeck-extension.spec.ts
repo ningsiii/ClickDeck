@@ -8,6 +8,7 @@ type ExtensionFixtures = {
   context: BrowserContext;
   extensionId: string;
   demoPageUrl: string;
+  presentationActivePrevUrl: string;
 };
 
 const CHROME_UNSAFE_PORTS = new Set([
@@ -55,23 +56,38 @@ const test = base.extend<ExtensionFixtures>({
     const projectRoot = process.cwd();
     const fixturePath = path.join(projectRoot, "fixtures");
     const server = createServer(async (request, response) => {
-      if (request.url === "/demo-page.html") {
-        const html = await readFile(path.join(fixturePath, "demo-page.html"), "utf8");
-        response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-        response.end(html);
-      } else if (request.url === "/test-image.png") {
-        const image = await readFile(path.join(fixturePath, "test-image.png"));
-        response.writeHead(200, { "content-type": "image/png" });
-        response.end(image);
-      } else {
+      const requestPath = new URL(request.url || "/", "http://127.0.0.1").pathname;
+      const fixtureName = requestPath.replace(/^\//, "");
+
+      try {
+        if (fixtureName.endsWith(".html")) {
+          const html = await readFile(path.join(fixturePath, fixtureName), "utf8");
+          response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+          response.end(html);
+          return;
+        }
+        if (fixtureName === "test-image.png") {
+          const image = await readFile(path.join(fixturePath, "test-image.png"));
+          response.writeHead(200, { "content-type": "image/png" });
+          response.end(image);
+          return;
+        }
+      } catch {
         response.writeHead(404);
         response.end("Not found");
+        return;
       }
+
+      response.writeHead(404);
+      response.end("Not found");
     });
 
     const port = await listenOnSafePort(server);
     await use(`http://127.0.0.1:${port}/demo-page.html`);
     server.close();
+  },
+  presentationActivePrevUrl: async ({ demoPageUrl }, use) => {
+    await use(demoPageUrl.replace("/demo-page.html", "/presentation-active-prev-fixture.html"));
   }
 });
 
@@ -352,4 +368,29 @@ test.describe("ClickDeck core editing workflows", () => {
     // Eventually the export finishes and UI is restored
     await expect(page.locator("html")).not.toHaveClass(/clickdeck-exporting/, { timeout: 10000 });
   });
+
+  test("9. Presentation mode syncs active/prev fixture state", async ({ page, presentationActivePrevUrl }) => {
+    await page.goto(presentationActivePrevUrl);
+    await activateExtension(page);
+
+    await page.locator("[data-action='present']").click();
+    await expect(page.locator("html")).toHaveClass(/clickdeck-presenting/);
+    await expect(page.locator("#ap-slide-1")).toHaveClass(/active/);
+    await expect(page.locator(".nav-dot").nth(0)).toHaveClass(/active/);
+
+    await page.keyboard.press("ArrowRight");
+
+    await expect(page.locator("#ap-slide-2")).toHaveClass(/active/);
+    await expect(page.locator("#ap-slide-1")).toHaveClass(/prev/);
+    await expect(page.locator(".nav-dot").nth(1)).toHaveClass(/active/);
+    await expect(page.locator("#currentSlide")).toHaveText("2");
+    await expect.poll(async () => {
+      return page.locator("#ap-slide-2").evaluate((element) => getComputedStyle(element).opacity);
+    }).toBe("1");
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("html")).not.toHaveClass(/clickdeck-presenting/);
+    await expect(page.locator("#clickdeck-root")).toBeVisible();
+  });
+
 });

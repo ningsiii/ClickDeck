@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickDeck Transform Hook Fixture</title>
+  <style>
+    body { margin: 0; font-family: "Trebuchet MS", sans-serif; background: #06130f; color: #f1ffee; }
+    #deck { display: flex; width: 300vw; height: 100vh; transform: translateX(0); transition: transform 200ms ease; will-change: transform; }
+    .slide { width: 100vw; height: 100vh; flex: 0 0 100vw; display: grid; place-items: center; }
+    .panel { width: min(840px, 76vw); padding: 60px; border-radius: 28px; background: rgba(28, 112, 76, .42); border: 1px solid rgba(255,255,255,.26); }
+    h1 { margin: 0 0 22px; font-size: 64px; }
+    .reveal-piece { opacity: 0; transform: translateY(22px); transition: opacity 180ms ease, transform 180ms ease; font-size: 28px; }
+    .slide.played .reveal-piece { opacity: 1; transform: none; }
+  </style>
+</head>
+<body>
+  <div id="deck">
+    <section class="slide" id="hook-slide-1"><article class="panel"><h1>Hook 1</h1><p class="reveal-piece">第一页 hook 内容。</p></article></section>
+    <section class="slide" id="hook-slide-2"><article class="panel"><h1>Hook 2</h1><p class="reveal-piece">第二页 hook 内容。</p></article></section>
+    <section class="slide" id="hook-slide-3"><article class="panel"><h1>Hook 3</h1><p class="reveal-piece">第三页 hook 内容。</p></article></section>
+  </div>
+  <script>
+    window.__playSlide = function(index) {
+      document.querySelectorAll('.slide').forEach(function(slide, slideIndex) {
+        slide.classList.toggle('played', slideIndex === index);
+      });
+      document.getElementById('deck').style.transform = 'translateX(' + (-index * 100) + 'vw)';
+    };
+    window.__playSlide(0);
+  </script>
+</body>
+</html>

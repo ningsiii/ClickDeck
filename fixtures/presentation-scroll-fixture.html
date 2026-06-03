@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClickDeck Scroll Fixture</title>
+  <style>
+    body { margin: 0; font-family: "Courier New", monospace; background: #f4efe5; color: #222; }
+    .slide { min-height: 100vh; display: grid; place-items: center; border-bottom: 1px solid rgba(0,0,0,.16); opacity: .38; transition: opacity 160ms ease; }
+    .slide.visible, .slide.active { opacity: 1; }
+    .sheet { width: min(900px, 76vw); padding: 56px; background: #fff7e8; border: 2px solid #111; box-shadow: 12px 12px 0 #111; }
+    h1 { font-size: 58px; margin: 0 0 18px; }
+    p { font-size: 24px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="slide visible" id="scroll-slide-1"><article class="sheet"><h1>Scroll 1</h1><p>纵向滚动第一页。</p></article></section>
+    <section class="slide" id="scroll-slide-2"><article class="sheet"><h1>Scroll 2</h1><p>纵向滚动第二页。</p></article></section>
+    <section class="slide" id="scroll-slide-3"><article class="sheet"><h1>Scroll 3</h1><p>纵向滚动第三页。</p></article></section>
+  </main>
+  <script>
+    document.addEventListener('clickdeck:presentationchange', function(event) {
+      document.querySelectorAll('.slide').forEach(function(slide, index) {
+        slide.classList.toggle('visible', index === event.detail.index);
+      });
+    });
+  </script>
+</body>
+</html>
