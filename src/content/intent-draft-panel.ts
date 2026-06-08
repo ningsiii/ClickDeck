@@ -78,13 +78,13 @@ export function createIntentDraftPanel(
       const isMove = draftAction === "move";
       btnTarget.classList.toggle("clickdeck-intent-draft__target-btn--active", isMove);
       btnTarget.textContent = isMove ? labels.selectTargetRegion : labels.intentMoveTo;
-      textarea.hidden = isMove;
+      textarea.hidden = false;
+      textarea.placeholder = isMove ? labels.intentMovePlaceholder : labels.intentPlaceholder;
     }
     syncMoveButton();
 
     btnTarget.addEventListener("click", () => {
       draftAction = "move";
-      textarea.value = "";
       syncMoveButton();
       onDrawTarget?.(operation.id);
     });
@@ -93,7 +93,11 @@ export function createIntentDraftPanel(
       const isMove = operation.action === "move";
       savedActionSpan.textContent = isMove ? `[${labels.intentActionMove}]` : "";
       savedActionSpan.hidden = !isMove;
-      savedTextSpan.textContent = isMove ? labels.intentActionMove : (operation.source.userIntent || labels.addIntent);
+      if (isMove) {
+        savedTextSpan.textContent = operation.source.userIntent || labels.intentActionMove;
+      } else {
+        savedTextSpan.textContent = operation.source.userIntent || labels.addIntent;
+      }
       
       editingView.style.display = "none";
       savedView.style.display = "flex";
@@ -117,7 +121,7 @@ export function createIntentDraftPanel(
     });
 
     btnSave.addEventListener("click", () => {
-      const text = draftAction === "move" ? "" : textarea.value.trim();
+      const text = textarea.value.trim();
       if (!text && draftAction !== "move") {
         textarea.focus();
         return;

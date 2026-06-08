@@ -115,6 +115,7 @@ export type PanelLabels = {
   intentActionMove: string;
   intentMoveTo: string;
   intentPlaceholder: string;
+  intentMovePlaceholder: string;
   save: string;
   cancel: string;
   delete: string;
@@ -240,6 +241,7 @@ const englishLabels: PanelLabels = {
   intentActionMove: "Move",
   intentMoveTo: "Move to...",
   intentPlaceholder: "Enter your instructions for AI...",
+  intentMovePlaceholder: "Optional: align left edge / cover this text / avoid the title / keep size",
   save: "Save",
   cancel: "Cancel",
   delete: "Delete",
@@ -365,6 +367,7 @@ const chineseLabels: PanelLabels = {
   intentActionMove: "移动",
   intentMoveTo: "移动到...",
   intentPlaceholder: "输入你想让 AI 做的操作...",
+  intentMovePlaceholder: "可选：对齐左边缘 / 盖住这里 / 避开标题 / 保持大小",
   save: "保存",
   cancel: "取消",
   delete: "删除",
