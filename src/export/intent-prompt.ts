@@ -1,5 +1,6 @@
 import { IntentOperation } from "../content/intent-region";
-import { RegionContext, summarizeVisualUnit } from "../content/region-context";
+import { collectCssFacts, CssFacts } from "../content/css-facts";
+import { RegionCandidate, RegionContext, summarizeVisualUnit } from "../content/region-context";
 
 export type IntentPromptOptions = {
   language: "en" | "zh";
@@ -23,34 +24,158 @@ function formatRect(rect: { left: number; top: number; width: number; height: nu
   return `[x:${Math.round(rect.left)}, y:${Math.round(rect.top)}, w:${Math.round(rect.width)}, h:${Math.round(rect.height)}]`;
 }
 
-export function extractStyleFacts(context: RegionContext): string[] {
-  const facts: string[] = [];
-  if (context.empty || context.candidates.length === 0) return facts;
+function formatAnchor(context: RegionContext): string {
+  const { anchor } = context.region;
+  const descriptor = anchor.locator?.descriptor ? ` (${anchor.locator.descriptor})` : "";
+  return `${anchor.kind}${descriptor}; confidence: ${anchor.confidence}`;
+}
 
-  const primaryCandidate = context.candidates[0].unit;
-  if (!primaryCandidate.element) return facts;
+function formatBox(context: RegionContext): string {
+  const { region } = context;
+  if (region.relativeBox) {
+    return `${formatRect(region.relativeBox)} relative to anchor, placement hint only`;
+  }
+  return `${formatRect(region.viewportBox)} viewport px, placement hint only`;
+}
 
-  try {
-    const style = window.getComputedStyle(primaryCandidate.element);
-    const fontSize = style.getPropertyValue("font-size");
-    const fontWeight = style.getPropertyValue("font-weight");
-    const color = style.getPropertyValue("color");
-    const bgColor = style.getPropertyValue("background-color");
-    const borderRadius = style.getPropertyValue("border-radius");
+function formatCandidate(candidate: RegionCandidate): string {
+  const summary = summarizeVisualUnit(candidate.unit);
+  const details = [
+    `rank ${candidate.rank}`,
+    candidate.reason,
+    `overlap ${Math.round(candidate.overlapRatio * 100)}%`,
+    candidate.centerInBox ? "center in box" : "partial overlap"
+  ];
+  return `${summary} (${details.join("; ")})`;
+}
 
-    if (fontSize && fontSize !== "16px") facts.push(`font-size: ${fontSize}`);
-    if (fontWeight && fontWeight !== "400" && fontWeight !== "normal") facts.push(`font-weight: ${fontWeight}`);
-    
-    // Only push color if it's not transparent or default black
-    if (color && color !== "rgb(0, 0, 0)") facts.push(`color: ${color}`);
-    if (bgColor && bgColor !== "rgba(0, 0, 0, 0)" && bgColor !== "transparent") facts.push(`background-color: ${bgColor}`);
-    
-    if (borderRadius && borderRadius !== "0px") facts.push(`border-radius: ${borderRadius}`);
-  } catch (e) {
-    // ignore
+function appendContextBlock(lines: string[], label: string, context: RegionContext, indent = ""): void {
+  lines.push(`${indent}${label}:`);
+  lines.push(`${indent}- Page mode: ${context.region.pageMode}`);
+  lines.push(`${indent}- Anchor: ${formatAnchor(context)}`);
+  lines.push(`${indent}- Visual box: ${formatBox(context)}`);
+  lines.push(`${indent}- Region confidence: ${context.confidence}`);
+}
+
+function appendRegionContents(lines: string[], context: RegionContext, indent = ""): void {
+  lines.push(`${indent}Region contents:`);
+  if (context.empty) {
+    lines.push(`${indent}- Empty visual area; use it as intended placement area, not as an existing element.`);
+    return;
   }
 
-  return facts.slice(0, 6);
+  context.candidates.slice(0, 3).forEach((candidate) => {
+    lines.push(`${indent}- ${formatCandidate(candidate)}`);
+  });
+}
+
+function appendNearbyReferences(lines: string[], context: RegionContext, indent = ""): void {
+  lines.push(`${indent}Nearby references:`);
+  if (context.nearby.length === 0) {
+    lines.push(`${indent}- None found.`);
+    return;
+  }
+
+  context.nearby.slice(0, 4).forEach((nearby) => {
+    lines.push(`${indent}- ${nearby.direction}: ${nearby.summary} (distance: ${Math.round(nearby.distance)}px)`);
+  });
+}
+
+function compactFactGroup(label: keyof CssFacts, facts: CssFacts): string | null {
+  const values = facts[label];
+  if (!Array.isArray(values) || values.length === 0) return null;
+  return `${label}: ${values.slice(0, 5).join("; ")}`;
+}
+
+function collectPrimaryCssFacts(context: RegionContext): string[] {
+  if (context.empty || context.candidates.length === 0) return [];
+  const element = context.candidates[0].unit.element;
+  if (!element) return [];
+
+  try {
+    const facts = collectCssFacts(element);
+    const lines = [`kind: ${facts.kind}`];
+    (["base", "text", "media", "layout", "positioning", "hints"] as Array<keyof CssFacts>).forEach((group) => {
+      const line = compactFactGroup(group, facts);
+      if (line) lines.push(line);
+    });
+    return lines.slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+export function extractStyleFacts(context: RegionContext): string[] {
+  return collectPrimaryCssFacts(context).filter((line) => line !== "kind: unknown");
+}
+
+function appendCssFacts(lines: string[], context: RegionContext, indent = ""): void {
+  const facts = collectPrimaryCssFacts(context);
+  lines.push(`${indent}CSS facts:`);
+  if (facts.length === 0) {
+    lines.push(`${indent}- Not available; use DOM structure and surrounding visual context.`);
+    return;
+  }
+
+  facts.forEach((fact) => lines.push(`${indent}- ${fact}`));
+}
+
+function getMoveNote(input: IntentPromptInput): string {
+  const sourceNote = input.sourceContext.region.userIntent.trim();
+  const targetNote = input.targetContext?.region.userIntent.trim() ?? "";
+  return sourceNote || targetNote;
+}
+
+function contextHasImage(context: RegionContext): boolean {
+  return context.candidates.some((candidate) => candidate.unit.kind === "image");
+}
+
+function appendIntentOperation(lines: string[], input: IntentPromptInput, opId: string): boolean {
+  const { sourceContext } = input;
+  const userNote = sourceContext.region.userIntent || "[not provided]";
+
+  lines.push(`${opId} | type: intent`);
+  lines.push(`User note: "${userNote}"`);
+  appendContextBlock(lines, "Target", sourceContext);
+  appendRegionContents(lines, sourceContext);
+  appendNearbyReferences(lines, sourceContext);
+  appendCssFacts(lines, sourceContext);
+  lines.push("Expected result:");
+  lines.push("- Implement the user note only inside the selected region and directly related local layout.");
+  lines.push("- Infer whether the note means add, delete, replace, restyle, or a small local rearrangement from the wording.");
+  lines.push("- If the selected region is empty, use it as the intended placement area for new content.");
+  lines.push("");
+
+  return contextHasImage(sourceContext);
+}
+
+function appendMoveOperation(lines: string[], input: IntentPromptInput, opId: string): boolean {
+  const { sourceContext, targetContext } = input;
+  if (!targetContext) return false;
+  const moveNote = getMoveNote(input);
+
+  lines.push(`${opId} | type: move`);
+  lines.push(`Move note: ${moveNote ? `"${moveNote}"` : "[not provided]"}`);
+  appendContextBlock(lines, "Source A", sourceContext);
+  appendRegionContents(lines, sourceContext);
+  appendCssFacts(lines, sourceContext);
+  lines.push("");
+  appendContextBlock(lines, "Target B", targetContext);
+  lines.push("Target B placement reference:");
+  lines.push("- Target B is the destination guide for placement and alignment, not replacement content.");
+  lines.push("- Existing content inside Target B is visual context unless it physically blocks the move.");
+  appendRegionContents(lines, targetContext);
+  appendNearbyReferences(lines, targetContext);
+  appendCssFacts(lines, targetContext);
+  lines.push("Expected result:");
+  lines.push("- Move Source A content toward Target B using DOM structure, local container, current layout, nearby references, and CSS facts.");
+  lines.push("- Without a move note, infer conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
+  lines.push("- Preserve source content, approximate size, proportions, visual hierarchy, and style unless local fit requires minor spacing adjustments.");
+  lines.push("- Preserve obvious alignment relationships such as edge alignment, centering, relative offset, and spacing rhythm.");
+  lines.push("- Do not hard-code viewport coordinates as CSS top/left unless the original layout is already explicitly absolute-positioned and that is the smallest safe change.");
+  lines.push("");
+
+  return contextHasImage(sourceContext) || contextHasImage(targetContext);
 }
 
 export function buildIntentPrompt(
@@ -61,163 +186,68 @@ export function buildIntentPrompt(
     return { ok: false, reason: "empty", message: options.language === "zh" ? "没有提供任何操作指令。" : "No operations provided." };
   }
 
+  for (const input of inputs) {
+    if (input.operation.action === "move" && !input.targetContext) {
+      return { ok: false, reason: "empty", message: options.language === "zh" ? "移动操作缺少目标区域。" : "Move operation is missing target region." };
+    }
+  }
+
   const lines: string[] = [];
   let hasImageReplacement = false;
+  const hasMove = inputs.some((input) => input.operation.action === "move");
+  const opIds = inputs.map((_, index) => `OP-${index + 1}`);
 
   lines.push("ClickDeck AI edit prompt");
   lines.push("");
-  lines.push("Page:");
+  lines.push("Page context:");
   lines.push(`- URL: ${options.page.url || "unknown"}`);
   lines.push(`- Title: ${options.page.title || "unknown"}`);
   lines.push("- Scope: Current active browser page only.");
   lines.push("");
-  
-  lines.push("Global rules:");
-  lines.push("1. Use the original HTML structure as the source of truth.");
-  lines.push("2. Treat each user note as natural-language editing intent. It may mean adding, deleting, replacing, restyling, or locally rearranging content.");
-  lines.push("3. Preserve the user's wording and intent. Do not treat the user note as literal page copy unless the user clearly asks to insert that exact text.");
-  lines.push("4. Keep changes limited to the selected region and directly related surrounding layout.");
-  lines.push("5. Match the existing visual style unless the user explicitly asks for another style.");
-  lines.push("6. If the intent, target, or placement is ambiguous, ask the user a clarifying question before editing.");
+
+  lines.push("How to use location hints:");
+  lines.push("1. Use the original HTML structure as the source of truth, then use anchors, region contents, nearby references, and CSS facts to locate the edit.");
+  lines.push("2. Visual boxes are placement hints, not absolute CSS instructions. Do not blindly convert viewport boxes into hard-coded top/left coordinates.");
+  lines.push("3. Prefer stable DOM/local container edits and obvious alignment relationships over pixel-perfect coordinate copying.");
+  lines.push("4. CSS facts are a short factual snapshot of the selected element, not a full computed-style dump and not a classification rule system.");
   lines.push("");
-  
-  lines.push("Intent notes:");
 
-  for (let i = 0; i < inputs.length; i++) {
-    const input = inputs[i];
-    const { operation, sourceContext } = input;
-    const region = sourceContext.region;
+  lines.push("Global editing rules:");
+  lines.push("1. Treat each user note as natural-language editing intent. It may mean adding, deleting, replacing, restyling, or locally rearranging content.");
+  lines.push("2. Preserve the user's wording and intent. Do not treat the user note as literal page copy unless the user clearly asks to insert, write as, or replace with exact text.");
+  lines.push("3. Keep changes limited to the selected region and directly related surrounding layout.");
+  lines.push("4. Match the existing visual style unless the user explicitly asks for another style.");
+  lines.push("5. If the intent, target, or placement is ambiguous, ask a clarifying question before editing instead of guessing broadly.");
+  lines.push("6. Do not redesign the whole slide/page or modify unrelated pages, slides, sections, content, scripts, or behavior.");
+  lines.push("");
 
-    if (operation.action === "move" && !input.targetContext) {
-      return { ok: false, reason: "empty", message: options.language === "zh" ? "移动操作缺少目标区域。" : "Move operation is missing target region." };
-    }
-
-    lines.push(`${i + 1}. ${operation.action === "move" ? "Move instruction" : "User intent"}`);
-    if (operation.action === "move") {
-      lines.push("   Instruction: Move Source region A to Target region B.");
-    } else {
-      lines.push(`   User note: "${region.userIntent}"`);
-    }
-
-    if (operation.action === "move") {
-      lines.push("   Source region A:");
-      lines.push(`   - Page mode: ${region.pageMode}`);
-      lines.push(`   - Anchor: ${region.anchor.kind}${region.anchor.locator?.descriptor ? ` (${region.anchor.locator.descriptor})` : ""}`);
-      if (region.relativeBox) {
-        lines.push(`   - Box: ${formatRect(region.relativeBox)} (relative to anchor, %)`);
-      } else {
-        lines.push(`   - Box: ${formatRect(region.viewportBox)} (viewport px)`);
-      }
-      lines.push("");
-
-      lines.push("   Region contents A (Source):");
-      if (sourceContext.empty) {
-        lines.push("   - The selected region is an empty visual area. Treat it as the intended placement area, not as an existing element to edit.");
-      } else {
-        sourceContext.candidates.slice(0, 3).forEach(c => {
-          lines.push(`   - ${summarizeVisualUnit(c.unit)}`);
-          if (c.unit.kind === "image") hasImageReplacement = true;
-        });
-      }
-      lines.push("");
-
-      const targetRegion = input.targetContext!.region;
-      lines.push("   Target region B:");
-      lines.push(`   - Page mode: ${targetRegion.pageMode}`);
-      lines.push(`   - Anchor: ${targetRegion.anchor.kind}${targetRegion.anchor.locator?.descriptor ? ` (${targetRegion.anchor.locator.descriptor})` : ""}`);
-      if (targetRegion.relativeBox) {
-        lines.push(`   - Box: ${formatRect(targetRegion.relativeBox)} (relative to anchor, %)`);
-      } else {
-        lines.push(`   - Box: ${formatRect(targetRegion.viewportBox)} (viewport px)`);
-      }
-      lines.push("");
-
-      lines.push("   Target region B placement reference:");
-      lines.push("   - Use Target region B as the destination guide for placement and alignment.");
-      lines.push("   - If Target region B contains existing content, treat that content as visual context only, not as content to edit, unless it physically blocks the move.");
-      if (input.targetContext!.empty) {
-        lines.push("   - Target region B is an empty visual area. Treat it as the intended placement area.");
-      } else {
-        input.targetContext!.candidates.slice(0, 3).forEach(c => {
-          lines.push(`   - context: ${summarizeVisualUnit(c.unit)}`);
-        });
-      }
-      input.targetContext!.nearby.slice(0, 4).forEach(n => {
-        lines.push(`   - ${n.direction}: ${n.summary}`);
-      });
-      lines.push("");
-
-    } else {
-      lines.push("   Target region:");
-      lines.push(`   - Page mode: ${region.pageMode}`);
-      lines.push(`   - Anchor: ${region.anchor.kind}${region.anchor.locator?.descriptor ? ` (${region.anchor.locator.descriptor})` : ""}`);
-      
-      if (region.relativeBox) {
-        lines.push(`   - Box: ${formatRect(region.relativeBox)} (relative to anchor, %)`);
-      } else {
-        lines.push(`   - Box: ${formatRect(region.viewportBox)} (viewport px)`);
-      }
-      lines.push("");
-
-      lines.push("   Region contents:");
-      if (sourceContext.empty) {
-        lines.push("   - The selected region is an empty visual area. Treat it as the intended placement area, not as an existing element to edit.");
-      } else {
-        sourceContext.candidates.slice(0, 3).forEach(c => {
-          lines.push(`   - ${summarizeVisualUnit(c.unit)}`);
-          if (c.unit.kind === "image") hasImageReplacement = true;
-        });
-      }
-      lines.push("");
-
-      lines.push("   Nearby references:");
-      if (sourceContext.nearby.length === 0) {
-        lines.push("   - None found.");
-      } else {
-        sourceContext.nearby.slice(0, 4).forEach(n => {
-          lines.push(`   - ${n.direction}: ${n.summary}`);
-        });
-      }
-      lines.push("");
-
-      lines.push("   Style reference:");
-      const styleFacts = extractStyleFacts(sourceContext);
-      if (styleFacts.length === 0) {
-        lines.push("   - Use surrounding context to match style.");
-      } else {
-        styleFacts.forEach(fact => {
-          lines.push(`   - ${fact}`);
-        });
-      }
-      lines.push("");
-    }
-
-    lines.push("   To do:");
-    if (operation.action === "move") {
-      lines.push("   - Move the contents of Source region A into the placement indicated by Target region B.");
-      lines.push("   - Preserve any obvious spatial relationship implied by the user's boxes, such as edge alignment, centering, relative offset, or approximate placement.");
-      lines.push("   - If the intended alignment is not visually clear from the boxes and nearby context, keep the move conservative and ask for clarification instead of guessing a strong alignment rule.");
-      lines.push("   - Preserve the source content, approximate size, proportions, visual hierarchy, and existing style.");
-      lines.push("   - Treat Target region B as the intended placement area, not as replacement content.");
-      lines.push("   - Align with nearby elements when the alignment relationship is visually obvious.");
-      lines.push("   - Only adjust local spacing if necessary to make the moved content fit.");
-    } else {
-      lines.push("   - Implement the user note inside the selected region.");
-      lines.push("   - Infer whether the note means add, delete, replace, restyle, or a small local layout adjustment from the user's wording.");
-      lines.push("   - If the selected region is empty, treat it as the intended placement area for new content.");
-      lines.push("   - If the selected region contains existing content, edit only the relevant content needed to satisfy the user note.");
-    }
-    lines.push("");
-
-    lines.push("   Do not:");
-    if (operation.action === "move") {
-      lines.push("   - Do not convert this into a full redesign. Do not move unrelated content unless it's strictly necessary to make room. Do not modify other slides/pages.");
-    } else {
-      lines.push("   - Do not redesign the whole slide/page.");
-      lines.push("   - Do not modify unrelated content or layout outside the selected region.");
-    }
+  if (hasMove) {
+    lines.push("Move operation rules:");
+    lines.push("1. If Move note is provided, treat it as the primary semantic explanation of the move.");
+    lines.push("2. If Move note is [not provided], infer the intent conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
+    lines.push("3. Target B is a placement reference, not replacement content.");
+    lines.push("4. Preserve source size/proportion/style and only make local spacing adjustments needed to fit.");
+    lines.push("5. Avoid brittle coordinate-only fixes unless the original layout is already absolute-positioned and no safer local layout edit exists.");
     lines.push("");
   }
+
+  lines.push("Operations:");
+  lines.push("");
+
+  inputs.forEach((input, index) => {
+    const opId = opIds[index];
+    if (input.operation.action === "move") {
+      hasImageReplacement = appendMoveOperation(lines, input, opId) || hasImageReplacement;
+    } else {
+      hasImageReplacement = appendIntentOperation(lines, input, opId) || hasImageReplacement;
+    }
+  });
+
+  lines.push("Completion checklist:");
+  lines.push(`1. Complete every operation exactly once: ${opIds.join(", ")}.`);
+  lines.push("2. Before finishing, verify that no operation ID was skipped, merged accidentally, or applied to the wrong region.");
+  lines.push("3. If any operation is ambiguous or unsafe, list it under `Unresolved` and ask the user a clarifying question instead of silently ignoring it.");
+  lines.push("4. Keep the output as source HTML/CSS changes only; do not add AI APIs, remote code, or unrelated behavior.");
 
   return {
     ok: true,

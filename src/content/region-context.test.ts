@@ -54,6 +54,7 @@ function mockRegion(viewportBox: Partial<IntentRegion["viewportBox"]>, anchorCon
 describe("Region Context", () => {
   it("summarizeVisualUnit formats correctly", () => {
     expect(summarizeVisualUnit(mockUnit("image", {}))).toBe("[Image]");
+    expect(summarizeVisualUnit(mockUnit("video", {}))).toBe("[Video]");
     expect(summarizeVisualUnit(mockUnit("background", {}))).toBe("[Background Container]");
     expect(summarizeVisualUnit(mockUnit("textLine", {}, { textSnippet: "Short" }))).toBe("Short");
     expect(summarizeVisualUnit(mockUnit("textLine", {}, { textSnippet: "This is a very long string that should exceed the fifty character limit and be truncated" }))).toBe("This is a very long string that should exceed t...");

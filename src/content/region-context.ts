@@ -26,6 +26,7 @@ export type RegionContext = {
 
 export function summarizeVisualUnit(unit: VisualUnit): string {
   if (unit.kind === "image") return "[Image]";
+  if (unit.kind === "video") return "[Video]";
   if (unit.kind === "background") return "[Background Container]";
   if (unit.textSnippet) return unit.textSnippet.length > 50 ? unit.textSnippet.slice(0, 47) + "..." : unit.textSnippet;
   if (unit.roleHint) return `[${unit.roleHint}]`;
@@ -42,7 +43,7 @@ export function rankRegionCandidates(
     let priorityScore = match.score;
     let reason = "Overlap";
 
-    if (match.unit.kind === "textLine" || match.unit.kind === "image" || match.unit.kind === "interactive") {
+    if (match.unit.kind === "textLine" || match.unit.kind === "image" || match.unit.kind === "video" || match.unit.kind === "interactive") {
       priorityScore += 10000;
       reason = `Primary content (${match.unit.kind})`;
     } else if (match.unit.kind === "textBlock") {
@@ -70,7 +71,7 @@ export function rankRegionCandidates(
 }
 
 function getPriorityBonus(unit: VisualUnit): number {
-  if (unit.kind === "textLine" || unit.kind === "image" || unit.kind === "interactive") return 20;
+  if (unit.kind === "textLine" || unit.kind === "image" || unit.kind === "video" || unit.kind === "interactive") return 20;
   if (unit.kind === "textBlock") return 10;
   return 0;
 }

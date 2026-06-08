@@ -1,7 +1,7 @@
 import { ElementLocator } from "../state/editor-state";
 import { createElementLocator, isClickDeckUiElement } from "./dom-utils";
 
-export type VisualUnitKind = "block" | "textBlock" | "textLine" | "image" | "background" | "interactive";
+export type VisualUnitKind = "block" | "textBlock" | "textLine" | "image" | "video" | "background" | "interactive";
 
 export type RectLike = {
   left: number;
@@ -72,6 +72,8 @@ export function collectVisualUnits(root: Node = document.body): VisualUnit[] {
 
       if (tagName === "img" || tagName === "svg" || tagName === "canvas") {
         kind = "image";
+      } else if (tagName === "video") {
+        kind = "video";
       } else if (tagName === "button" || tagName === "a" || tagName === "input" || tagName === "select" || tagName === "textarea") {
         kind = "interactive";
       } else if (style.backgroundImage !== "none" && !style.backgroundImage.startsWith("linear-gradient")) {

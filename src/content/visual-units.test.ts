@@ -43,6 +43,7 @@ describe("DOM collection and filtering", () => {
         <p id="text-block" style="display: block; width: 100px; height: 20px;">Hello World</p>
         <button id="btn" style="display: inline-block; width: 50px; height: 20px;">Click me</button>
         <img id="img" style="display: inline-block; width: 10px; height: 10px;" src="test.png" />
+        <video id="video" style="display: inline-block; width: 20px; height: 10px;"></video>
       </div>
       <div id="hidden" style="display: none; width: 100px; height: 100px;"></div>
       <div id="clickdeck-ui" data-clickdeck="true" style="display: block; width: 100px; height: 100px;">
@@ -77,6 +78,7 @@ describe("DOM collection and filtering", () => {
     // - button#btn (interactive)
     // - textLine inside button
     // - img#img (image)
+    // - video#video (video)
     //
     // Total 6 units.
     
@@ -100,5 +102,8 @@ describe("DOM collection and filtering", () => {
     // The image
     const img = units.find(u => u.element.id === "img" && u.kind === "image");
     expect(img).toBeDefined();
+
+    const video = units.find(u => u.element.id === "video" && u.kind === "video");
+    expect(video).toBeDefined();
   });
 });

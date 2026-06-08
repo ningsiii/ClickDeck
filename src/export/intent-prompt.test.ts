@@ -1,37 +1,108 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
+import { IntentRegion } from "../content/intent-region";
+import { RegionCandidate } from "../content/region-context";
+import { VisualUnit, VisualUnitKind } from "../content/visual-units";
 import { buildIntentPrompt, IntentPromptInput } from "./intent-prompt";
+
+const viewportBox = { left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 };
+
+function createElement(tagName = "div", text = ""): HTMLElement {
+  const element = document.createElement(tagName);
+  element.textContent = text;
+  Object.defineProperty(element, "getBoundingClientRect", {
+    value: () => ({ left: 10, top: 20, width: 120, height: 40, right: 130, bottom: 60 }),
+    configurable: true
+  });
+  document.body.appendChild(element);
+  return element;
+}
+
+function mockVisualUnit(kind: VisualUnitKind, options: { text?: string; element?: HTMLElement } = {}): VisualUnit {
+  const element = options.element ?? createElement(kind === "image" ? "img" : "div", options.text ?? "Sample content");
+  return {
+    id: `vu-${Math.random()}`,
+    kind,
+    element,
+    locator: { descriptor: "sample", tagName: element.tagName.toLowerCase(), cssPath: "#sample", nthOfTypePath: "body > *:nth-of-type(1)", siblingIndex: 0 },
+    rect: viewportBox,
+    documentRect: viewportBox,
+    textSnippet: options.text,
+    confidence: "high"
+  };
+}
+
+function mockCandidate(kind: VisualUnitKind, options: { text?: string; element?: HTMLElement } = {}): RegionCandidate {
+  return {
+    unit: mockVisualUnit(kind, options),
+    rank: 1,
+    reason: `Primary content (${kind})`,
+    overlapRatio: 0.82,
+    centerInBox: true
+  };
+}
 
 function mockRegionContext(
   action: "intent" | "move",
   userIntent: string,
   empty: boolean,
-  candidates: any[] = [],
+  candidates: RegionCandidate[] = [],
   nearby: any[] = []
 ): IntentPromptInput {
+  const region: IntentRegion = {
+    id: "r1",
+    action,
+    userIntent,
+    pageMode: "slide",
+    viewportBox,
+    documentBox: viewportBox,
+    relativeBox: { left: 10, top: 20, width: 30, height: 40, right: 40, bottom: 60 },
+    anchor: {
+      kind: "slide",
+      confidence: "high",
+      locator: { descriptor: "section #slide-1 .slide", tagName: "section", cssPath: "#slide-1", nthOfTypePath: "body > section:nth-of-type(1)", siblingIndex: 0 }
+    },
+    createdAt: Date.now()
+  };
+
   return {
     operation: {
       id: "op1",
       action,
-      source: {} as any,
+      source: region,
       createdAt: Date.now()
     },
     sourceContext: {
-      region: {
-        id: "r1",
-        action,
-        userIntent,
-        pageMode: "slide",
-        viewportBox: { left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 },
-        documentBox: { left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 },
-        anchor: { kind: "slide", confidence: "high" },
-        createdAt: Date.now()
-      },
+      region,
       candidates,
       nearby,
       empty,
-      confidence: "high"
+      confidence: empty ? "medium" : "high"
     }
+  };
+}
+
+function addTargetContext(input: IntentPromptInput, userIntent = "", empty = true): void {
+  input.targetContext = {
+    region: {
+      id: "r2",
+      action: "move",
+      userIntent,
+      pageMode: "slide",
+      viewportBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
+      documentBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
+      relativeBox: { left: 58, top: 13, width: 31, height: 78, right: 89, bottom: 91 },
+      anchor: {
+        kind: "slide",
+        confidence: "high",
+        locator: { descriptor: "section #slide-1 .slide", tagName: "section", cssPath: "#slide-1", nthOfTypePath: "body > section:nth-of-type(1)", siblingIndex: 0 }
+      },
+      createdAt: Date.now()
+    },
+    candidates: empty ? [] : [mockCandidate("textBlock", { text: "Target context" })],
+    nearby: [{ direction: "above", summary: "[Title]", distance: 24 } as any],
+    empty,
+    confidence: empty ? "medium" : "high"
   };
 }
 
@@ -44,45 +115,35 @@ describe("Intent Prompt Builder", () => {
     }
   });
 
-  it("builds natural-language intent prompt for empty visual area with nearby references", () => {
+  it("builds ordinary intent prompt with layered sections and no repeated To do / Do not blocks", () => {
     const input = mockRegionContext("intent", "Add a title here", true, [], [
-      { direction: "above", summary: "[Image]" }
+      { direction: "above", summary: "[Image]", distance: 12 }
     ]);
 
     const result = buildIntentPrompt([input], { language: "en", page: { url: "test.com", title: "Test" } });
     expect(result.ok).toBe(true);
     if (result.ok) {
       const prompt = result.prompt;
-      // Global and Page sections
       expect(prompt).toContain("ClickDeck AI edit prompt");
-      expect(prompt).toContain("Global rules:");
-      expect(prompt).toContain("URL: test.com");
-      
-      // Operation sections
-      expect(prompt).toContain("Intent notes:");
-      expect(prompt).toContain("1. User intent");
+      expect(prompt).toContain("Page context:");
+      expect(prompt).toContain("How to use location hints:");
+      expect(prompt).toContain("Global editing rules:");
+      expect(prompt).toContain("Operations:");
+      expect(prompt).toContain("OP-1 | type: intent");
       expect(prompt).toContain('User note: "Add a title here"');
-      
-      // Empty area wording
-      expect(prompt).toContain("The selected region is an empty visual area. Treat it as the intended placement area, not as an existing element to edit.");
-      expect(prompt).toContain("- above: [Image]");
-      
-      // Standard ending
-      expect(prompt).toContain("To do:");
-      expect(prompt).toContain("Implement the user note inside the selected region.");
-      expect(prompt).toContain("Infer whether the note means add, delete, replace, restyle, or a small local layout adjustment");
-      expect(prompt).toContain("Do not:");
-      expect(prompt).toContain("Do not modify unrelated content");
-      
-      // Must not contain scattered Allowed changes block
-      expect(prompt).not.toContain("Allowed changes:");
-      expect(prompt).not.toContain("If uncertain:");
+      expect(prompt).toContain("Visual box: [x:10, y:20, w:30, h:40] relative to anchor, placement hint only");
+      expect(prompt).toContain("Empty visual area; use it as intended placement area");
+      expect(prompt).toContain("above: [Image] (distance: 12px)");
+      expect(prompt).toContain("Completion checklist:");
+      expect(prompt).not.toContain("Intent notes:");
+      expect(prompt.match(/To do:/g)).toBeNull();
+      expect(prompt.match(/Do not:/g)).toBeNull();
     }
   });
 
-  it("keeps delete-like wording as user intent without requiring an action category", () => {
+  it("keeps user wording as intent and does not force literal page copy", () => {
     const input = mockRegionContext("intent", "Remove this paragraph", false, [
-      { unit: { kind: "textLine" } }
+      mockCandidate("textLine", { text: "Paragraph to remove" })
     ]);
 
     const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
@@ -90,82 +151,90 @@ describe("Intent Prompt Builder", () => {
     if (result.ok) {
       const prompt = result.prompt;
       expect(prompt).toContain('User note: "Remove this paragraph"');
-      expect(prompt).toContain("Do not redesign the whole slide/page");
+      expect(prompt).toContain("Do not treat the user note as literal page copy unless the user clearly asks to insert, write as, or replace with exact text.");
+      expect(prompt).toContain("Do not redesign the whole slide/page or modify unrelated pages");
     }
   });
 
-  it("builds restyle-like prompt without omitting style reference", () => {
-    const input = mockRegionContext("intent", "Make this red", false, [
-      { unit: { kind: "textLine" } }
+  it("includes short CSS facts without dumping full computed style", () => {
+    const element = createElement("h1", "Styled headline");
+    element.style.fontSize = "32px";
+    element.style.fontWeight = "800";
+    element.style.lineHeight = "1.2";
+    element.style.color = "rgb(255, 109, 61)";
+    element.style.margin = "0px";
+
+    const input = mockRegionContext("intent", "Make this stronger", false, [
+      mockCandidate("textLine", { text: "Styled headline", element })
     ]);
 
     const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.prompt).toContain('User note: "Make this red"');
-      expect(result.prompt).toContain("Style reference:");
+      const prompt = result.prompt;
+      expect(prompt).toContain("CSS facts:");
+      expect(prompt).toContain("kind: text");
+      expect(prompt).toContain("text: font-size: 32px; font-weight: 800; line-height: 1.2; color: rgb(255, 109, 61)");
+      expect(prompt).not.toContain("animation-duration");
+      expect(prompt).not.toContain("margin: 0px");
     }
   });
 
-  it("handles multiple operations correctly", () => {
-    const op1 = mockRegionContext("intent", "Remove first", false);
+  it("handles multiple operations with explicit operation IDs and checklist verification", () => {
+    const op1 = mockRegionContext("intent", "Remove first", false, [mockCandidate("textBlock", { text: "First" })]);
     const op2 = mockRegionContext("intent", "Add second", true);
 
     const result = buildIntentPrompt([op1, op2], { language: "en", page: { url: "", title: "" } });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.prompt).toContain("1. User intent");
-      expect(result.prompt).toContain("2. User intent");
-      expect(result.prompt).toContain('User note: "Remove first"');
-      expect(result.prompt).toContain('User note: "Add second"');
+      const prompt = result.prompt;
+      expect(prompt).toContain("OP-1 | type: intent");
+      expect(prompt).toContain("OP-2 | type: intent");
+      expect(prompt).toContain('User note: "Remove first"');
+      expect(prompt).toContain('User note: "Add second"');
+      expect(prompt).toContain("Complete every operation exactly once: OP-1, OP-2.");
+      expect(prompt).toContain("no operation ID was skipped");
     }
   });
 
-  it("handles move operation with both source and target", () => {
-    const input = mockRegionContext("move", "Move this to there", false);
-    // Add targetContext
-    input.targetContext = {
-      region: {
-        id: "r2",
-        action: "move",
-        userIntent: "Move this to there",
-        pageMode: "slide",
-        viewportBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
-        documentBox: { left: 200, top: 200, width: 100, height: 100, right: 300, bottom: 300 },
-        anchor: { kind: "slide", confidence: "high" },
-        createdAt: Date.now()
-      },
-      candidates: [],
-      nearby: [{ direction: "above", summary: "[Title]" } as any],
-      empty: true,
-      confidence: "medium"
-    };
+  it("handles move operation without a move note", () => {
+    const input = mockRegionContext("move", "", false, [mockCandidate("image")]);
+    addTargetContext(input, "", true);
 
     const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
     expect(result.ok).toBe(true);
     if (result.ok) {
       const prompt = result.prompt;
-      expect(prompt).toContain('Move instruction');
-      expect(prompt).toContain('Instruction: Move Source region A to Target region B.');
-      expect(prompt).not.toContain('User note: "Move this to there"');
-      expect(prompt).toContain('Source region A:');
-      expect(prompt).toContain('Region contents A (Source):');
-      expect(prompt).toContain('Target region B:');
-      expect(prompt).toContain('Target region B placement reference:');
-      expect(prompt).toContain('Use Target region B as the destination guide for placement and alignment.');
-      expect(prompt).toContain('treat that content as visual context only, not as content to edit');
-      expect(prompt).toContain('- above: [Title]');
-      expect(prompt).toContain('Move the contents of Source region A into the placement indicated by Target region B');
-      expect(prompt).toContain("Preserve any obvious spatial relationship implied by the user's boxes");
-      expect(prompt).toContain('keep the move conservative and ask for clarification instead of guessing a strong alignment rule');
-      expect(prompt).toContain('Preserve the source content, approximate size, proportions, visual hierarchy, and existing style');
-      expect(prompt).toContain('Align with nearby elements when the alignment relationship is visually obvious');
-      expect(prompt).toContain('Do not convert this into a full redesign');
+      expect(prompt).toContain("Move operation rules:");
+      expect(prompt).toContain("OP-1 | type: move");
+      expect(prompt).toContain("Move note: [not provided]");
+      expect(prompt).toContain("Source A:");
+      expect(prompt).toContain("Target B:");
+      expect(prompt).toContain("Target B is the destination guide for placement and alignment, not replacement content.");
+      expect(prompt).toContain("Without a move note, infer conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
+      expect(prompt).toContain("Visual boxes are placement hints, not absolute CSS instructions");
+      expect(prompt).toContain("Do not hard-code viewport coordinates as CSS top/left");
+      expect(prompt).toContain("above: [Title] (distance: 24px)");
+      expect(result.hasImageReplacement).toBe(true);
+    }
+  });
+
+  it("keeps optional future move note when provided", () => {
+    const input = mockRegionContext("move", "Move the logo group closer to the title", false, [
+      mockCandidate("block", { text: "Logo group" })
+    ]);
+    addTargetContext(input, "", false);
+
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.prompt).toContain('Move note: "Move the logo group closer to the title"');
+      expect(result.prompt).toContain("If Move note is provided, treat it as the primary semantic explanation of the move.");
     }
   });
 
   it("returns error if move operation is missing targetContext", () => {
-    const input = mockRegionContext("move", "Move this to there", false);
+    const input = mockRegionContext("move", "", false);
     
     const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
     expect(result.ok).toBe(false);
