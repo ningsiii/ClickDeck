@@ -126,26 +126,55 @@ describe("Region Context", () => {
     expect(ctx4.confidence).toBe("low");
   });
 
-  it("calculateAlignmentHints generates accurate hints up to 4", () => {
+  it("calculateAlignmentHints prioritizes edge over center, limits center to 1", () => {
     const box = { left: 100, top: 100, width: 200, height: 100, right: 300, bottom: 200 };
     const anchor = { left: 0, top: 0, width: 800, height: 600, right: 800, bottom: 600 };
     
-    // U1 left is 100 (delta 0), U2 top is 104 (delta 4)
-    const unit1 = mockUnit("textLine", { left: 100, top: 80, width: 50, height: 20 }, { textSnippet: "U1" });
-    const unit2 = mockUnit("image", { left: 120, top: 104, width: 50, height: 20 });
-    const unitFar = mockUnit("video", { left: 1000, top: 1000, width: 50, height: 20 });
+    // U1 has perfect center X and Y match, but edges are 50px away
+    const unit1 = mockUnit("textLine", { left: 150, top: 125, width: 100, height: 50 }, { textSnippet: "U1" });
+    // U2 has perfect left edge match, other edges far away
+    const unit2 = mockUnit("image", { left: 100, top: 300, width: 50, height: 50 }); // Left edge aligns
     
-    const hints = calculateAlignmentHints(box, anchor, [unit1, unit2, unitFar]);
-    expect(hints.length).toBeLessThanOrEqual(4);
+    const hints = calculateAlignmentHints(box, anchor, [unit1, unit2]);
     
-    const leftHint = hints.find(h => h.summary.includes("Left edge aligns with U1"));
-    expect(leftHint).toBeDefined();
-    expect(leftHint?.confidence).toBe("high");
-    expect(leftHint?.deltaPx).toBe(0);
+    // Expect edge hint to be before center hint
+    const edgeIndex = hints.findIndex(h => h.summary.includes("edge"));
+    const centerIndex = hints.findIndex(h => h.summary.includes("Center"));
+    expect(edgeIndex).toBe(0);
+    expect(centerIndex).toBe(1);
+    expect(edgeIndex).toBeLessThan(centerIndex);
 
-    const topHint = hints.find(h => h.summary.includes("Top edge aligns with [Image] top edge"));
-    expect(topHint).toBeDefined();
-    expect(topHint?.confidence).toBe("high");
-    expect(topHint?.deltaPx).toBe(4);
+    // Expect at most 1 center hint across all elements
+    const centerHints = hints.filter(h => h.summary.includes("Center"));
+    expect(centerHints.length).toBe(1);
+  });
+
+  it("calculateAlignmentHints downgrades far elements and scores spacing correctly", () => {
+    const box = { left: 100, top: 100, width: 200, height: 100, right: 300, bottom: 200 };
+    
+    // Nearby spacing (24px below)
+    const unitNearby = mockUnit("textLine", { left: 100, top: 56, width: 200, height: 20 }, { textSnippet: "Nearby" }); 
+    // Top of box is 100. Bottom of unitNearby is 76. Spacing is 24.
+    
+    // Far element with perfect center match
+    const unitFar = mockUnit("video", { left: 1000, top: 100, width: 200, height: 100 }); 
+    // Center Y perfectly matches, but it's far away (left is 1000 vs 300)
+    
+    const hints = calculateAlignmentHints(box, undefined, [unitNearby, unitFar]);
+    
+    // Spacing 24px should NOT be high, but medium
+    const spacingHint = hints.find(h => h.summary.includes("below"));
+    expect(spacingHint).toBeDefined();
+    expect(spacingHint?.confidence).toBe("medium");
+    expect(spacingHint?.deltaPx).toBe(24);
+
+    // The nearby spacing hint should beat the far center hint
+    const spacingIndex = hints.indexOf(spacingHint!);
+    const farCenterHint = hints.find(h => h.summary.includes("Center Y is close to [Video]"));
+    
+    if (farCenterHint) {
+      const farCenterIndex = hints.indexOf(farCenterHint);
+      expect(spacingIndex).toBeLessThan(farCenterIndex);
+    }
   });
 });

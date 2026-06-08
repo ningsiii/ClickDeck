@@ -153,19 +153,32 @@ function getConfidence(deltaPx: number): "high" | "medium" | "low" | "none" {
   return "none";
 }
 
+type InternalAlignmentHint = AlignmentHint & {
+  relationKind: "edge" | "spacing" | "center";
+  referencePriority: number;
+};
+
 export function calculateAlignmentHints(
   box: RectLike,
   anchorRect: RectLike | undefined,
   units: VisualUnit[]
 ): AlignmentHint[] {
-  const hints: AlignmentHint[] = [];
+  const hints: InternalAlignmentHint[] = [];
   const boxCenterX = box.left + box.width / 2;
   const boxCenterY = box.top + box.height / 2;
 
-  const pushHint = (summary: string, deltaPx: number) => {
-    const confidence = getConfidence(deltaPx);
+  const pushHint = (summary: string, deltaPx: number, relationKind: "edge" | "spacing" | "center", referencePriority: number) => {
+    let confidence: "high" | "medium" | "low" | "none" = "none";
+    if (relationKind === "spacing") {
+      if (deltaPx <= 4) confidence = "high";
+      else if (deltaPx <= 24) confidence = "medium";
+      else if (deltaPx <= 32) confidence = "low";
+    } else {
+      confidence = getConfidence(deltaPx);
+    }
+
     if (confidence !== "none") {
-      hints.push({ summary, deltaPx, confidence });
+      hints.push({ summary, deltaPx, confidence, relationKind, referencePriority });
     }
   };
 
@@ -173,12 +186,12 @@ export function calculateAlignmentHints(
     const anchorCenterX = anchorRect.left + anchorRect.width / 2;
     const anchorCenterY = anchorRect.top + anchorRect.height / 2;
 
-    pushHint(`Left edge aligns with anchor left edge`, Math.abs(box.left - anchorRect.left));
-    pushHint(`Right edge aligns with anchor right edge`, Math.abs(box.right - anchorRect.right));
-    pushHint(`Top edge aligns with anchor top edge`, Math.abs(box.top - anchorRect.top));
-    pushHint(`Bottom edge aligns with anchor bottom edge`, Math.abs(box.bottom - anchorRect.bottom));
-    pushHint(`Center X is close to anchor center X`, Math.abs(boxCenterX - anchorCenterX));
-    pushHint(`Center Y is close to anchor center Y`, Math.abs(boxCenterY - anchorCenterY));
+    pushHint(`Left edge aligns with anchor left edge`, Math.abs(box.left - anchorRect.left), "edge", 0);
+    pushHint(`Right edge aligns with anchor right edge`, Math.abs(box.right - anchorRect.right), "edge", 0);
+    pushHint(`Top edge aligns with anchor top edge`, Math.abs(box.top - anchorRect.top), "edge", 0);
+    pushHint(`Bottom edge aligns with anchor bottom edge`, Math.abs(box.bottom - anchorRect.bottom), "edge", 0);
+    pushHint(`Center X is close to anchor center X`, Math.abs(boxCenterX - anchorCenterX), "center", 0);
+    pushHint(`Center Y is close to anchor center Y`, Math.abs(boxCenterY - anchorCenterY), "center", 0);
   }
 
   for (const unit of units) {
@@ -192,46 +205,71 @@ export function calculateAlignmentHints(
     const uCenterY = u.top + u.height / 2;
     const label = summarizeVisualUnit(unit);
 
-    pushHint(`Left edge aligns with ${label} left edge`, Math.abs(box.left - u.left));
-    pushHint(`Right edge aligns with ${label} right edge`, Math.abs(box.right - u.right));
-    pushHint(`Center X is close to ${label} center X`, Math.abs(boxCenterX - uCenterX));
-
-    pushHint(`Top edge aligns with ${label} top edge`, Math.abs(box.top - u.top));
-    pushHint(`Bottom edge aligns with ${label} bottom edge`, Math.abs(box.bottom - u.bottom));
-    pushHint(`Center Y is close to ${label} center Y`, Math.abs(boxCenterY - uCenterY));
-
+    const overlapX = Math.max(0, Math.min(box.right, u.right) - Math.max(box.left, u.left));
+    const overlapY = Math.max(0, Math.min(box.bottom, u.bottom) - Math.max(box.top, u.top));
+    const isOverlapping = overlapX > 0 && overlapY > 0;
+    
     const horizontallyAligned = Math.abs(uCenterX - boxCenterX) < Math.max(box.width, u.width) / 1.5;
+    const verticallyAligned = Math.abs(uCenterY - boxCenterY) < Math.max(box.height, u.height) / 1.5;
+    
+    let isNearby = isOverlapping;
+    if (!isNearby && horizontallyAligned) {
+      const distY = Math.min(Math.abs(box.top - u.bottom), Math.abs(box.bottom - u.top));
+      if (distY <= 100) isNearby = true;
+    }
+    if (!isNearby && verticallyAligned) {
+      const distX = Math.min(Math.abs(box.left - u.right), Math.abs(box.right - u.left));
+      if (distX <= 100) isNearby = true;
+    }
+
+    const priority = isNearby ? 1 : 2;
+
+    pushHint(`Left edge aligns with ${label} left edge`, Math.abs(box.left - u.left), "edge", priority);
+    pushHint(`Right edge aligns with ${label} right edge`, Math.abs(box.right - u.right), "edge", priority);
+    pushHint(`Center X is close to ${label} center X`, Math.abs(boxCenterX - uCenterX), "center", priority);
+
+    pushHint(`Top edge aligns with ${label} top edge`, Math.abs(box.top - u.top), "edge", priority);
+    pushHint(`Bottom edge aligns with ${label} bottom edge`, Math.abs(box.bottom - u.bottom), "edge", priority);
+    pushHint(`Center Y is close to ${label} center Y`, Math.abs(boxCenterY - uCenterY), "center", priority);
+
     if (horizontallyAligned) {
       if (box.top >= u.bottom) {
-        const dist = box.top - u.bottom;
-        if (dist <= 32) {
-          hints.push({ summary: `Top edge is ${Math.round(dist)}px below ${label} bottom edge`, deltaPx: dist, confidence: "high" });
-        }
+        pushHint(`Top edge is ${Math.round(box.top - u.bottom)}px below ${label} bottom edge`, box.top - u.bottom, "spacing", priority);
       }
       if (box.bottom <= u.top) {
-        const dist = u.top - box.bottom;
-        if (dist <= 32) {
-          hints.push({ summary: `Bottom edge is ${Math.round(dist)}px above ${label} top edge`, deltaPx: dist, confidence: "high" });
-        }
+        pushHint(`Bottom edge is ${Math.round(u.top - box.bottom)}px above ${label} top edge`, u.top - box.bottom, "spacing", priority);
       }
     }
   }
 
-  const score = (h: AlignmentHint) => {
-    if (h.summary.includes("above") || h.summary.includes("below")) return h.deltaPx - 100; // prioritize spacing
-    if (h.confidence === "high") return h.deltaPx;
-    if (h.confidence === "medium") return h.deltaPx + 20;
-    return h.deltaPx + 40;
+  const score = (h: InternalAlignmentHint) => {
+    const typeScore = h.relationKind === "edge" ? 0 : h.relationKind === "spacing" ? 10 : 20;
+    const refScore = h.referencePriority * 100;
+    const confScore = h.confidence === "high" ? 0 : h.confidence === "medium" ? 2 : 4;
+    return refScore + typeScore + confScore + (h.deltaPx * 0.1);
   };
 
   hints.sort((a, b) => score(a) - score(b));
 
   const seen = new Set<string>();
   const topHints: AlignmentHint[] = [];
+  let centerCount = 0;
+  
   for (const h of hints) {
     if (seen.has(h.summary)) continue;
+    
+    if (h.relationKind === "center") {
+      if (centerCount >= 1) continue;
+      centerCount++;
+    }
+
     seen.add(h.summary);
-    topHints.push(h);
+    topHints.push({
+      summary: h.summary,
+      deltaPx: h.deltaPx,
+      confidence: h.confidence
+    });
+    
     if (topHints.length >= 4) break;
   }
 
