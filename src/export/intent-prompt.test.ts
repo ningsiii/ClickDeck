@@ -101,6 +101,10 @@ function addTargetContext(input: IntentPromptInput, userIntent = "", empty = tru
     },
     candidates: empty ? [] : [mockCandidate("textBlock", { text: "Target context" })],
     nearby: [{ direction: "above", summary: "[Title]", distance: 24 } as any],
+    alignmentHints: [
+      { summary: "Left edge aligns with [Title] left edge", deltaPx: 2, confidence: "high" },
+      { summary: "Top edge is 24px below [Header] bottom edge", deltaPx: 24, confidence: "high" }
+    ],
     empty,
     confidence: empty ? "medium" : "high"
   };
@@ -214,6 +218,9 @@ describe("Intent Prompt Builder", () => {
       expect(prompt).toContain("Without a move note, infer conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
       expect(prompt).toContain("Visual boxes are placement hints, not absolute CSS instructions");
       expect(prompt).toContain("Do not hard-code viewport coordinates as CSS top/left");
+      expect(prompt).toContain("Target B alignment hints:");
+      expect(prompt).toContain("- Left edge aligns with [Title] left edge (delta: 2px, confidence: high).");
+      expect(prompt).toContain("- Top edge is 24px below [Header] bottom edge (delta: 24px, confidence: high).");
       expect(prompt).toContain("above: [Title] (distance: 24px)");
       expect(result.hasMediaReplacement).toBe(true);
     }
@@ -240,6 +247,19 @@ describe("Intent Prompt Builder", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.message).toContain("missing target region");
+    }
+  });
+
+  it("handles move operation without alignment hints", () => {
+    const input = mockRegionContext("move", "", false, [mockCandidate("image")]);
+    addTargetContext(input, "", true);
+    input.targetContext!.alignmentHints = [];
+
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.prompt).toContain("Target B alignment hints:");
+      expect(result.prompt).toContain("- None detected; use Target B visual box and nearby references conservatively.");
     }
   });
 });

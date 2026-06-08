@@ -1,5 +1,5 @@
 import { IntentRegion } from "./intent-region";
-import { VisualUnit, findVisualUnitsInBox } from "./visual-units";
+import { VisualUnit, findVisualUnitsInBox, RectLike } from "./visual-units";
 
 export type RegionCandidate = {
   unit: VisualUnit;
@@ -16,10 +16,17 @@ export type NearbyReference = {
   summary: string;
 };
 
+export type AlignmentHint = {
+  summary: string;
+  deltaPx: number;
+  confidence: "high" | "medium" | "low";
+};
+
 export type RegionContext = {
   region: IntentRegion;
   candidates: RegionCandidate[];
   nearby: NearbyReference[];
+  alignmentHints?: AlignmentHint[];
   empty: boolean;
   confidence: "high" | "medium" | "low";
 };
@@ -139,6 +146,98 @@ export function findNearbyReferences(
   return results;
 }
 
+function getConfidence(deltaPx: number): "high" | "medium" | "low" | "none" {
+  if (deltaPx <= 4) return "high";
+  if (deltaPx <= 8) return "medium";
+  if (deltaPx <= 16) return "low";
+  return "none";
+}
+
+export function calculateAlignmentHints(
+  box: RectLike,
+  anchorRect: RectLike | undefined,
+  units: VisualUnit[]
+): AlignmentHint[] {
+  const hints: AlignmentHint[] = [];
+  const boxCenterX = box.left + box.width / 2;
+  const boxCenterY = box.top + box.height / 2;
+
+  const pushHint = (summary: string, deltaPx: number) => {
+    const confidence = getConfidence(deltaPx);
+    if (confidence !== "none") {
+      hints.push({ summary, deltaPx, confidence });
+    }
+  };
+
+  if (anchorRect && anchorRect.width > 0) {
+    const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+    const anchorCenterY = anchorRect.top + anchorRect.height / 2;
+
+    pushHint(`Left edge aligns with anchor left edge`, Math.abs(box.left - anchorRect.left));
+    pushHint(`Right edge aligns with anchor right edge`, Math.abs(box.right - anchorRect.right));
+    pushHint(`Top edge aligns with anchor top edge`, Math.abs(box.top - anchorRect.top));
+    pushHint(`Bottom edge aligns with anchor bottom edge`, Math.abs(box.bottom - anchorRect.bottom));
+    pushHint(`Center X is close to anchor center X`, Math.abs(boxCenterX - anchorCenterX));
+    pushHint(`Center Y is close to anchor center Y`, Math.abs(boxCenterY - anchorCenterY));
+  }
+
+  for (const unit of units) {
+    if (unit.element.closest('[data-clickdeck="true"]')) continue;
+    if (unit.kind === "background" || unit.kind === "block") continue;
+
+    const u = unit.rect;
+    if (u.width === 0 || u.height === 0) continue;
+
+    const uCenterX = u.left + u.width / 2;
+    const uCenterY = u.top + u.height / 2;
+    const label = summarizeVisualUnit(unit);
+
+    pushHint(`Left edge aligns with ${label} left edge`, Math.abs(box.left - u.left));
+    pushHint(`Right edge aligns with ${label} right edge`, Math.abs(box.right - u.right));
+    pushHint(`Center X is close to ${label} center X`, Math.abs(boxCenterX - uCenterX));
+
+    pushHint(`Top edge aligns with ${label} top edge`, Math.abs(box.top - u.top));
+    pushHint(`Bottom edge aligns with ${label} bottom edge`, Math.abs(box.bottom - u.bottom));
+    pushHint(`Center Y is close to ${label} center Y`, Math.abs(boxCenterY - uCenterY));
+
+    const horizontallyAligned = Math.abs(uCenterX - boxCenterX) < Math.max(box.width, u.width) / 1.5;
+    if (horizontallyAligned) {
+      if (box.top >= u.bottom) {
+        const dist = box.top - u.bottom;
+        if (dist <= 32) {
+          hints.push({ summary: `Top edge is ${Math.round(dist)}px below ${label} bottom edge`, deltaPx: dist, confidence: "high" });
+        }
+      }
+      if (box.bottom <= u.top) {
+        const dist = u.top - box.bottom;
+        if (dist <= 32) {
+          hints.push({ summary: `Bottom edge is ${Math.round(dist)}px above ${label} top edge`, deltaPx: dist, confidence: "high" });
+        }
+      }
+    }
+  }
+
+  const score = (h: AlignmentHint) => {
+    if (h.summary.includes("above") || h.summary.includes("below")) return h.deltaPx - 100; // prioritize spacing
+    if (h.confidence === "high") return h.deltaPx;
+    if (h.confidence === "medium") return h.deltaPx + 20;
+    return h.deltaPx + 40;
+  };
+
+  hints.sort((a, b) => score(a) - score(b));
+
+  const seen = new Set<string>();
+  const topHints: AlignmentHint[] = [];
+  for (const h of hints) {
+    if (seen.has(h.summary)) continue;
+    seen.add(h.summary);
+    topHints.push(h);
+    if (topHints.length >= 4) break;
+  }
+
+  return topHints;
+}
+
 export function buildRegionContext(
   region: IntentRegion,
   units: VisualUnit[]
@@ -158,10 +257,13 @@ export function buildRegionContext(
     confidence = "medium";
   }
 
+  const alignmentHints = region.action === "move" ? calculateAlignmentHints(region.viewportBox, region.anchor.rect, units) : undefined;
+
   return {
     region,
     candidates,
     nearby,
+    alignmentHints,
     empty,
     confidence
   };

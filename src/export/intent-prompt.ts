@@ -165,6 +165,16 @@ function appendMoveOperation(lines: string[], input: IntentPromptInput, opId: st
   lines.push("- Target B is the destination guide for placement and alignment, not replacement content.");
   lines.push("- Existing content inside Target B is visual context unless it physically blocks the move.");
   appendRegionContents(lines, targetContext);
+  
+  lines.push("Target B alignment hints:");
+  if (targetContext.alignmentHints && targetContext.alignmentHints.length > 0) {
+    targetContext.alignmentHints.forEach((hint) => {
+      lines.push(`- ${hint.summary} (delta: ${Math.round(hint.deltaPx)}px, confidence: ${hint.confidence}).`);
+    });
+  } else {
+    lines.push("- None detected; use Target B visual box and nearby references conservatively.");
+  }
+  
   appendNearbyReferences(lines, targetContext);
   appendCssFacts(lines, targetContext);
   lines.push("Expected result:");
@@ -208,7 +218,7 @@ export function buildIntentPrompt(
   lines.push("How to use location hints:");
   lines.push("1. Use the original HTML structure as the source of truth, then use anchors, region contents, nearby references, and CSS facts to locate the edit.");
   lines.push("2. Visual boxes are placement hints, not absolute CSS instructions. Do not blindly convert viewport boxes into hard-coded top/left coordinates.");
-  lines.push("3. Prefer stable DOM/local container edits and obvious alignment relationships over pixel-perfect coordinate copying.");
+  lines.push("3. Use Target B relativeBox and alignment hints as spatial intent. Prefer stable local layout edits over coordinate-only CSS.");
   lines.push("4. CSS facts are a short factual snapshot of the selected element, not a full computed-style dump and not a classification rule system.");
   lines.push("");
 

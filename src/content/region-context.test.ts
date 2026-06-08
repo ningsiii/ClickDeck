@@ -4,7 +4,8 @@ import {
   summarizeVisualUnit,
   rankRegionCandidates,
   findNearbyReferences,
-  buildRegionContext
+  buildRegionContext,
+  calculateAlignmentHints
 } from "./region-context";
 import { VisualUnit } from "./visual-units";
 import { IntentRegion } from "./intent-region";
@@ -123,5 +124,28 @@ describe("Region Context", () => {
     const ctx4 = buildRegionContext(regionLow, [farUnit]); // Too far
     expect(ctx4.empty).toBe(true);
     expect(ctx4.confidence).toBe("low");
+  });
+
+  it("calculateAlignmentHints generates accurate hints up to 4", () => {
+    const box = { left: 100, top: 100, width: 200, height: 100, right: 300, bottom: 200 };
+    const anchor = { left: 0, top: 0, width: 800, height: 600, right: 800, bottom: 600 };
+    
+    // U1 left is 100 (delta 0), U2 top is 104 (delta 4)
+    const unit1 = mockUnit("textLine", { left: 100, top: 80, width: 50, height: 20 }, { textSnippet: "U1" });
+    const unit2 = mockUnit("image", { left: 120, top: 104, width: 50, height: 20 });
+    const unitFar = mockUnit("video", { left: 1000, top: 1000, width: 50, height: 20 });
+    
+    const hints = calculateAlignmentHints(box, anchor, [unit1, unit2, unitFar]);
+    expect(hints.length).toBeLessThanOrEqual(4);
+    
+    const leftHint = hints.find(h => h.summary.includes("Left edge aligns with U1"));
+    expect(leftHint).toBeDefined();
+    expect(leftHint?.confidence).toBe("high");
+    expect(leftHint?.deltaPx).toBe(0);
+
+    const topHint = hints.find(h => h.summary.includes("Top edge aligns with [Image] top edge"));
+    expect(topHint).toBeDefined();
+    expect(topHint?.confidence).toBe("high");
+    expect(topHint?.deltaPx).toBe(4);
   });
 });
