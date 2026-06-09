@@ -425,7 +425,13 @@ test.describe("ClickDeck core editing workflows", () => {
     // The marker should update its label to "1A"
     await expect(marker.locator(".clickdeck-intent-region-badge")).toHaveText("1A");
 
+    // We should not be in draw mode yet. We need to click "Select target region"
+    await expect(page.locator(".clickdeck-intent-overlay")).not.toBeVisible();
+    await expect(intentDraft.locator(".clickdeck-intent-draft__ghost-btn")).toBeVisible();
+    
     // 3. Draw Target B
+    await btnTarget.click();
+    
     // We are in draw mode, click and drag
     await mouse.move(10, 10);
     await mouse.down();
@@ -439,7 +445,68 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(targetMarker).toHaveCSS("border-style", "dashed");
   });
 
-  test("11. Remove intent marker", async ({ page, demoPageUrl }) => {
+  test("11. Move intent target box dragging", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    const heading = page.getByRole("heading", { name: "Quarterly Product Review" });
+    await heading.click();
+    await page.locator("[data-action='add-intent']").click();
+    
+    // Draw an intent region
+    const mouse = page.mouse;
+    await mouse.move(50, 50);
+    await mouse.down();
+    await mouse.move(150, 150);
+    await mouse.up();
+
+    // Click Move to...
+    const intentDraft = page.locator(".clickdeck-intent-draft");
+    const btnTarget = intentDraft.locator(".clickdeck-intent-draft__target-btn");
+    await btnTarget.click();
+
+    // Click Move target box
+    const btnGhost = intentDraft.locator(".clickdeck-intent-draft__ghost-btn");
+    await btnGhost.click();
+
+    const ghostPreview = page.locator(".clickdeck-ghost-preview");
+    await expect(ghostPreview).toBeVisible();
+
+    const initialBox = await ghostPreview.boundingBox();
+    expect(initialBox).toBeTruthy();
+
+    // Drag the ghost preview
+    await mouse.move(initialBox!.x + 10, initialBox!.y + 10);
+    await mouse.down();
+    await mouse.move(initialBox!.x + 100, initialBox!.y + 100);
+    await mouse.up();
+
+    const newBox = await ghostPreview.boundingBox();
+    expect(newBox).toBeTruthy();
+    expect(newBox!.x).toBeGreaterThan(initialBox!.x + 50);
+    expect(newBox!.y).toBeGreaterThan(initialBox!.y + 50);
+
+    // Click Use this position
+    const btnUsePosition = ghostPreview.locator("button[data-action='confirm']");
+    await btnUsePosition.click();
+
+    // Verify 1B marker is created and is dashed
+    const targetMarker = page.locator(".clickdeck-intent-region-marker", { hasText: "1B" });
+    await expect(targetMarker).toBeVisible();
+    await expect(targetMarker.locator(".clickdeck-intent-region-badge")).toHaveText("1B");
+    await expect(targetMarker).toHaveCSS("border-style", "dashed");
+
+    // Copy AI prompt
+    await page.locator("[data-action='copy-ai-prompt']").click();
+    const modal = page.locator(".clickdeck-prompt-modal");
+    await expect(modal).toBeVisible();
+    const promptText = await modal.locator("textarea").inputValue();
+    
+    expect(promptText).toContain("type: move");
+    expect(promptText).toContain("Target B source: dragged target box");
+  });
+
+  test("12. Remove intent marker", async ({ page, demoPageUrl }) => {
     await page.goto(demoPageUrl);
     await activateExtension(page);
 

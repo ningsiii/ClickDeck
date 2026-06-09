@@ -104,8 +104,11 @@ export function createIntentDraftPanel(
       const changed = draftAction !== "move";
       draftAction = "move";
       syncMoveButton();
-      if (changed) onActionChange?.(operation.id, "move");
-      onDrawTarget?.(operation.id);
+      if (changed) {
+        onActionChange?.(operation.id, "move");
+      } else {
+        onDrawTarget?.(operation.id);
+      }
     });
 
     btnGhost.addEventListener("click", () => {

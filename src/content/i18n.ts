@@ -263,7 +263,7 @@ const englishLabels: PanelLabels = {
   intentMoveTo: "Move to...",
   intentPlaceholder: "Enter your instructions for AI...",
   intentMovePlaceholder: "Optional: align left edge / cover this text / avoid the title / keep size",
-  intentDragGhost: "Move (Target Box)",
+  intentDragGhost: "Move target box",
   intentDragGhostHint: "Drag the target box to describe where AI should move this region.\nThis does not change the page yet.",
   intentUsePosition: "Use this position",
   intentCancelPreview: "Cancel preview",
@@ -275,7 +275,7 @@ const englishLabels: PanelLabels = {
   delete: "Delete",
   drawRegionHint: "Drag to draw a region for AI editing",
   drawTargetRegionHint: "Drag to draw target region",
-  selectTargetRegion: "Select Target Region"
+  selectTargetRegion: "Select target region"
 };
 
 const chineseLabels: PanelLabels = {
@@ -415,7 +415,7 @@ const chineseLabels: PanelLabels = {
   delete: "删除",
   drawRegionHint: "拖拽框选，告诉 AI 在哪操作",
   drawTargetRegionHint: "拖拽框选，告诉 AI 移动到哪",
-  selectTargetRegion: "选择目标区域"
+  selectTargetRegion: "框选目标区域"
 };
 
 export function getPanelLanguage(): "en" | "zh" {
