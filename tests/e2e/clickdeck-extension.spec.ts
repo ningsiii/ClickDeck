@@ -431,6 +431,12 @@ test.describe("ClickDeck core editing workflows", () => {
     // We want to test the fallback draw path, so cancel ghost preview
     const ghostPreview = page.locator(".clickdeck-ghost-preview");
     await ghostPreview.locator(".clickdeck-ghost-preview__close").click();
+    await expect(ghostPreview).not.toBeVisible();
+    
+    // Verify that anchorElement inline position pollution was cleaned up
+    const headingAnchor = page.getByRole("heading", { name: "Quarterly Product Review" });
+    const positionStyle = await headingAnchor.evaluate((el: HTMLElement) => el.style.position);
+    expect(positionStyle).toBe("");
 
     // 3. Draw Target B
     const btnGhost = intentDraft.locator(".clickdeck-intent-draft__ghost-btn");

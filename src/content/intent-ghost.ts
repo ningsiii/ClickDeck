@@ -30,7 +30,9 @@ export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBo
   element.style.setProperty("--ghost-color", options.color);
   element.style.setProperty("--ghost-bg", `color-mix(in srgb, ${options.color} 15%, transparent)`);
   
+  let originalPosition: string | null = null;
   if (options.anchorElement && window.getComputedStyle(options.anchorElement).position === "static") {
+    originalPosition = options.anchorElement.style.position;
     options.anchorElement.style.position = "relative";
   }
 
@@ -182,6 +184,13 @@ export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBo
       document.removeEventListener("mouseup", onMouseUp);
       element.remove();
       clearGuideLines();
+      if (options.anchorElement && originalPosition !== null) {
+        if (originalPosition === "") {
+          options.anchorElement.style.removeProperty("position");
+        } else {
+          options.anchorElement.style.position = originalPosition;
+        }
+      }
     }
   };
 }
