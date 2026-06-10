@@ -1,6 +1,6 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
 import { detectPresentationSlides, syncPresentationHostState } from "../content/presentation-mode";
-import { detectScrollTarget, throttledCaptureViewport, wait } from "./utils";
+import { detectScrollTarget, throttledCaptureViewport, wait, waitForVisualStability } from "./utils";
 import { downloadPdfBlob, imageElementToJpegDataUrl, SimpleImagePdf } from "./simple-image-pdf";
 
 declare global {
@@ -34,7 +34,7 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
 
     while (currentY < totalHeight) {
       scrollTarget.setScrollTop(currentY);
-      await wait(300);
+      await waitForVisualStability(300);
 
       const img = await throttledCaptureViewport(logger);
       const actualY = scrollTarget.getScrollTop();
@@ -125,7 +125,7 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
 
     while (currentY < totalHeight) {
       scrollTarget.setScrollTop(currentY);
-      await wait(300);
+      await waitForVisualStability(300);
 
       const img = await throttledCaptureViewport(logger);
       const actualY = scrollTarget.getScrollTop();
@@ -227,7 +227,7 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
         logger
       });
 
-      await wait(300);
+      await waitForVisualStability(300);
 
       const img = await throttledCaptureViewport(logger);
 

@@ -1,5 +1,5 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
-import { detectScrollTarget, throttledCaptureViewport, wait } from "./utils";
+import { detectScrollTarget, throttledCaptureViewport, wait, waitForVisualStability } from "./utils";
 
 const MAX_CANVAS_PIXELS = 80_000_000;
 
@@ -81,7 +81,7 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
       scrollTarget.setScrollTop(currentY);
       
       // Wait for rendering and any lazy loads or scroll events
-      await wait(300);
+      await waitForVisualStability(300);
       
       // Request screenshot from background using throttled utility
       const img = await throttledCaptureViewport(logger);
