@@ -159,17 +159,16 @@ describe("createPanel export controls", () => {
 });
 
 describe("createPanel Ask Gemini section", () => {
-  it("renders collapsed Ask Gemini section with three buttons", () => {
+  it("renders Ask Gemini section with three buttons", () => {
     const panel = createPanel(() => undefined);
     document.body.appendChild(panel.element);
 
-    const details = panel.element.querySelector<HTMLDetailsElement>(".clickdeck-panel__ask-gemini-details");
-    expect(details).not.toBeNull();
-    expect(details?.open).toBe(false);
+    const group = panel.element.querySelector<HTMLDivElement>(".clickdeck-panel__group--ask-gemini");
+    expect(group).not.toBeNull();
 
-    const btnFlow = details?.querySelector("[data-action='ask-gemini-flow']");
-    const btnFocus = details?.querySelector("[data-action='ask-gemini-focus']");
-    const btnInteraction = details?.querySelector("[data-action='ask-gemini-interaction']");
+    const btnFlow = group?.querySelector("[data-action='ask-gemini-flow']");
+    const btnFocus = group?.querySelector("[data-action='ask-gemini-focus']");
+    const btnInteraction = group?.querySelector("[data-action='ask-gemini-interaction']");
 
     expect(btnFlow).not.toBeNull();
     expect(btnFocus).not.toBeNull();

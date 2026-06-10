@@ -220,27 +220,19 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
     <div class="clickdeck-panel__section" data-section="ask-gemini">
       <div class="clickdeck-panel__section-title">${labels.askGeminiSection}</div>
       <div class="clickdeck-panel__sub-hint" style="margin-bottom: 8px; font-size: 11px; opacity: 0.6; line-height: 1.4;">${labels.askGeminiHint}</div>
-      <details class="clickdeck-panel__ask-gemini-details">
-        <summary class="clickdeck-panel__advanced-summary" style="margin-bottom: 8px; text-transform: none; letter-spacing: normal;">${labels.askGeminiToggle}</summary>
-        <div class="clickdeck-panel__group clickdeck-panel__group--ask-gemini">
-          ${buttonMarkup("ask-gemini-flow", labels.askGeminiFlow, false, labels.askGeminiFlowTooltip)}
-          ${buttonMarkup("ask-gemini-focus", labels.askGeminiFocus, false, labels.askGeminiFocusTooltip)}
-          ${buttonMarkup("ask-gemini-interaction", labels.askGeminiInteraction, false, labels.askGeminiInteractionTooltip)}
-        </div>
-      </details>
+      <div class="clickdeck-panel__group clickdeck-panel__group--ask-gemini">
+        ${buttonMarkup("ask-gemini-flow", labels.askGeminiFlow, false, labels.askGeminiFlowTooltip)}
+        ${buttonMarkup("ask-gemini-focus", labels.askGeminiFocus, false, labels.askGeminiFocusTooltip)}
+        ${buttonMarkup("ask-gemini-interaction", labels.askGeminiInteraction, false, labels.askGeminiInteractionTooltip)}
+      </div>
     </div>
 
     <div class="clickdeck-panel__section" data-section="finish">
       <div class="clickdeck-panel__section-title">${labels.finish}</div>
-      <div class="clickdeck-panel__group">
+      <div class="clickdeck-panel__group" style="grid-template-columns: repeat(2, 1fr);">
         ${buttonMarkup("export-long-image", labels.exportLongImage)}
-      </div>
-      <div class="clickdeck-panel__group">
         ${buttonMarkup("export-html", labels.exportHtmlButton, false, labels.exportHtmlDesc)}
         ${buttonMarkup("present", labels.present, true)}
-      </div>
-      <div class="clickdeck-panel__section-title">${labels.pdfGroup}</div>
-      <div class="clickdeck-panel__group">
         ${buttonMarkup("export-image-pdf-long", labels.exportImagePdfLong, false, labels.imagePdfTooltip)}
         ${buttonMarkup("export-image-pdf-a4", labels.exportImagePdfA4, false, labels.imagePdfTooltip)}
         ${buttonMarkup("export-image-pdf-slides", labels.exportImagePdfSlides, false, labels.imagePdfTooltip)}
