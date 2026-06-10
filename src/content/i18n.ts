@@ -373,7 +373,7 @@ const chineseLabels: PanelLabels = {
   savedEditsFound: "发现已保存的修改",
   restore: "恢复",
   dismiss: "忽略",
-  clear: "清空",
+  clear: "清除",
   collapse: "折叠",
   restorePanel: "展开",
   transparency: "透明度",
