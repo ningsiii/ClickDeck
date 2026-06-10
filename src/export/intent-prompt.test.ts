@@ -216,6 +216,11 @@ describe("Intent Prompt Builder", () => {
       expect(prompt).toContain("Target B:");
       expect(prompt).toContain("Target B is the destination guide for placement and alignment, not replacement content.");
       expect(prompt).toContain("Without a move note, infer conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
+      expect(prompt).toContain("Interpret the move as the desired final visual placement of Source A content");
+      expect(prompt).toContain("Before changing CSS, identify the existing layout mechanism that controls Source A placement.");
+      expect(prompt).toContain("Prefer stable local layout edits such as flex/grid alignment, parent alignment, margin, max-width, gap, order, or local wrapper placement.");
+      expect(prompt).toContain("Do not recreate or preserve ClickDeck editing UI such as selection boxes, target boxes, dashed outlines, badges, or marker labels.");
+      expect(prompt).toContain("Implement the move through the page's existing layout flow first: parent alignment, flex/grid placement, margin, max-width, gap, order, or a local wrapper.");
       expect(prompt).toContain("Visual boxes are placement hints, not absolute CSS instructions");
       expect(prompt).toContain("Do not hard-code viewport coordinates as CSS top/left");
       expect(prompt).toContain("Target B alignment hints:");

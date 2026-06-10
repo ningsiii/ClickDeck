@@ -207,6 +207,9 @@ function appendMoveOperation(lines: string[], input: IntentPromptInput, opId: st
   lines.push("Expected result:");
   lines.push("- Move Source A content toward Target B using DOM structure, local container, current layout, nearby references, and CSS facts.");
   lines.push("- Without a move note, infer conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
+  lines.push("- Treat Source A as one selected content unit and Target B as its desired final visual placement.");
+  lines.push("- Do not recreate or preserve ClickDeck editing UI such as selection boxes, target boxes, dashed outlines, badges, or marker labels.");
+  lines.push("- Implement the move through the page's existing layout flow first: parent alignment, flex/grid placement, margin, max-width, gap, order, or a local wrapper.");
   lines.push("- Preserve source content, approximate size, proportions, visual hierarchy, and style unless local fit requires minor spacing adjustments.");
   lines.push("- Preserve obvious alignment relationships such as edge alignment, centering, relative offset, and spacing rhythm.");
   lines.push("- Do not hard-code viewport coordinates as CSS top/left unless the original layout is already explicitly absolute-positioned and that is the smallest safe change.");
@@ -284,8 +287,11 @@ export function buildIntentPrompt(
     lines.push("1. If Move note is provided, treat it as the primary semantic explanation of the move.");
     lines.push("2. If Move note is [not provided], infer the intent conservatively from Source A, Target B, visual boxes, region contents, nearby references, and CSS facts.");
     lines.push("3. Target B is a placement reference, not replacement content.");
-    lines.push("4. Preserve source size/proportion/style and only make local spacing adjustments needed to fit.");
-    lines.push("5. Avoid brittle coordinate-only fixes unless the original layout is already absolute-positioned and no safer local layout edit exists.");
+    lines.push("4. Interpret the move as the desired final visual placement of Source A content, not as an instruction to recreate ClickDeck selection boxes, dashed outlines, labels, or target markers.");
+    lines.push("5. Before changing CSS, identify the existing layout mechanism that controls Source A placement.");
+    lines.push("6. Prefer stable local layout edits such as flex/grid alignment, parent alignment, margin, max-width, gap, order, or local wrapper placement.");
+    lines.push("7. Preserve source size/proportion/style and only make local spacing adjustments needed to fit.");
+    lines.push("8. Avoid brittle coordinate-only fixes unless the original layout is already absolute-positioned and no safer local layout edit exists.");
     lines.push("");
   }
 
