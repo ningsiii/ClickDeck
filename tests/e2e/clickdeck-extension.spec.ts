@@ -436,10 +436,14 @@ test.describe("ClickDeck core editing workflows", () => {
     // The marker should update its label to "1A"
     await expect(marker.locator(".clickdeck-intent-region-badge")).toHaveText("1A");
 
+    // The ghost button should not exist anymore (Task 62)
+    const btnGhost = intentDraft.locator(".clickdeck-intent-draft__ghost-btn");
+    await expect(btnGhost).toHaveCount(0);
+    
     // We should be in ghost preview mode now
     await expect(page.locator(".clickdeck-ghost-preview")).toBeVisible();
     
-    // We want to test the fallback draw path, so cancel ghost preview
+    // Close the ghost preview
     const ghostPreview = page.locator(".clickdeck-ghost-preview");
     await ghostPreview.locator(".clickdeck-ghost-preview__close").click();
     await expect(ghostPreview).not.toBeVisible();
@@ -448,22 +452,6 @@ test.describe("ClickDeck core editing workflows", () => {
     const headingAnchor = page.getByRole("heading", { name: "Quarterly Product Review" });
     const positionStyle = await headingAnchor.evaluate((el: HTMLElement) => el.style.position);
     expect(positionStyle).toBe("");
-
-    // 3. Draw Target B
-    const btnGhost = intentDraft.locator(".clickdeck-intent-draft__ghost-btn");
-    await btnGhost.click();
-    
-    // We are in draw mode, click and drag
-    await mouse.move(10, 10);
-    await mouse.down();
-    await mouse.move(100, 100);
-    await mouse.up();
-
-    // A new target marker should appear, should have label "1B" and dashed border
-    const targetMarker = page.locator(".clickdeck-intent-region-marker").nth(1);
-    await expect(targetMarker).toBeVisible();
-    await expect(targetMarker.locator(".clickdeck-intent-region-badge")).toHaveText("1B");
-    await expect(targetMarker).toHaveCSS("border-style", "dashed");
   });
 
   test("11. Move intent target box dragging", async ({ page, demoPageUrl }) => {

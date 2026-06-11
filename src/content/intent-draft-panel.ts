@@ -16,7 +16,7 @@ export function createIntentDraftPanel(
   onCancel: (operationId: string) => void,
   onDelete: (operationId: string) => void,
   onHighlight: (operation: IntentOperation) => void,
-  onDrawTarget?: (operationId: string) => void,
+  _onDrawTarget?: (operationId: string) => void,
   onDragTarget?: (operationId: string) => void,
   onActionChange?: (operationId: string, action: IntentAction) => void
 ): IntentDraftPanel {
@@ -44,9 +44,6 @@ export function createIntentDraftPanel(
         <div class="clickdeck-intent-draft__target-actions" style="display: flex; gap: 8px;">
           <button class="clickdeck-button clickdeck-button--outline clickdeck-intent-draft__target-btn" type="button">
             ${labels.intentMoveTo}
-          </button>
-          <button class="clickdeck-button clickdeck-button--outline clickdeck-intent-draft__ghost-btn" type="button" style="display: none;">
-            ${labels.intentDragGhost}
           </button>
           <button class="clickdeck-button clickdeck-button--outline clickdeck-intent-draft__remove-btn" type="button">
             ${labels.intentMarkRemoval}
@@ -78,7 +75,6 @@ export function createIntentDraftPanel(
     const btnSave = card.querySelector('button[data-action="save"]') as HTMLButtonElement;
     const btnDelete = card.querySelector('button[data-action="delete"]') as HTMLButtonElement;
     const btnTarget = card.querySelector('.clickdeck-intent-draft__target-btn') as HTMLButtonElement;
-    const btnGhost = card.querySelector('.clickdeck-intent-draft__ghost-btn') as HTMLButtonElement;
     const btnRemove = card.querySelector('.clickdeck-intent-draft__remove-btn') as HTMLButtonElement;
 
     textarea.value = operation.source.userIntent;
@@ -90,8 +86,6 @@ export function createIntentDraftPanel(
       const isMove = draftAction === "move";
       btnTarget.classList.toggle("clickdeck-intent-draft__target-btn--active", isMove);
       btnTarget.textContent = isMove ? labels.intentDragGhost : labels.intentMoveTo;
-      btnGhost.style.display = isMove ? "inline-flex" : "none";
-      btnGhost.textContent = labels.selectTargetRegion;
       
       const isRemove = draftAction === "remove";
       btnRemove.classList.toggle("clickdeck-intent-draft__remove-btn--active", isRemove);
@@ -109,16 +103,6 @@ export function createIntentDraftPanel(
         onActionChange?.(operation.id, "move");
       }
       onDragTarget?.(operation.id);
-    });
-
-    btnGhost.addEventListener("click", () => {
-      const changed = draftAction !== "move";
-      draftAction = "move";
-      syncMoveButton();
-      if (changed) {
-        onActionChange?.(operation.id, "move");
-      }
-      onDrawTarget?.(operation.id);
     });
 
     btnRemove.addEventListener("click", () => {

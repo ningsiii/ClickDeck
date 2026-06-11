@@ -113,18 +113,22 @@ describe("intent-draft-panel", () => {
     expect(onDragTarget).toHaveBeenCalledWith(operation.id);
   });
 
-  it("should call onDrawTarget when btnGhost is clicked", () => {
-    const onDrawTarget = vi.fn();
-    const panel = createIntentDraftPanel(vi.fn(), vi.fn(), vi.fn(), vi.fn(), onDrawTarget, vi.fn(), vi.fn());
+  it("should display only the single Target button in Move mode", () => {
+    const panel = createIntentDraftPanel(vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn());
     
     const operation = createMockOperation();
     operation.action = "move";
     panel.addDraft(operation);
 
     const card = panel.element.querySelector(".clickdeck-intent-draft__card") as HTMLElement;
+    const btnTarget = card.querySelector(".clickdeck-intent-draft__target-btn") as HTMLButtonElement;
     const btnGhost = card.querySelector(".clickdeck-intent-draft__ghost-btn") as HTMLButtonElement;
     
-    btnGhost.click();
-    expect(onDrawTarget).toHaveBeenCalledWith(operation.id);
+    // Ghost button should not exist
+    expect(btnGhost).toBeNull();
+    
+    // Target button should exist and have the active class for move
+    expect(btnTarget).not.toBeNull();
+    expect(btnTarget.classList.contains("clickdeck-intent-draft__target-btn--active")).toBe(true);
   });
 });
