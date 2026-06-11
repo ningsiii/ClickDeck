@@ -15,13 +15,10 @@ import {
 } from "./change-summary";
 import { isClickDeckUiElement } from "../content/dom-utils";
 
-function getLocalHtmlSnippet(targetDescriptor: string): string | null {
-  // In a real browser context, we can query the DOM to find the element
-  // The descriptor is the target's unique ID or class
+function getLocalHtmlSnippet(el: HTMLElement | undefined): string | null {
+  if (!el) return null;
+  
   try {
-    const el = document.querySelector(targetDescriptor);
-    if (!el || !(el instanceof HTMLElement)) return null;
-    
     // Create a clone to strip clickdeck UI
     const clone = el.cloneNode(true) as HTMLElement;
     const clickdeckElements = clone.querySelectorAll("[id^='clickdeck-'], [class*='clickdeck-']");
@@ -202,7 +199,7 @@ export function buildUnifiedPrompt(
       lines.push(`   Slide/Page Context: ${group.slideContext}`);
     }
 
-    const snippet = getLocalHtmlSnippet(group.target);
+    const snippet = getLocalHtmlSnippet(group.targetElement);
     if (snippet) {
       lines.push(`   Context code snippet:`);
       lines.push(`   \`\`\`html\n   ${snippet.split('\n').join('\n   ')}\n   \`\`\``);

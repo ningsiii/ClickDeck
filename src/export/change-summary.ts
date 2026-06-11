@@ -23,6 +23,7 @@ const EMPTY_MESSAGE_ZH = "当前没有可总结的修改，请先在页面上做
 export type PromptChangeGroup = {
   key: string;
   target: string;
+  targetElement?: HTMLElement;
   locator: string;
   slideContext?: string;
   styleChanges: Map<string, { before: string; after: string }>;
@@ -46,6 +47,7 @@ export function groupPromptChanges(patches: EditorPatch[]): PromptChangeGroup[] 
       group = {
         key,
         target: locator.descriptor || patch.targetDescriptor,
+        targetElement: patch.targetElement,
         locator: locator.cssPath || locator.nthOfTypePath,
         slideContext: getSlideContext(patch.targetElement),
         styleChanges: new Map(),

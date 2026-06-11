@@ -22,17 +22,21 @@ describe("buildUnifiedPrompt", () => {
   });
 
   it("generates a TodoList with both intent ops and normal changes", () => {
+    const targetElement = document.createElement("div");
+    targetElement.className = "test test-class";
+    targetElement.innerHTML = "<span>Hello</span>";
+    
     const patch: EditorPatch = {
       id: "p1",
       createdAt: Date.now(),
-      targetElement: document.createElement("div"),
+      targetElement,
       targetDescriptor: "div",
       targetLocator: { cssPath: "div.test", descriptor: "test div" },
       kind: "style",
       property: "font-size",
       before: "12px",
       after: "14px"
-    };
+    } as unknown as EditorPatch;
 
     const intent: IntentPromptInput = {
       operation: { action: "remove", regionId: "r1" },
@@ -50,7 +54,7 @@ describe("buildUnifiedPrompt", () => {
         nearby: [],
         confidence: "low"
       }
-    };
+    } as unknown as IntentPromptInput;
 
     const result = buildUnifiedPrompt([patch], [intent], { language: "en", page: dummyPage });
     expect(result.ok).toBe(true);
@@ -66,6 +70,10 @@ describe("buildUnifiedPrompt", () => {
       
       // Should contain the patch op
       expect(prompt).toContain("- [ ] TASK-2 | STYLE | Target: test div | Details: Change-1");
+      
+      // Should contain the HTML snippet correctly formatted
+      expect(prompt).toContain("Context code snippet:");
+      expect(prompt).toContain('<div class="test test-class"><span>Hello</span></div>');
       
       // Should contain the final checklist
       expect(prompt).toContain("Final alignment checklist:");
