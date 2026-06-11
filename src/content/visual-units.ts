@@ -69,6 +69,7 @@ export function collectVisualUnits(root: Node = document.body): VisualUnit[] {
       const style = window.getComputedStyle(element);
       const tagName = element.tagName.toLowerCase();
       let kind: VisualUnitKind | undefined;
+      let textSnippet: string | undefined;
 
       if (tagName === "img" || tagName === "svg" || tagName === "canvas") {
         kind = "image";
@@ -76,13 +77,48 @@ export function collectVisualUnits(root: Node = document.body): VisualUnit[] {
         kind = "video";
       } else if (tagName === "button" || tagName === "a" || tagName === "input" || tagName === "select" || tagName === "textarea") {
         kind = "interactive";
+        if (tagName === "input") {
+          const type = (element.getAttribute("type") || "text").toLowerCase();
+          const excludedTypes = ["hidden", "password", "file", "checkbox", "radio", "color", "button", "submit", "reset", "range"];
+          if (!excludedTypes.includes(type)) {
+            textSnippet = (element as HTMLInputElement).value;
+          }
+        } else if (tagName === "textarea") {
+          textSnippet = (element as HTMLTextAreaElement).value;
+        } else if (tagName === "select") {
+          const select = element as HTMLSelectElement;
+          if (select.multiple) {
+            const selectedOptions = Array.from(select.selectedOptions);
+            if (selectedOptions.length > 0) {
+              textSnippet = selectedOptions.map(opt => opt.text || opt.value).join(", ");
+            }
+          } else {
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption) {
+              textSnippet = selectedOption.text || selectedOption.value;
+            } else {
+              textSnippet = select.value;
+            }
+          }
+        }
       } else if (style.backgroundImage !== "none" && !style.backgroundImage.startsWith("linear-gradient")) {
         kind = "background";
+      } else if (tagName === "td" || tagName === "th") {
+        kind = "textBlock";
+        textSnippet = element.innerText || element.textContent || "";
+        textSnippet = textSnippet.replace(/\s+/g, " ").trim();
       } else if (hasDirectTextContent(element)) {
         kind = "textBlock";
       } else {
         if (style.display === "block" || style.display === "flex" || style.display === "grid") {
           kind = "block";
+        }
+      }
+
+      if (textSnippet) {
+        textSnippet = textSnippet.trim();
+        if (textSnippet.length > 80) {
+          textSnippet = textSnippet.substring(0, 80) + "...";
         }
       }
 
@@ -96,6 +132,7 @@ export function collectVisualUnits(root: Node = document.body): VisualUnit[] {
             locator: createElementLocator(element),
             rect: toRectLike(rect),
             documentRect: toDocumentRect(rect),
+            textSnippet: textSnippet && textSnippet.length > 0 ? textSnippet : undefined,
             confidence: "high"
           });
         }

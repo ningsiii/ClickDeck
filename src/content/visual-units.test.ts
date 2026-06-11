@@ -106,4 +106,70 @@ describe("DOM collection and filtering", () => {
     const video = units.find(u => u.element.id === "video" && u.kind === "video");
     expect(video).toBeDefined();
   });
+
+  it("collectVisualUnits should extract textSnippet from form inputs and table cells", () => {
+    document.body.innerHTML = `
+      <div id="form-container" style="display: block; width: 500px; height: 500px;">
+        <input type="text" id="text-input" value="Hello Input" style="display: block; width: 100px; height: 20px;" />
+        <input type="number" id="num-input" value="42" style="display: block; width: 100px; height: 20px;" />
+        <input type="password" id="pass-input" value="secret" style="display: block; width: 100px; height: 20px;" />
+        <textarea id="textarea" style="display: block; width: 100px; height: 50px;">Text area content</textarea>
+        
+        <select id="select-single" style="display: block; width: 100px; height: 20px;">
+          <option value="1">Option 1</option>
+          <option value="2" selected>Option 2</option>
+        </select>
+        
+        <select id="select-multi" multiple style="display: block; width: 100px; height: 50px;">
+          <option value="A" selected>Apple</option>
+          <option value="B" selected>Banana</option>
+          <option value="C">Cherry</option>
+        </select>
+
+        <table style="display: block; width: 200px; height: 100px;">
+          <tr>
+            <td id="table-cell" style="display: table-cell; width: 100px; height: 50px;">Cell <span style="display:inline-block;width:10px;height:10px;">Data</span></td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    document.querySelectorAll('*').forEach(el => {
+      const w = parseInt((el as HTMLElement).style.width || "0", 10);
+      const h = parseInt((el as HTMLElement).style.height || "0", 10);
+      (el as any).getBoundingClientRect = () => ({
+        left: 0, top: 0, width: w, height: h, right: w, bottom: h
+      });
+    });
+
+    const units = collectVisualUnits(document.body);
+
+    const textInput = units.find(u => u.element.id === "text-input");
+    expect(textInput?.kind).toBe("interactive");
+    expect(textInput?.textSnippet).toBe("Hello Input");
+
+    const numInput = units.find(u => u.element.id === "num-input");
+    expect(numInput?.kind).toBe("interactive");
+    expect(numInput?.textSnippet).toBe("42");
+
+    const passInput = units.find(u => u.element.id === "pass-input");
+    expect(passInput?.kind).toBe("interactive");
+    expect(passInput?.textSnippet).toBeUndefined();
+
+    const textarea = units.find(u => u.element.id === "textarea");
+    expect(textarea?.kind).toBe("interactive");
+    expect(textarea?.textSnippet).toBe("Text area content");
+
+    const selectSingle = units.find(u => u.element.id === "select-single");
+    expect(selectSingle?.kind).toBe("interactive");
+    expect(selectSingle?.textSnippet).toBe("Option 2");
+
+    const selectMulti = units.find(u => u.element.id === "select-multi");
+    expect(selectMulti?.kind).toBe("interactive");
+    expect(selectMulti?.textSnippet).toBe("Apple, Banana");
+
+    const td = units.find(u => u.element.id === "table-cell" && u.kind === "textBlock");
+    expect(td).toBeDefined();
+    expect(td?.textSnippet).toBe("Cell Data");
+  });
 });
