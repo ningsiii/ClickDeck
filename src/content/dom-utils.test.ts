@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { canAutoStartTextEditing, createElementLocator, placeCaretFromPoint } from "./dom-utils";
+import { canAutoStartTextEditing, createElementLocator, placeCaretFromPoint, isElementVisible } from "./dom-utils";
 
 describe("createElementLocator", () => {
   it("includes a short text snippet for text elements", () => {

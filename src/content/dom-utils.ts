@@ -230,6 +230,24 @@ function isLikelyStableToken(value: string): boolean {
   return true;
 }
 
+export function isElementVisible(element: HTMLElement): boolean {
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) {
+    return false;
+  }
+
+  let current: HTMLElement | null = element;
+  while (current && current !== document.body && current !== document.documentElement) {
+    const style = window.getComputedStyle(current);
+    if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) < 0.05) {
+      return false;
+    }
+    current = current.parentElement;
+  }
+
+  return true;
+}
+
 export function getSlideContext(element: HTMLElement): string | undefined {
   const container = element.closest('section, .slide, .page, [data-slide], [data-page], [aria-roledescription="slide"]');
   if (!container || !(container instanceof HTMLElement)) {

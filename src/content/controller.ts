@@ -15,7 +15,7 @@ import {
   type EditorPatch
 } from "../state/editor-state";
 import { createEditHistory } from "../state/history";
-import { canAutoStartTextEditing, createElementLocator, describeElement, placeCaretFromPoint } from "./dom-utils";
+import { canAutoStartTextEditing, createElementLocator, describeElement, placeCaretFromPoint, isElementVisible } from "./dom-utils";
 import { getAskGeminiPrompt, type AskGeminiPromptKey } from "../export/ask-gemini";
 import { getPanelLabels, getPanelLanguage } from "./i18n";
 import { createOverlay, type ClickDeckOverlay } from "./overlay";
@@ -66,6 +66,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let presentationController: PresentationController | null = null;
   let editingElement: HTMLElement | null = null;
   let originalText: string = "";
+  let visibilityCheckInterval: number | null = null;
   const pageHref = window.location.href;
   const storageKey = buildStorageKey(pageHref);
   const textTags = new Set(["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "li", "strong", "em"]);
@@ -332,7 +333,13 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    overlay.updateOutline(selectedElement ?? hoveredElement);
+    const target = selectedElement ?? hoveredElement;
+    if (target && !isElementVisible(target)) {
+      overlay.updateOutline(null);
+      return;
+    }
+
+    overlay.updateOutline(target);
   }
 
   function isPanelCollapsed(): boolean {
@@ -1242,6 +1249,12 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__CLICKDECK_COLLECT_PRESENTATION_DIAGNOSTICS__ = () => collectPresentationDiagnostics();
     tryRestorePersistedPatches();
+
+    visibilityCheckInterval = window.setInterval(() => {
+      if (selectedElement || hoveredElement) {
+        updateOutline();
+      }
+    }, 200);
   }
 
   function deactivate(): void {
@@ -1263,6 +1276,11 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     window.removeEventListener("resize", updateOutline, true);
     window.removeEventListener("keydown", handleHistoryShortcut, true);
     window.removeEventListener("keydown", handleSelectionShortcut, true);
+
+    if (visibilityCheckInterval !== null) {
+      window.clearInterval(visibilityCheckInterval);
+      visibilityCheckInterval = null;
+    }
 
     panel?.destroy();
     panel = null;
