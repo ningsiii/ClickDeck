@@ -327,7 +327,23 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    if (isPanelCollapsed()) {
+      overlay.updateOutline(null);
+      return;
+    }
+
     overlay.updateOutline(selectedElement ?? hoveredElement);
+  }
+
+  function isPanelCollapsed(): boolean {
+    return panel?.element.classList.contains("clickdeck-panel--collapsed") ?? false;
+  }
+
+  function syncCollapsedBrowsingMode(): void {
+    if (isPanelCollapsed()) {
+      hoveredElement = null;
+    }
+    updateOutline();
   }
 
   function refreshHistoryButtons(): void {
@@ -385,6 +401,14 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
+    if (isPanelCollapsed()) {
+      if (hoveredElement) {
+        hoveredElement = null;
+        updateOutline();
+      }
+      return;
+    }
+
     const target = getEditableTarget(event.target);
     if (target === hoveredElement) {
       return;
@@ -397,7 +421,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handleClick(event: MouseEvent): void {
-    if (!active || intentOverlay) {
+    if (!active || intentOverlay || isPanelCollapsed()) {
       return;
     }
 
@@ -470,6 +494,10 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
   function handleSelectionShortcut(event: KeyboardEvent): void {
     if (!active) {
+      return;
+    }
+
+    if (isPanelCollapsed()) {
       return;
     }
 
@@ -640,6 +668,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
             setTimeout(() => { btn.textContent = originalText; }, 2000);
           }
           panel?.element.classList.add("clickdeck-panel--collapsed");
+          syncCollapsedBrowsingMode();
         })
         .catch((error) => {
           logger.error("Failed to copy Ask Gemini prompt", { action, error });
@@ -1181,7 +1210,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     active = true;
     setEditorActive(state, true);
     overlay = createOverlay(rootId);
-    panel = createPanel(handlePanelAction);
+    panel = createPanel(handlePanelAction, {
+      onCollapsedChange: syncCollapsedBrowsingMode
+    });
     overlay.root.append(panel.element);
     refreshHistoryButtons();
     panel.setReplaceMediaAvailability(false, "none");

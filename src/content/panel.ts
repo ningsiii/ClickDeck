@@ -50,7 +50,11 @@ export type ClickDeckPanel = {
   hideSavedEditsNotice: () => void;
 };
 
-export function createPanel(onAction: (action: PanelAction) => void): ClickDeckPanel {
+export type PanelOptions = {
+  onCollapsedChange?: (collapsed: boolean) => void;
+};
+
+export function createPanel(onAction: (action: PanelAction) => void, options: PanelOptions = {}): ClickDeckPanel {
   const labels = getPanelLabels();
   const panelLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo2-panel.png") : "brand/logo2-panel.png";
   const collapsedLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo-collapsed.png") : "brand/logo-collapsed.png";
@@ -255,8 +259,10 @@ export function createPanel(onAction: (action: PanelAction) => void): ClickDeckP
       const action = internalButton.dataset.internalAction;
       if (action === "collapse") {
         element.classList.add("clickdeck-panel--collapsed");
+        options.onCollapsedChange?.(true);
       } else if (action === "restore") {
         element.classList.remove("clickdeck-panel--collapsed");
+        options.onCollapsedChange?.(false);
       } else if (action === "transparency") {
         if (element.classList.contains("clickdeck-panel--opacity-70")) {
           element.classList.remove("clickdeck-panel--opacity-70");

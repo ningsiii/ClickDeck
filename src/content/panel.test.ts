@@ -180,7 +180,7 @@ describe("createPanel Ask Gemini section", () => {
     const panelHtml = panel.element.innerHTML;
     expect(panelHtml).not.toContain("Paste into Chrome Ask Gemini");
     expect(panelHtml).not.toContain("优先粘贴到");
-    expect(panelHtml).toContain("Use with an AI that can see this page"); // English hint by default in tests (navigator language fallback)
+    expect(panelHtml).toContain("Use with an AI that can see the current page"); // English hint by default in tests (navigator language fallback)
 
     panel.destroy();
   });

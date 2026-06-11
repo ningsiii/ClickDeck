@@ -332,21 +332,32 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(content).not.toBeVisible();
     await expect(floatBtn).toBeVisible();
 
-    // Verify keyboard tools still work while collapsed
-    const heading = page.getByRole("heading", { name: "Quarterly Product Review" });
-    await heading.click();
-    
-    // Select and press Esc
-    await page.keyboard.press("Escape");
-    await page.mouse.move(0, 0); // Move mouse away
     const outline = root.locator(".clickdeck-outline");
-    await expect(outline).toBeHidden(); // Esc works!
+    await page.evaluate(() => {
+      const button = document.createElement("button");
+      button.id = "native-click-target";
+      button.textContent = "Native page button";
+      button.addEventListener("click", () => {
+        document.body.dataset.nativeClicked = "true";
+      });
+      document.body.appendChild(button);
+    });
+
+    // While collapsed, ClickDeck should behave like browsing mode: page clicks pass through.
+    await page.locator("#native-click-target").click();
+    await expect.poll(() => page.evaluate(() => document.body.dataset.nativeClicked)).toBe("true");
+    await expect(outline).toBeHidden();
 
     // Click floating button to restore
     await floatBtn.click();
     await expect(panel).not.toHaveClass(/clickdeck-panel--collapsed/);
     await expect(content).toBeVisible();
     await expect(floatBtn).toBeHidden();
+
+    // Restoring should bring editing selection back without losing state.
+    const heading = page.getByRole("heading", { name: "Quarterly Product Review" });
+    await heading.click();
+    await expect(outline).toBeVisible();
   });
 
   test("8. Long image export", async ({ page, demoPageUrl }) => {
