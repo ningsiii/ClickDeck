@@ -114,6 +114,7 @@ export type PanelLabels = {
   aiPromptSection: string;
   askGeminiSection: string;
   askGeminiHint: string;
+  askGeminiVisibilityHint: string;
   askGeminiToggle: string;
   askGeminiFlow: string;
   askGeminiFlowTooltip: string;
@@ -260,6 +261,7 @@ const englishLabels: PanelLabels = {
   aiPromptSection: "AI Prompt",
   askGeminiSection: "Ask Gemini",
   askGeminiHint: "Use with an AI that can see the current page. Best for what is on screen now; multi-page decks may still need page-by-page review.",
+  askGeminiVisibilityHint: "If parts of the page are hidden, AI suggestions may only be based on currently visible content.",
   askGeminiToggle: "Choose review type",
   askGeminiFlow: "Flow",
   askGeminiFlowTooltip: "Ask AI to review page order, cause-and-effect, and narrative flow.",
@@ -406,6 +408,7 @@ const chineseLabels: PanelLabels = {
   aiPromptSection: "AI Prompt",
   askGeminiSection: "Ask Gemini",
   askGeminiHint: "给能看见当前页面的 AI 用。更适合评审眼前这一页；如果是多页 deck，通常仍要逐页看逻辑。",
+  askGeminiVisibilityHint: "若部分页面未显示，AI 提供的建议可能只基于当前可见内容。",
   askGeminiToggle: "选择评审方向",
   askGeminiFlow: "看逻辑",
   askGeminiFlowTooltip: "让 AI 给页面顺序、因果关系和叙事节奏提建议。",

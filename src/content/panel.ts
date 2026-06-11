@@ -223,7 +223,8 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
 
     <div class="clickdeck-panel__section" data-section="ask-gemini">
       <div class="clickdeck-panel__section-title">${labels.askGeminiSection}</div>
-      <div class="clickdeck-panel__sub-hint" style="margin-bottom: 8px; font-size: 11px; opacity: 0.6; line-height: 1.4;">${labels.askGeminiHint}</div>
+      <div class="clickdeck-panel__sub-hint" style="margin-bottom: 4px; font-size: 11px; opacity: 0.6; line-height: 1.4;">${labels.askGeminiHint}</div>
+      <div class="clickdeck-panel__sub-hint" style="margin-bottom: 8px; font-size: 11px; opacity: 0.8; line-height: 1.4;">${labels.askGeminiVisibilityHint}</div>
       <div class="clickdeck-panel__group clickdeck-panel__group--ask-gemini">
         ${buttonMarkup("ask-gemini-flow", labels.askGeminiFlow, false, labels.askGeminiFlowTooltip)}
         ${buttonMarkup("ask-gemini-focus", labels.askGeminiFocus, false, labels.askGeminiFocusTooltip)}
