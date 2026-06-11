@@ -352,3 +352,60 @@ function cssEscape(value: string): string {
   // Minimal escape to keep selectors valid without adding dependencies.
   return value.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~\s])/g, "\\$1");
 }
+
+export function placeCaretFromPoint(target: HTMLElement, x: number, y: number): boolean {
+  try {
+    let range: Range | null = null;
+    let node: Node | null = null;
+    let offset = 0;
+
+    if (typeof document.caretRangeFromPoint === "function") {
+      range = document.caretRangeFromPoint(x, y);
+      if (range) {
+        node = range.startContainer;
+        offset = range.startOffset;
+      }
+    } else if (typeof (document as any).caretPositionFromPoint === "function") {
+      const position = (document as any).caretPositionFromPoint(x, y);
+      if (position) {
+        node = position.offsetNode;
+        offset = position.offset;
+      }
+    }
+
+    if (node && target.contains(node)) {
+      // Validate offset bounds
+      const maxOffset = node.nodeType === Node.TEXT_NODE ? (node.nodeValue?.length ?? 0) : node.childNodes.length;
+      
+      if (offset >= 0 && offset <= maxOffset) {
+        const sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          const newRange = document.createRange();
+          newRange.setStart(node, offset);
+          newRange.collapse(true);
+          sel.addRange(newRange);
+          return true;
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore and fallback
+  }
+
+  // Safe fallback: place caret at the end of the target
+  try {
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(target);
+      newRange.collapse(false);
+      sel.addRange(newRange);
+    }
+  } catch (e) {
+    // Ignore error
+  }
+
+  return false;
+}

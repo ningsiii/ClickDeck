@@ -565,4 +565,40 @@ test.describe("ClickDeck core editing workflows", () => {
     expect(promptText).toContain("Remove the selected region from the source HTML/CSS");
   });
 
+  test("13. Text editing caret placement", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    // Find a long text element (using a locator that won't break when text changes)
+    const heading = page.locator("h1").first();
+    
+    // Get its bounding box to click at ~30% width
+    const box = await heading.boundingBox();
+    expect(box).not.toBeNull();
+    if (!box) return;
+
+    // The text is "Quarterly Product Review" (24 chars)
+    // 30% width should land roughly around "Quarterly" or "Product"
+    const clickX = box.x + box.width * 0.35;
+    const clickY = box.y + box.height / 2;
+
+    // Click to enter text editing at the specific position
+    await page.mouse.click(clickX, clickY);
+
+    // Verify it entered contenteditable
+    await expect(heading).toHaveAttribute("contenteditable", "true");
+
+    // Type some characters
+    await page.keyboard.type("TEST-");
+
+    // Get the new text
+    const newText = await heading.textContent();
+    
+    // It should NOT be appended to the end (e.g., "Quarterly Product ReviewTEST-")
+    // It should be inserted in the middle (e.g., "Quarterly TEST-Product Review")
+    expect(newText?.endsWith("TEST-")).toBe(false);
+    expect(newText).toContain("TEST-");
+    expect(newText).not.toEqual("Quarterly Product ReviewTEST-");
+  });
+
 });

@@ -15,7 +15,7 @@ import {
   type EditorPatch
 } from "../state/editor-state";
 import { createEditHistory } from "../state/history";
-import { canAutoStartTextEditing, createElementLocator, describeElement } from "./dom-utils";
+import { canAutoStartTextEditing, createElementLocator, describeElement, placeCaretFromPoint } from "./dom-utils";
 import { getAskGeminiPrompt, type AskGeminiPromptKey } from "../export/ask-gemini";
 import { getPanelLabels, getPanelLanguage } from "./i18n";
 import { createOverlay, type ClickDeckOverlay } from "./overlay";
@@ -458,6 +458,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       originalText = target.textContent ?? "";
       target.setAttribute("contenteditable", "true");
       target.focus();
+      placeCaretFromPoint(target, event.clientX, event.clientY);
     } else {
       editingElement = null;
       originalText = "";

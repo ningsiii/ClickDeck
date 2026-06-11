@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
-import { canAutoStartTextEditing, createElementLocator } from "./dom-utils";
+import { describe, expect, it, vi } from "vitest";
+import { canAutoStartTextEditing, createElementLocator, placeCaretFromPoint } from "./dom-utils";
 
 describe("createElementLocator", () => {
   it("includes a short text snippet for text elements", () => {
@@ -155,5 +155,102 @@ describe("canAutoStartTextEditing", () => {
     expect(canAutoStartTextEditing(img)).toBe(false);
     expect(canAutoStartTextEditing(button)).toBe(false);
     expect(canAutoStartTextEditing(input)).toBe(false);
+  });
+});
+
+describe("placeCaretFromPoint", () => {
+  it("places caret using caretPositionFromPoint if available and valid", () => {
+    document.body.innerHTML = `<main><p id="test-p">Hello World</p></main>`;
+    const p = document.getElementById("test-p") as HTMLElement;
+    const textNode = p.firstChild as Text;
+
+    // Mock getSelection
+    const mockSelection = {
+      removeAllRanges: vi.fn(),
+      addRange: vi.fn()
+    };
+    window.getSelection = () => mockSelection as any;
+
+    // Mock Range
+    const mockRange = {
+      setStart: vi.fn(),
+      collapse: vi.fn(),
+      selectNodeContents: vi.fn()
+    };
+    document.createRange = () => mockRange as any;
+
+    // Mock caretPositionFromPoint
+    (document as any).caretPositionFromPoint = (_x: number, _y: number) => {
+      return { offsetNode: textNode, offset: 5 };
+    };
+
+    const result = placeCaretFromPoint(p, 100, 100);
+
+    expect(result).toBe(true);
+    expect(mockSelection.removeAllRanges).toHaveBeenCalled();
+    expect(mockRange.setStart).toHaveBeenCalledWith(textNode, 5);
+    expect(mockRange.collapse).toHaveBeenCalledWith(true);
+    expect(mockSelection.addRange).toHaveBeenCalled();
+
+    delete (document as any).caretPositionFromPoint;
+  });
+
+  it("falls back to end of target if point is outside target", () => {
+    document.body.innerHTML = `<main><p id="test-p">Hello</p><p id="other-p">World</p></main>`;
+    const p = document.getElementById("test-p") as HTMLElement;
+    const otherP = document.getElementById("other-p") as HTMLElement;
+    const otherTextNode = otherP.firstChild as Text;
+
+    const mockSelection = {
+      removeAllRanges: vi.fn(),
+      addRange: vi.fn()
+    };
+    window.getSelection = () => mockSelection as any;
+
+    const mockRange = {
+      setStart: vi.fn(),
+      collapse: vi.fn(),
+      selectNodeContents: vi.fn()
+    };
+    document.createRange = () => mockRange as any;
+
+    (document as any).caretPositionFromPoint = (_x: number, _y: number) => {
+      return { offsetNode: otherTextNode, offset: 2 };
+    };
+
+    const result = placeCaretFromPoint(p, 100, 100);
+
+    expect(result).toBe(false);
+    expect(mockRange.selectNodeContents).toHaveBeenCalledWith(p);
+    expect(mockRange.collapse).toHaveBeenCalledWith(false);
+
+    delete (document as any).caretPositionFromPoint;
+  });
+
+  it("falls back if API is missing", () => {
+    document.body.innerHTML = `<main><p id="test-p">Hello</p></main>`;
+    const p = document.getElementById("test-p") as HTMLElement;
+
+    const mockSelection = {
+      removeAllRanges: vi.fn(),
+      addRange: vi.fn()
+    };
+    window.getSelection = () => mockSelection as any;
+
+    const mockRange = {
+      setStart: vi.fn(),
+      collapse: vi.fn(),
+      selectNodeContents: vi.fn()
+    };
+    document.createRange = () => mockRange as any;
+
+    (document as any).caretRangeFromPoint = undefined;
+    (document as any).caretPositionFromPoint = undefined;
+
+    const result = placeCaretFromPoint(p, 100, 100);
+
+    expect(result).toBe(false);
+    expect(mockRange.selectNodeContents).toHaveBeenCalledWith(p);
+    expect(mockRange.collapse).toHaveBeenCalledWith(false);
   });
 });
