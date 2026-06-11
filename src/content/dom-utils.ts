@@ -204,8 +204,13 @@ export function isMeaningfulElement(element: HTMLElement): boolean {
   }
 
   const className = typeof element.className === "string" ? element.className.toLowerCase() : "";
-  if (className.includes("card") || className.includes("btn") || className.includes("item") || className.includes("icon")) {
+  if (className.includes("card") || className.includes("btn") || className.includes("item")) {
     return true;
+  }
+  if (className.includes("icon")) {
+    if (element.getAttribute("aria-label") || element.getAttribute("title")) {
+      return true;
+    }
   }
 
   if (element.isContentEditable) return true;

@@ -52,6 +52,9 @@ describe("isLargeContainer and getEditableTarget", () => {
       const { isLargeContainer } = await import("./selection");
 
       const el = document.createElement("div");
+      el.innerHTML = "<span>Meaningful descendant</span>";
+      document.body.appendChild(el);
+      
       el.getBoundingClientRect = () => ({
         left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
         x: 0, y: 0, toJSON: () => {}
@@ -65,21 +68,45 @@ describe("isLargeContainer and getEditableTarget", () => {
         x: 0, y: 0, toJSON: () => {}
       });
       expect(isLargeContainer(el)).toBe(false);
+      
+      document.body.removeChild(el);
+    });
+
+    it("rejects large elements that have no meaningful descendants", async () => {
+      const { isLargeContainer } = await import("./selection");
+      const el = document.createElement("div");
+      // Intentionally empty
+      document.body.appendChild(el);
+      
+      el.getBoundingClientRect = () => ({
+        left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
+        x: 0, y: 0, toJSON: () => {}
+      });
+      
+      expect(isLargeContainer(el)).toBe(false);
+      document.body.removeChild(el);
     });
 
     it("rejects large elements that are not layout tags", async () => {
       const { isLargeContainer } = await import("./selection");
       const el = document.createElement("span");
+      el.innerHTML = "<span>Meaningful descendant</span>";
+      document.body.appendChild(el);
+      
       el.getBoundingClientRect = () => ({
         left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
         x: 0, y: 0, toJSON: () => {}
       });
       expect(isLargeContainer(el)).toBe(false);
+      document.body.removeChild(el);
     });
 
-    it("rejects large elements with role dialog/navigation", async () => {
+    it("rejects large elements with role dialog/navigation/toolbar", async () => {
       const { isLargeContainer } = await import("./selection");
       const el = document.createElement("div");
+      el.innerHTML = "<span>Meaningful descendant</span>";
+      document.body.appendChild(el);
+      
       el.getBoundingClientRect = () => ({
         left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
         x: 0, y: 0, toJSON: () => {}
@@ -88,9 +115,54 @@ describe("isLargeContainer and getEditableTarget", () => {
       el.setAttribute("role", "dialog");
       expect(isLargeContainer(el)).toBe(false);
       
+      el.setAttribute("role", "toolbar");
+      expect(isLargeContainer(el)).toBe(false);
+      
       el.removeAttribute("role");
       el.setAttribute("aria-modal", "true");
       expect(isLargeContainer(el)).toBe(false);
+      
+      document.body.removeChild(el);
+    });
+
+    it("rejects large elements that are fixed or sticky", async () => {
+      const { isLargeContainer } = await import("./selection");
+      const el = document.createElement("div");
+      el.innerHTML = "<span>Meaningful descendant</span>";
+      document.body.appendChild(el);
+      
+      el.getBoundingClientRect = () => ({
+        left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
+        x: 0, y: 0, toJSON: () => {}
+      });
+      
+      el.style.position = "fixed";
+      expect(isLargeContainer(el)).toBe(false);
+      
+      el.style.position = "sticky";
+      expect(isLargeContainer(el)).toBe(false);
+      
+      document.body.removeChild(el);
+    });
+
+    it("rejects media, inputs, buttons and links even if they are large", async () => {
+      const { isLargeContainer } = await import("./selection");
+      
+      for (const tag of ["img", "video", "canvas", "button", "input", "select", "textarea", "a", "label", "nav", "dialog"]) {
+        const el = document.createElement(tag);
+        document.body.appendChild(el);
+        if (tag === "button" || tag === "a") {
+          el.innerHTML = "<span>Meaningful descendant</span>";
+        }
+        
+        el.getBoundingClientRect = () => ({
+          left: 0, top: 0, right: 1000, bottom: 1000, width: 1000, height: 1000,
+          x: 0, y: 0, toJSON: () => {}
+        });
+        
+        expect(isLargeContainer(el)).toBe(false);
+        document.body.removeChild(el);
+      }
     });
   });
 

@@ -85,6 +85,10 @@ export function isLargeContainer(element: HTMLElement): boolean {
     return false;
   }
 
+  if (!findMeaningfulDescendant(element)) {
+    return false;
+  }
+
   return true;
 }
 
