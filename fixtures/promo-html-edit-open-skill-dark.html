@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>优雅修改 HTML - ClickDeck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #000000;
+  --text: #ffffff;
+  --title: #78d7ff;
+  --accent: #f2c15b;
+  --dim: #8c8c8c;
+  --dark-card: #0f1316;
+  --border: #22282d;
+  --blue: #78d7ff;
+  --coral: #ff8b72;
+  --ink-card: #101417;
+  --glow-cool: rgba(120, 215, 255, 0.18);
+  --glow-warm: rgba(242, 193, 91, 0.14);
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+  user-select: none;
+}
+
+.deck {
+  position: relative;
+  width: 100%;
+}
+
+.slide {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8vh 7vw;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(120, 215, 255, 0.07), transparent 320px),
+    radial-gradient(circle at 88% 80%, rgba(242, 193, 91, 0.06), transparent 360px),
+    var(--bg);
+}
+
+
+
+.slide-label {
+  font-size: clamp(11px, 1.1vw, 14px);
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-size: clamp(40px, 5.4vw, 74px);
+  font-weight: 800;
+  line-height: 1.12;
+  color: var(--text);
+  letter-spacing: -1.5px;
+}
+
+h1 .highlight { color: var(--title); }
+h1 .accent { color: var(--accent); }
+
+h2 {
+  font-size: clamp(26px, 3.2vw, 44px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--title);
+  letter-spacing: -1px;
+}
+
+h3 {
+  font-size: clamp(16px, 1.7vw, 24px);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: clamp(16px, 1.7vw, 22px);
+  font-weight: 400;
+  color: #cccccc;
+  line-height: 1.55;
+  margin: 16px auto 0;
+  max-width: 760px;
+}
+
+.body-text {
+  font-size: clamp(15px, 1.4vw, 19px);
+  font-weight: 400;
+  color: #cccccc;
+  line-height: 1.68;
+}
+
+.small-text {
+  font-size: clamp(12px, 1.1vw, 15px);
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.divider {
+  width: 48px;
+  height: 3px;
+  background: var(--title);
+  border-radius: 2px;
+  margin: 16px 0;
+}
+
+.divider-accent { background: var(--accent); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(120, 215, 255, 0.08);
+  border: 1px solid rgba(120, 215, 255, 0.18);
+  border-radius: 100px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.06em;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.badge .dot-warm {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge .dot-gray {
+  width: 4px;
+  height: 4px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.card-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  flex: 0;
+}
+
+.card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.card {
+  background: var(--dark-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(18px, 2.2vw, 32px);
+  display: flex;
+  flex-direction: column;
+}
+
+.card .card-num {
+  font-size: clamp(32px, 3.5vw, 48px);
+  font-weight: 800;
+  color: var(--title);
+  opacity: 0.3;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.quote-block {
+  border-left: 3px solid var(--accent);
+  padding: 16px 24px;
+  background: rgba(255, 199, 54, 0.04);
+  border-radius: 0 12px 12px 0;
+  margin: 16px 0;
+}
+
+.quote-block p {
+  font-size: clamp(15px, 1.5vw, 20px);
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.6;
+}
+
+.vs-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  margin-top: 16px;
+}
+
+.vs-col {
+  flex: 1;
+  border-radius: 18px;
+  padding: clamp(16px, 1.8vw, 24px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.vs-col.left-col {
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.vs-col.right-col {
+  background: linear-gradient(135deg, rgba(120, 215, 255, 0.10), rgba(120, 215, 255, 0.03));
+  border: 1px solid rgba(120, 215, 255, 0.28);
+}
+
+.vs-col .vs-tag {
+  display: inline-block;
+  font-size: clamp(10px, 0.9vw, 12px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  width: fit-content;
+}
+
+.vs-col.left-col .vs-tag {
+  background: rgba(255,255,255,0.08);
+  color: var(--dim);
+}
+
+.vs-col.right-col .vs-tag {
+  background: rgba(120, 215, 255, 0.13);
+  color: var(--text);
+}
+
+.steps {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  align-items: stretch;
+}
+
+.step {
+  flex: 1;
+  background: var(--dark-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(16px, 2vw, 28px) clamp(12px, 1.5vw, 24px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.step .step-num {
+  font-size: clamp(10px, 0.9vw, 14px);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.step .step-icon { font-size: clamp(22px, 2.5vw, 32px); margin-bottom: 8px; }
+.step h3 { font-size: clamp(14px, 1.3vw, 18px); margin-bottom: 4px; }
+
+.step-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  color: #333;
+}
+
+.prompt-box {
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: clamp(16px, 2vw, 24px) clamp(18px, 2.2vw, 28px);
+  margin-top: 16px;
+}
+
+.prompt-box .prompt-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.prompt-box p {
+  font-size: clamp(14px, 1.4vw, 18px);
+  color: #cccccc;
+  line-height: 1.65;
+}
+
+.prompt-box p em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2vw, 26px);
+  margin: 34px auto 0;
+  width: min(980px, 100%);
+  min-height: clamp(72px, 8vw, 96px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.logo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: clamp(48px, 5.8vw, 72px);
+  padding: 0 clamp(14px, 1.8vw, 22px);
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(12, 13, 16, 0.78);
+  color: #d4d4d4;
+  font-size: clamp(14px, 1.4vw, 20px);
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.logo-chip.brand {
+  min-width: clamp(210px, 23vw, 270px);
+  justify-content: flex-start;
+  border-radius: 999px;
+  background: rgba(38, 30, 34, 0.92);
+}
+
+.cover-brand {
+  margin: 0 auto 40px;
+}
+
+.logo-chip.brand b {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 139, 114, 0.16);
+  color: var(--coral);
+  font-size: clamp(11px, 0.9vw, 13px);
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.logo-chip.icon-only {
+  width: clamp(62px, 7vw, 92px);
+  justify-content: center;
+  padding: 0;
+  border-radius: 28px;
+}
+
+.logo-chip img {
+  width: clamp(28px, 3.2vw, 42px);
+  height: clamp(28px, 3.2vw, 42px);
+  object-fit: contain;
+}
+
+.logo-chip.brand img {
+  width: clamp(34px, 4vw, 52px);
+  height: clamp(34px, 4vw, 52px);
+}
+
+.logo-chip.icon-only.store img {
+  width: clamp(30px, 3.4vw, 44px);
+  height: clamp(30px, 3.4vw, 44px);
+}
+
+.cover-stage {
+  position: relative;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.cover-title {
+  font-size: clamp(3rem, 7.5vw, 7.2rem);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.cover-title .line {
+  display: inline;
+}
+
+.cover-title .line + .line {
+  margin-left: 0.18em;
+}
+
+.cover-title .accent-gradient {
+  background: linear-gradient(92deg, var(--title) 0%, var(--accent) 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.browser-preview {
+  background: #0f0f0f;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.browser-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.traffic {
+  display: flex;
+  gap: 7px;
+}
+
+.traffic span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+}
+
+.traffic span:nth-child(1) { background: rgba(255,125,105,0.8); }
+.traffic span:nth-child(2) { background: rgba(242,193,91,0.85); }
+.traffic span:nth-child(3) { background: rgba(121,167,255,0.85); }
+
+.address {
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-page {
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+  gap: 16px;
+  padding: 18px;
+}
+
+.preview-stack,
+.preview-media {
+  display: grid;
+  gap: 14px;
+}
+
+.preview-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.preview-card h3 {
+  font-size: clamp(22px, 2vw, 30px);
+  margin-bottom: 10px;
+}
+
+.preview-card p {
+  color: #cccccc;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.pill-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.preview-media img,
+.preview-media video {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: #0a0a0a;
+  object-fit: cover;
+}
+
+.preview-media img {
+  aspect-ratio: 16 / 9;
+  padding: 18px;
+}
+
+.preview-media video {
+  aspect-ratio: 16 / 9;
+}
+
+.edit-stage {
+  width: min(1240px, 100%);
+  display: grid;
+  gap: 28px;
+}
+
+.edit-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: end;
+  gap: 28px;
+}
+
+.edit-hero h2 {
+  max-width: 820px;
+  font-size: clamp(34px, 4.2vw, 62px);
+  line-height: 1.12;
+}
+
+.edit-index {
+  justify-self: end;
+  color: rgba(255,255,255,0.07);
+  font-size: clamp(72px, 10vw, 150px);
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -8px;
+}
+
+.material-board {
+  background:
+    linear-gradient(180deg, rgba(120, 215, 255, 0.035), rgba(255,255,255,0.012)),
+    #0d1113;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.material-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.9fr 0.9fr;
+  gap: 16px;
+  padding: 18px;
+}
+
+.material {
+  min-height: 256px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+
+.material.text {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.material-label {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(242, 193, 91, 0.10);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.material.text h3 {
+  margin-top: 22px;
+  font-size: clamp(26px, 3vw, 44px);
+  line-height: 1.1;
+}
+
+.material.text p {
+  color: #c9c9c9;
+  line-height: 1.7;
+  margin-top: 16px;
+}
+
+.material img,
+.material video {
+  width: 100%;
+  height: 100%;
+  min-height: 256px;
+  object-fit: cover;
+  display: block;
+}
+
+.material.image {
+  display: grid;
+  place-items: center;
+}
+
+.material.image img {
+  width: 76%;
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,0.35));
+}
+
+.intent-canvas {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  min-height: 100%;
+}
+
+.intent-block {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.05);
+}
+
+.intent-block p {
+  color: #cccccc;
+  font-size: 15px;
+  line-height: 1.72;
+}
+
+.intent-image {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  border-radius: 18px;
+  border: 1px dashed rgba(121,167,255,0.4);
+  background: linear-gradient(135deg, rgba(121,167,255,0.08), rgba(121,167,255,0.02));
+}
+
+.intent-image img {
+  width: min(180px, 42%);
+}
+
+.intent-marker,
+.intent-remove {
+  position: absolute;
+  border-radius: 16px;
+}
+
+.intent-marker {
+  border: 2px dashed var(--coral);
+  background: rgba(255,125,105,0.08);
+}
+
+.intent-marker.source {
+  left: 16px;
+  right: 30%;
+  top: 62px;
+  height: 110px;
+}
+
+.intent-marker.target {
+  right: 18px;
+  bottom: 22px;
+  width: 28%;
+  height: 92px;
+  border-color: var(--blue);
+  background: rgba(121,167,255,0.08);
+}
+
+.intent-remove {
+  left: 22px;
+  bottom: 20px;
+  width: 160px;
+  height: 68px;
+  border: 2px dashed rgba(242,193,91,0.82);
+  background: rgba(242,193,91,0.08);
+}
+
+.intent-badge {
+  position: absolute;
+  top: -14px;
+  left: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intent-marker.source .intent-badge {
+  background: var(--coral);
+  color: #180d0a;
+}
+
+.intent-marker.target .intent-badge {
+  background: var(--blue);
+  color: #07111f;
+}
+
+.intent-remove .intent-badge {
+  background: var(--accent);
+  color: #191200;
+}
+
+.blank-zone {
+  min-height: 100%;
+  border-radius: 18px;
+  border: 1px dashed rgba(255,255,255,0.14);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 42px,
+      rgba(255,255,255,0.03) 42px,
+      rgba(255,255,255,0.03) 43px
+    ),
+    rgba(255,255,255,0.02);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--dim);
+  padding: 28px;
+}
+
+.review-shot {
+  background: #0f0f0f;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.review-shot-body {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.review-shot strong {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.ghost-line {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+}
+
+.ghost-line.short { width: 52%; }
+.ghost-line.mid { width: 74%; }
+.ghost-line.long { width: 92%; }
+
+.mini-kicker {
+  color: var(--dim);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.glow-cool { background: var(--title); }
+.glow-warm { background: var(--accent); }
+
+@media (max-width: 900px) {
+  .slide { padding: 4vh 5vw; }
+  .cover-stage,
+  .card-grid.cols-2,
+  .card-grid.cols-3,
+  .browser-page,
+  .edit-hero,
+  .material-grid {
+    grid-template-columns: 1fr;
+  }
+  .logo-row {
+    flex-wrap: wrap;
+    border-radius: 24px;
+  }
+  .logo-chip.icon-only {
+    width: 62px;
+  }
+  .edit-index {
+    justify-self: start;
+    font-size: 72px;
+    letter-spacing: -4px;
+  }
+  .vs-row { flex-direction: column; gap: 12px; }
+  .steps { flex-direction: column; }
+  .dots { display: none; }
+  .step-arrow { justify-content: center; transform: rotate(90deg); min-height: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="dots" id="dots"></div>
+<div class="hint" id="hint">← → 或点击翻页</div>
+
+<div class="deck" id="deck">
+
+<section class="slide">
+  <div class="glow glow-cool" style="top:-100px;left:-100px;"></div>
+  <div class="glow glow-warm" style="bottom:-100px;right:-100px;"></div>
+  <div class="cover-stage">
+    <div>
+      <span class="anim logo-chip brand cover-brand" style="transform: scale(0.6); margin-bottom: 12px; transform-origin: bottom center;"><img src="../public/icons/icon48.png" alt="">ClickDeck <b>V1.3</b></span>
+      <div class="anim cover-title">
+        <span class="line">优雅修改</span>
+        <span class="line accent-gradient" style="font-size: 114.667px;">HTML</span>
+      </div>
+      <div class="anim ai-hook" style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 32px; margin: 24px auto 16px; border-radius: 999px; background: linear-gradient(90deg, rgba(120, 215, 255, 0.08), rgba(242, 193, 91, 0.12)); border: 1px solid rgba(242, 193, 91, 0.3); box-shadow: 0 8px 32px rgba(242, 193, 91, 0.12);">
+        <span style="color: var(--accent); font-size: 26px; line-height: 1; filter: drop-shadow(0 0 8px var(--accent));">✦</span>
+        <span style="font-size: clamp(22px, 2.5vw, 28px); font-weight: 700; letter-spacing: 1.5px; background: linear-gradient(90deg, #ffffff 30%, var(--accent) 100%); -webkit-background-clip: text; color: transparent;">解锁 Native AI 页面评审</span>
+      </div>
+      <p class="anim subtitle" style="font-weight: 500; letter-spacing: 0.5px;">AI 专用的 FrontPage：拒绝低效沟通，视觉归你，源码归它。</p>
+      <div class="anim logo-row" aria-label="ClickDeck supported platforms">
+        <span class="logo-chip icon-only"><img src="./一些素材/chromelogo.svg" alt="Chrome"></span>
+        <span class="logo-chip icon-only"><img src="./一些素材/edge_logo.svg" alt="Edge"></span>
+        <span class="logo-chip icon-only store"><img src="./一些素材/330px-Google_Chrome_Web_Store_icon_2022.svg.png" alt="Chrome Web Store"></span>
+        <span class="logo-chip icon-only"><img src="./一些素材/500px-Octicons-mark-github.svg.png" alt="GitHub" style="filter: invert(1);"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="edit-stage">
+    <div class="anim edit-hero">
+      <div>
+        <div class="slide-label">Edit Directly</div>
+        <h2 style="font-size: 47.7333px;">所见即所得：<span style="color:var(--accent);">在真实的页面中直接编辑</span></h2>
+        <div class="anim divider divider-accent"></div>
+      </div>
+    </div>
+    <div class="anim material-grid" style="padding: 0; margin-top: 12px; gap: 24px;">
+      <div class="material text">
+        <div>
+          <h3>把“差一点点”的页面改到刚刚好。</h3>
+          <p>标题、文案、颜色和间距，先在浏览器里改顺，再决定要不要回到源码层。</p>
+        </div>
+        <div class="pill-row">
+          <span class="material-label">Edit text</span>
+          <span class="material-label">Restyle</span>
+          <span class="material-label">Undo</span>
+        </div>
+      </div>
+      <div class="material image" style="display: flex; flex-direction: column; justify-content: space-between; padding: 24px;">
+        <div style="flex: 1; display: grid; place-items: center;">
+          <div style="position: relative; width: 160px;">
+            <img src="../docs/assets/logo2-original.png" alt="Editable image sample" style="width: 100%; height: auto; outline: 1.5px dashed rgba(120, 215, 255, 0.6); outline-offset: 6px; border-radius: 4px;">
+            <div style="position: absolute; top: -8px; left: -8px; width: 5px; height: 5px; background: #fff; border: 1px solid var(--title);"></div>
+            <div style="position: absolute; top: -8px; right: -8px; width: 5px; height: 5px; background: #fff; border: 1px solid var(--title);"></div>
+            <div style="position: absolute; bottom: -8px; left: -8px; width: 5px; height: 5px; background: #fff; border: 1px solid var(--title);"></div>
+            <div style="position: absolute; bottom: -8px; right: -8px; width: 5px; height: 5px; background: #fff; border: 1px solid var(--title);"></div>
+          </div>
+        </div>
+        <div class="pill-row">
+          <span class="material-label">Replace</span>
+          <span class="material-label">Fit / Cover</span>
+          <span class="material-label">Radius</span>
+        </div>
+      </div>
+      <div class="material video">
+        <video controls muted playsinline preload="metadata" src="../../../ClickDeck视频/V2.mp4"></video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="anim slide-label">Intent Annotation</div>
+  <div class="anim"><h2>视觉化批注：<span style="color:var(--accent);">把意图直接“画”在页面上</span></h2></div>
+  <div class="anim divider divider-accent"></div>
+  <div class="anim intent-playground" style="display: grid; grid-template-columns: 360px 1fr; gap: 40px; margin-top: 32px; height: 500px; width: min(1180px, 100%);">
+    <!-- 左侧真实的演示素材 -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div class="material text" style="padding: 32px; min-height: unset;">
+        <h3 style="font-size: 26px; margin-bottom: 16px; line-height: 1.3;">互动排版区域</h3>
+        <p style="color: #ccc; font-size: 16px; line-height: 1.7;">这是一段用于演示批注和移动功能的真实文本。你可以框选它，添加修改意图，或者直接将它拖拽到右侧的空白画板中。</p>
+      </div>
+      <div class="material image" style="min-height: unset; padding: 32px; display: grid; place-items: center;">
+        <img src="../public/icons/icon128.png" alt="Sample" style="width: 140px; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.4));">
+      </div>
+    </div>
+    
+    <!-- 右侧极其纯净的留白画板，仅做微弱引导 -->
+    <div style="border-radius: 24px; border: 2px dashed rgba(255,255,255,0.06); background: rgba(255,255,255,0.015); position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.08); font-weight: 700; font-size: 24px; letter-spacing: 4px; text-transform: uppercase;">
+        Empty Space
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="glow glow-cool" style="top:50%;right:-100px;transform:translateY(-50%);"></div>
+  <div class="anim slide-label">Ask Gemini</div>
+  <div class="anim" style="display: flex; flex-direction: column; align-items: flex-start;">
+    <h2>超越代码补全：<span style="color:var(--accent);">直接引入页面级的评审诊断</span></h2>
+    <span style="display: block; width: 48px; height: 3px; margin-top: 16px; border-radius: 999px; background: var(--accent); flex: 0 0 auto;"></span>
+  </div>
+  <div class="anim card-grid cols-2" style="width:min(1180px,100%); align-items:stretch;">
+    <!-- 左侧：官方引用与机制差异 -->
+    <div style="display: flex; flex-direction: column; justify-content: flex-start; padding-right: 24px; padding-top: 4px; padding-bottom: 4px;">
+      
+      <!-- 适用人群 -->
+      <div style="margin-bottom: 48px;">
+        <span style="font-size: 14px; font-weight: 600; color: #fff; letter-spacing: 2px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--accent); font-size: 16px;">✦</span> 适用场景与人群
+        </span>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <span style="background: rgba(255, 180, 50, 0.1); color: var(--accent); border: 1px solid rgba(255, 180, 50, 0.3); padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 500;">PPT 演示 / 汇报</span>
+          <span style="background: rgba(255, 180, 50, 0.1); color: var(--accent); border: 1px solid rgba(255, 180, 50, 0.3); padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 500;">产品经理 (PM)</span>
+          <span style="background: rgba(255, 180, 50, 0.1); color: var(--accent); border: 1px solid rgba(255, 180, 50, 0.3); padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 500;">UI 设计 / 排版</span>
+          <span style="background: rgba(255, 180, 50, 0.1); color: var(--accent); border: 1px solid rgba(255, 180, 50, 0.3); padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 500;">UX / 体验研究</span>
+        </div>
+      </div>
+
+      <!-- 模拟的官方截图/引用框 -->
+      <div style="background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); position: relative; overflow: hidden; margin-bottom: 24px;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853); opacity: 0.8;"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="./一些素材/chromelogo.svg" alt="Chrome" style="width: 20px;">
+            <span style="font-weight: 600; color: #fff; font-size: 14px;">Ask Gemini in Chrome</span>
+          </div>
+          <div class="badge" style="margin: 0; transform: scale(0.9); transform-origin: right; border-color: rgba(120, 215, 255, 0.4); background: rgba(120, 215, 255, 0.1);"><div class="dot-warm"></div>Google 官方说明</div>
+        </div>
+        <p style="font-size: 16px; color: #ddd; line-height: 1.6; font-style: italic; margin: 0; font-family: Georgia, serif;">
+          "Chat with Gemini while you browse to ask questions, summarize, and get insights <strong style="color: var(--accent); font-weight: 600; font-family: system-ui, sans-serif;">about the page you're viewing</strong>."
+        </p>
+      </div>
+
+      <div>
+        <p style="font-size: 18px; color: #fff; line-height: 1.6; margin-bottom: 16px; font-weight: 500;">
+          相比于专注重写源码的 Coding AI（工程队），能看到真实网页的 Ask Gemini 是顶级的<strong style="color: var(--accent);">设计评审官</strong>。
+        </p>
+        <p class="body-text" style="font-size: 15px; line-height: 1.6; margin-bottom: 0;">
+          视角不同，给出的价值截然不同。一键复制 ClickDeck 预设的 Prompt，让 AI 直接为你提供专业的页面级诊断。
+        </p>
+      </div>
+    </div>
+
+    <!-- 右侧：三个 Prompt 功能及核心价值 -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <!-- Prompt 1: 看逻辑 -->
+      <div class="card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; color: #fff; font-size: 20px;">01. 看逻辑</h3>
+          <span style="font-size: 12px; border: 1px solid rgba(120, 215, 255, 0.3); background: rgba(120, 215, 255, 0.05); padding: 2px 8px; border-radius: 4px; color: var(--title);">Prompt</span>
+        </div>
+        <p class="body-text" style="margin-bottom: 8px; font-size: 15px;">看页面顺序、因果关系和叙事节奏。</p>
+        <p class="small-text" style="color: #aaa; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+          <strong style="color: #ddd;">💡 核心价值：</strong>提取网页真实的图文流，让 AI 评估叙事逻辑是否顺畅。不仅能找出转化漏斗里的逻辑断层，还能把冗长的网页快速梳理成干练的大纲。
+        </p>
+      </div>
+      
+      <!-- Prompt 2: 看重点 -->
+      <div class="card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; color: #fff; font-size: 20px;">02. 看重点</h3>
+          <span style="font-size: 12px; border: 1px solid rgba(120, 215, 255, 0.3); background: rgba(120, 215, 255, 0.05); padding: 2px 8px; border-radius: 4px; color: var(--title);">Prompt</span>
+        </div>
+        <p class="body-text" style="margin-bottom: 8px; font-size: 15px;">看视觉主次，提醒哪些核心信息被埋没。</p>
+        <p class="small-text" style="color: #aaa; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+          <strong style="color: #ddd;">💡 核心价值：</strong>将页面当前的 CSS 表现带给模型，让它像设计总监一样指出视觉焦点的偏差，并给出对比度、字号或留白优化的具体修改建议。
+        </p>
+      </div>
+
+      <!-- Prompt 3: 看交互 -->
+      <div class="card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; color: #fff; font-size: 20px;">03. 看交互</h3>
+          <span style="font-size: 12px; border: 1px solid rgba(120, 215, 255, 0.3); background: rgba(120, 215, 255, 0.05); padding: 2px 8px; border-radius: 4px; color: var(--title);">Prompt</span>
+        </div>
+        <p class="body-text" style="margin-bottom: 8px; font-size: 15px;">看按钮、切换和滚动路径是不是顺手。</p>
+        <p class="small-text" style="color: #aaa; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+          <strong style="color: #ddd;">💡 核心价值：</strong>结合页面的真实 DOM 结构，评估用户的点击与操作体验是否符合直觉，提前发现容易造成流失的反人类摩擦点。
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="glow glow-warm" style="bottom:-100px;left:-100px;"></div>
+  <div class="anim slide-label">Export & Handoff</div>
+  <div class="anim"><h2>评审结束，然后呢？<span style="color:var(--accent);">拿走结果，或交还给工程队</span></h2></div>
+  <div class="anim divider divider-accent"></div>
+  
+  <div class="anim card-grid cols-3" style="width:min(1180px,100%);">
+    
+    <!-- 路径 1: 固化资产 -->
+    <div class="card" style="display: flex; flex-direction: column; background: rgba(30, 25, 15, 0.95); border: 1px solid rgba(242, 193, 91, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #f2c15b, transparent); opacity: 1;"></div>
+      <span class="card-num" style="color: rgba(242, 193, 91, 0.4);">01</span>
+      <h3 style="font-size: 24px; margin-bottom: 12px; color: #f2c15b; font-weight: 600;">固化资产 <span style="font-size: 14px; font-weight: normal; color: rgba(242, 193, 91, 0.8);">(Export)</span></h3>
+      <p class="body-text" style="flex-grow: 1; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">无缝导出静态 HTML、高清长图或 PDF，把网页当前的完美状态封存为确定的产物。</p>
+      <div class="prompt-box" style="margin-top: auto; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(242, 193, 91, 0.3);">
+        <div class="prompt-label" style="background: rgba(242, 193, 91, 0.2); color: #f2c15b; border: 1px solid rgba(242, 193, 91, 0.4); font-weight: 600;">share & archive</div>
+        <p style="color: #ccc; margin: 0; font-size: 14px; line-height: 1.6;">适合页面已调顺，准备用于离线归档、对外分享或向客户做静态定稿交付。</p>
+      </div>
+    </div>
+    
+    <!-- 路径 2: 登台演示 -->
+    <div class="card" style="display: flex; flex-direction: column; background: rgba(30, 25, 15, 0.95); border: 1px solid rgba(242, 193, 91, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #f2c15b, transparent); opacity: 1;"></div>
+      <span class="card-num" style="color: rgba(242, 193, 91, 0.4);">02</span>
+      <h3 style="font-size: 24px; margin-bottom: 12px; color: #f2c15b; font-weight: 600;">登台演示 <span style="font-size: 14px; font-weight: normal; color: rgba(242, 193, 91, 0.8);">(Present)</span></h3>
+      <p class="body-text" style="flex-grow: 1; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">一键进入沉浸式全屏放映模式，隐藏所有杂乱控件，让原生网页秒变高保真 PPT 舞台。</p>
+      <div class="prompt-box" style="margin-top: auto; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(242, 193, 91, 0.3);">
+        <div class="prompt-label" style="background: rgba(242, 193, 91, 0.2); color: #f2c15b; border: 1px solid rgba(242, 193, 91, 0.4); font-weight: 600;">live pitch</div>
+        <p style="color: #ccc; margin: 0; font-size: 14px; line-height: 1.6;">适合直接带着修改后的原型上台提案、做工作汇报，或者录制产品宣发视频。</p>
+      </div>
+    </div>
+    
+    <!-- 路径 3: 工程队交接 (终端极客风) -->
+    <div class="card" style="display: flex; flex-direction: column; background: rgba(15, 20, 30, 0.95); border: 1px solid rgba(120, 215, 255, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #78d7ff, transparent); opacity: 1;"></div>
+      <span class="card-num" style="color: rgba(120, 215, 255, 0.4);">03</span>
+      <h3 style="font-size: 24px; margin-bottom: 12px; color: #78d7ff; font-weight: 600;">交还工程队 <span style="font-size: 14px; font-weight: normal; color: rgba(120, 215, 255, 0.8);">(Handoff)</span></h3>
+      <p class="body-text" style="flex-grow: 1; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">不用手敲枯燥的重构需求。一键将视觉修改意图打包成极高精度的 Prompt 喂给大模型。</p>
+      <div class="prompt-box" style="margin-top: auto; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(120, 215, 255, 0.3);">
+        <div class="prompt-label" style="background: rgba(120, 215, 255, 0.2); color: #78d7ff; border: 1px solid rgba(120, 215, 255, 0.4); font-weight: 600;">Cursor / Claude</div>
+        <div style="font-family: 'Courier New', Courier, monospace; color: #78d7ff; line-height: 1.6; font-size: 14px;">
+          <span style="color: #fff;">></span> <span style="color: #bbb;">Target:</span> [x:10, y:20] .hero-title<br>
+          <span style="color: #fff;">></span> <span style="color: #bbb;">Operation:</span> apply layout edits<br>
+          <span style="color: #6a9955; font-style: italic;">// 点击完成最后一公里的源码闭环</span>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+</div>
+</body>
+</html>
