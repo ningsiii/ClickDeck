@@ -240,6 +240,8 @@ describe("Intent Prompt Builder", () => {
       expect(prompt).toContain("Placement offset:");
       expect(prompt).toContain("Target B left edge is about 48% to the right of Source A left edge.");
       expect(prompt).toContain("Target B top edge is about 7% above Source A top edge.");
+      expect(prompt).toContain("Primary placement constraints:");
+      expect(prompt).toContain("Keep Source A below [Title] and preserve the vertical spacing.");
       expect(prompt).toContain("Placement references:");
       expect(prompt).toContain("- above: [Title], 24px away; place Target B below this reference / preserve vertical spacing.");
       expect(prompt).toContain("Final alignment guide:");
@@ -277,6 +279,40 @@ describe("Intent Prompt Builder", () => {
       expect(result.prompt).toContain("Exclude nearby labels/headings outside Source A's visual box");
       expect(result.prompt).toContain("Do not include nearby labels, headings, or parent-container text unless they overlap Source A");
       expect(result.prompt).toContain("- left: 适用场景与人群, 37px away; use it as horizontal context / preserve offset.");
+      expect(result.prompt).toContain("Primary placement constraints:");
+      expect(result.prompt).toContain('Place Source A to the right of "适用场景与人群" while preserving the horizontal relationship.');
+    }
+  });
+
+  it("summarizes the key left and below relationships as primary placement constraints", () => {
+    const input = mockRegionContext("move", "", false, [
+      mockCandidate("textLine", { text: "PPT 演示 / 汇报" }),
+      mockCandidate("textLine", { text: "产品经理 (PM)" })
+    ]);
+    addTargetContext(input, "", true);
+    input.targetContext!.nearby = [
+      { direction: "left", summary: "适用场景与人群", distance: 43, layoutSemantic: "use it as horizontal context / preserve offset" } as any,
+      { direction: "below", summary: "超越代码补全：", distance: 51, layoutSemantic: "place Target B above this reference / preserve vertical spacing" } as any
+    ];
+    input.targetContext!.activeAlignmentGuides = [
+      {
+        axis: "y",
+        position: 120,
+        targetEdge: "centerY",
+        sourceEdge: "centerY",
+        unitSummary: "适用场景与人群",
+        deltaPx: 0
+      }
+    ];
+
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const prompt = result.prompt;
+      expect(prompt).toContain("Primary placement constraints:");
+      expect(prompt).toContain('Preserve the recorded guide: Target B center Y aligns with "适用场景与人群" center Y.');
+      expect(prompt).toContain('Place Source A to the right of "适用场景与人群" while preserving the horizontal relationship.');
+      expect(prompt).toContain('Keep Source A above "超越代码补全：" and preserve the vertical spacing.');
     }
   });
 

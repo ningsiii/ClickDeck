@@ -26,6 +26,8 @@ type TargetGuidePosition = {
   targetEdge: AlignmentEdge;
 };
 
+const GUIDE_ORTHOGONAL_MAX = 240;
+
 function getTargetGuidePositions(rect: RectLike): TargetGuidePosition[] {
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
@@ -39,6 +41,21 @@ function getTargetGuidePositions(rect: RectLike): TargetGuidePosition[] {
   ];
 }
 
+function rangeDistance(startA: number, endA: number, startB: number, endB: number): number {
+  if (endA < startB) return startB - endA;
+  if (endB < startA) return startA - endB;
+  return 0;
+}
+
+function isGuideLocallyRelevant(rect: RectLike, candidate: GuideCandidate): boolean {
+  if (candidate.axis === "x") {
+    const distanceY = rangeDistance(rect.top, rect.bottom, candidate.sourceRect.top, candidate.sourceRect.bottom);
+    return distanceY <= Math.max(GUIDE_ORTHOGONAL_MAX, rect.height * 2);
+  }
+  const distanceX = rangeDistance(rect.left, rect.right, candidate.sourceRect.left, candidate.sourceRect.right);
+  return distanceX <= Math.max(GUIDE_ORTHOGONAL_MAX, rect.width);
+}
+
 export function computeActiveGuides(
   rect: RectLike,
   guideCandidates: GuideCandidate[],
@@ -50,6 +67,7 @@ export function computeActiveGuides(
   for (const target of targetPositions) {
     for (const candidate of guideCandidates) {
       if (candidate.axis !== target.axis) continue;
+      if (!isGuideLocallyRelevant(rect, candidate)) continue;
       const deltaPx = Math.abs(target.position - candidate.position);
       if (deltaPx > threshold) continue;
 

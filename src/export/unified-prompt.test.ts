@@ -128,6 +128,8 @@ describe("buildUnifiedPrompt", () => {
       expect(prompt).toContain("Treat Source A as the selected visual content group inside Source A's visual box");
       expect(prompt).toContain("Target B is below and shifted to the right of Source A");
       expect(prompt).toContain("Placement offset:");
+      expect(prompt).toContain("Primary placement constraints:");
+      expect(prompt).toContain("Place Source A to the left of [Title] while avoiding overlap.");
       expect(prompt).toContain("Placement references:");
       expect(prompt).toContain("- right: [Title], 10px away; avoid overlap / preserve offset.");
       expect(prompt).toContain("Final alignment guide:");

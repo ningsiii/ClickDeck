@@ -127,6 +127,19 @@ describe("Region Context", () => {
     expect(refs.some(ref => ref.unit === duplicateNearby)).toBe(true);
   });
 
+  it("findNearbyReferences excludes every source visual unit by id, even when it was not a top candidate", () => {
+    const region = mockRegion({ left: 100, top: 100, width: 100, height: 100 });
+    const sourceChip = mockUnit("textLine", { left: 100, top: 250, width: 100, height: 20 }, { id: "source-chip", textSnippet: "UI 设计 / 排版" });
+    const title = mockUnit("textLine", { left: 100, top: 290, width: 240, height: 40 }, { textSnippet: "超越代码补全：" });
+
+    const refs = findNearbyReferences(region, [sourceChip, title], {
+      excludeUnitIds: ["source-chip"]
+    });
+
+    expect(refs.some(ref => ref.summary === "UI 设计 / 排版")).toBe(false);
+    expect(refs.some(ref => ref.summary === "超越代码补全：")).toBe(true);
+  });
+
 
   it("buildRegionContext returns correct confidence", () => {
     const regionHigh = mockRegion({ left: 0, top: 0, width: 100, height: 100 }, "high");

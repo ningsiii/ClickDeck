@@ -1,6 +1,6 @@
 import { IntentOperation } from "../content/intent-region";
 import { collectCssFacts, CssFacts } from "../content/css-facts";
-import { ActiveAlignmentGuide, AlignmentEdge, RegionCandidate, RegionContext, summarizeVisualUnit } from "../content/region-context";
+import { ActiveAlignmentGuide, AlignmentEdge, NearbyReference, RegionCandidate, RegionContext, summarizeVisualUnit } from "../content/region-context";
 
 export type IntentPromptOptions = {
   language: "en" | "zh";
@@ -147,6 +147,48 @@ function appendPlacementOffset(lines: string[], sourceContext: RegionContext, ta
   lines.push("");
 }
 
+function quoteReference(summary: string): string {
+  return summary.startsWith("[") ? summary : `"${summary}"`;
+}
+
+function pickReference(context: RegionContext, direction: NearbyReference["direction"]): NearbyReference | undefined {
+  const references = context.nearby.filter(ref => ref.direction === direction);
+  return references.find(ref => !ref.summary.startsWith("[")) ?? references[0];
+}
+
+function appendPrimaryPlacementConstraints(lines: string[], targetContext: RegionContext): void {
+  const constraints: string[] = [];
+
+  targetContext.activeAlignmentGuides?.slice(0, 2).forEach((guide) => {
+    constraints.push(`- Preserve the recorded guide: Target B ${formatAlignmentEdge(guide.targetEdge)} aligns with ${quoteReference(guide.unitSummary)} ${formatAlignmentEdge(guide.sourceEdge)}.`);
+  });
+
+  const left = pickReference(targetContext, "left");
+  const right = pickReference(targetContext, "right");
+  const below = pickReference(targetContext, "below");
+  const above = pickReference(targetContext, "above");
+
+  if (left) {
+    constraints.push(`- Place Source A to the right of ${quoteReference(left.summary)} while preserving the horizontal relationship.`);
+  } else if (right) {
+    constraints.push(`- Place Source A to the left of ${quoteReference(right.summary)} while avoiding overlap.`);
+  }
+
+  if (below) {
+    constraints.push(`- Keep Source A above ${quoteReference(below.summary)} and preserve the vertical spacing.`);
+  } else if (above) {
+    constraints.push(`- Keep Source A below ${quoteReference(above.summary)} and preserve the vertical spacing.`);
+  }
+
+  lines.push("Primary placement constraints:");
+  if (constraints.length === 0) {
+    lines.push("- Use Placement offset and Target B visual box as the primary placement constraints.");
+  } else {
+    constraints.slice(0, 4).forEach(line => lines.push(line));
+  }
+  lines.push("");
+}
+
 function formatAlignmentEdge(edge: AlignmentEdge): string {
   if (edge === "centerX") return "center X";
   if (edge === "centerY") return "center Y";
@@ -270,6 +312,7 @@ export function appendMoveOperation(lines: string[], input: IntentPromptInput, o
   }
   lines.push("");
   appendPlacementOffset(lines, sourceContext, targetContext);
+  appendPrimaryPlacementConstraints(lines, targetContext);
   appendContextBlock(lines, "Target B", targetContext);
   lines.push("Target B placement reference:");
   if (targetContext.region.isGhostPreview) {

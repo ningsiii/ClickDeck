@@ -32,7 +32,7 @@ import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSli
 import { createIntentOverlay, type IntentOverlay } from "./intent-overlay";
 import { createIntentDraftPanel, type IntentDraftPanel } from "./intent-draft-panel";
 import { createIntentRegion, type IntentOperation, type IntentRegion } from "./intent-region";
-import { collectVisualUnits, type RectLike } from "./visual-units";
+import { collectVisualUnits, findVisualUnitsInBox, type RectLike } from "./visual-units";
 import { buildRegionContext, summarizeVisualUnit, type GuideCandidate, type RegionContext, type ActiveAlignmentGuide } from "./region-context";
 import { createMoveTargetBox, type MoveTargetBox } from "./intent-ghost";
 
@@ -1075,27 +1075,29 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                 const box = relativeBox ?? draft.context.region.documentBox;
 
                 const units = collectVisualUnits();
-                const sourceTextSnippets = draft.context.candidates
-                  .map(c => c.unit.textSnippet?.trim())
+                const sourceUnits = findVisualUnitsInBox(units, sourceViewportBox).map(match => match.unit);
+                const sourceTextSnippets = sourceUnits
+                  .map(unit => unit.textSnippet?.trim())
                   .filter(Boolean) as string[];
                 const sourceTextSet = new Set(sourceTextSnippets);
-                const sourceElements = new Set(draft.context.candidates.map(c => c.unit.element));
+                const sourceElements = new Set(sourceUnits.map(unit => unit.element));
+                const sourceUnitIds = new Set(sourceUnits.map(unit => unit.id));
                 const guideCandidates: GuideCandidate[] = units
                   .filter(u => {
                     const textSnippet = u.textSnippet?.trim();
-                    return !sourceElements.has(u.element) && (!textSnippet || !sourceTextSet.has(textSnippet));
+                    return !sourceUnitIds.has(u.id) && !sourceElements.has(u.element) && (!textSnippet || !sourceTextSet.has(textSnippet));
                   })
                   .flatMap((u) => {
                     const summary = summarizeVisualUnit(u);
                     const centerX = u.rect.left + u.rect.width / 2;
                     const centerY = u.rect.top + u.rect.height / 2;
                     return [
-                      { axis: "x" as const, position: u.rect.left, sourceEdge: "left" as const, unitSummary: summary, unitKind: u.kind },
-                      { axis: "x" as const, position: u.rect.right, sourceEdge: "right" as const, unitSummary: summary, unitKind: u.kind },
-                      { axis: "x" as const, position: centerX, sourceEdge: "centerX" as const, unitSummary: summary, unitKind: u.kind },
-                      { axis: "y" as const, position: u.rect.top, sourceEdge: "top" as const, unitSummary: summary, unitKind: u.kind },
-                      { axis: "y" as const, position: u.rect.bottom, sourceEdge: "bottom" as const, unitSummary: summary, unitKind: u.kind },
-                      { axis: "y" as const, position: centerY, sourceEdge: "centerY" as const, unitSummary: summary, unitKind: u.kind }
+                      { axis: "x" as const, position: u.rect.left, sourceEdge: "left" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect },
+                      { axis: "x" as const, position: u.rect.right, sourceEdge: "right" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect },
+                      { axis: "x" as const, position: centerX, sourceEdge: "centerX" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect },
+                      { axis: "y" as const, position: u.rect.top, sourceEdge: "top" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect },
+                      { axis: "y" as const, position: u.rect.bottom, sourceEdge: "bottom" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect },
+                      { axis: "y" as const, position: centerY, sourceEdge: "centerY" as const, unitSummary: summary, unitKind: u.kind, sourceRect: u.rect }
                     ];
                   });
 
@@ -1107,17 +1109,10 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                     isGhostPreview: true
                   });
                   const idx = intentDrafts.findIndex(d => d.operation.id === opId);
-                  const excludeTexts = idx !== -1
-                    ? intentDrafts[idx].context.candidates
-                      .map(c => c.unit.textSnippet?.trim())
-                      .filter(Boolean) as string[]
-                    : undefined;
-                  const excludeElements = idx !== -1
-                    ? intentDrafts[idx].context.candidates.map(c => c.unit.element)
-                    : undefined;
                   const targetContext = buildRegionContext(region, units, {
-                    excludeTextSnippets: excludeTexts,
-                    excludeElements,
+                    excludeTextSnippets: sourceTextSnippets,
+                    excludeElements: Array.from(sourceElements),
+                    excludeUnitIds: Array.from(sourceUnitIds),
                     activeAlignmentGuides: activeGuides
                   });
                   if (idx !== -1) {

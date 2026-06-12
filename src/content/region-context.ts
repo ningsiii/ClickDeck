@@ -31,6 +31,7 @@ export type GuideCandidate = {
   sourceEdge: AlignmentEdge;
   unitSummary: string;
   unitKind: VisualUnit["kind"];
+  sourceRect: RectLike;
 };
 
 export type ActiveAlignmentGuide = {
@@ -344,10 +345,14 @@ export function calculateAlignmentHints(
 export type RegionContextOptions = {
   excludeTextSnippets?: string[];
   excludeElements?: HTMLElement[];
+  excludeUnitIds?: string[];
   activeAlignmentGuides?: ActiveAlignmentGuide[];
 };
 
 function shouldExcludeUnit(unit: VisualUnit, options?: RegionContextOptions): boolean {
+  if (options?.excludeUnitIds?.includes(unit.id)) {
+    return true;
+  }
   if (options?.excludeElements?.some(element => element === unit.element)) {
     return true;
   }
