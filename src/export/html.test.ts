@@ -85,4 +85,22 @@ describe("exportHtmlSnapshot", () => {
     expect(document.querySelector("#clickdeck-style")).not.toBeNull();
     expect(document.querySelector("[data-clickdeck='true']")).not.toBeNull();
   });
+
+  it("preserves edited text, inline styles, and replaced image sources in the HTML snapshot", () => {
+    const heading = document.querySelector<HTMLHeadingElement>("h1")!;
+    const image = document.querySelector<HTMLImageElement>("#dataImg")!;
+    heading.textContent = "Edited headline";
+    heading.style.fontSize = "48px";
+    heading.style.color = "rgb(255, 0, 0)";
+    image.src = "data:image/png;base64,ZmFrZS1pbWFnZQ==";
+
+    exportHtmlSnapshot(logger);
+
+    expect(blobArgs).not.toBeNull();
+    const parts = (blobArgs?.[0] as unknown[]) ?? [];
+    const html = parts.join("");
+    expect(html).toContain("Edited headline");
+    expect(html).toContain('style="font-size: 48px; color: rgb(255, 0, 0);"');
+    expect(html).toContain("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+  });
 });

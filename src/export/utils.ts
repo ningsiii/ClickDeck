@@ -32,6 +32,32 @@ export async function waitForVisualStability(baseWaitMs = 300): Promise<void> {
   });
 }
 
+export async function waitForExportReadiness(baseWaitMs = 300): Promise<void> {
+  await waitForVisualStability(baseWaitMs);
+
+  const pendingImages = Array.from(document.images).filter((image) => !image.complete);
+  if (pendingImages.length === 0) {
+    return;
+  }
+
+  await Promise.allSettled(pendingImages.map((image) => waitForImageReady(image)));
+  await waitForVisualStability(0);
+}
+
+async function waitForImageReady(image: HTMLImageElement): Promise<void> {
+  const imageReady = typeof image.decode === "function"
+    ? image.decode()
+    : new Promise<void>((resolve) => {
+        image.addEventListener("load", () => resolve(), { once: true });
+        image.addEventListener("error", () => resolve(), { once: true });
+      });
+
+  await Promise.race([
+    imageReady.catch(() => undefined),
+    wait(1500)
+  ]);
+}
+
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

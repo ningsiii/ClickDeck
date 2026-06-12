@@ -128,6 +128,33 @@ describe("exportLongImageSnapshot", () => {
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
   });
 
+  it("captures the edited DOM state for font-size and replaced images", async () => {
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 800, writable: true });
+    document.body.innerHTML = `
+      <h1 id="headline" style="font-size: 64px;">Edited export state</h1>
+      <img id="hero" src="data:image/png;base64,ZmFrZS1pbWFnZQ==" />
+    `;
+    const hero = document.querySelector<HTMLImageElement>("#hero")!;
+    Object.defineProperty(hero, "complete", { value: true, configurable: true });
+
+    (global as any).chrome.runtime.sendMessage = vi.fn((msg, callback) => {
+      if (msg.type === "CLICKDECK_CAPTURE_VISIBLE_TAB") {
+        const headline = document.querySelector<HTMLElement>("#headline")!;
+        const image = document.querySelector<HTMLImageElement>("#hero")!;
+        expect(window.getComputedStyle(headline).fontSize).toBe("64px");
+        expect(image.src).toContain("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+        callback({ dataUrl: "data:image/png;base64,mocked" });
+      }
+    });
+
+    await exportLongImageSnapshot(mockLogger);
+
+    expect((global as any).chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      { type: "CLICKDECK_CAPTURE_VISIBLE_TAB" },
+      expect.any(Function)
+    );
+  });
+
   it("stops when canvas exceeds MAX_CANVAS_PIXELS", async () => {
     Object.defineProperty(window, 'devicePixelRatio', { value: 3, writable: true });
     Object.defineProperty(document.documentElement, 'scrollHeight', { value: 20000, writable: true });

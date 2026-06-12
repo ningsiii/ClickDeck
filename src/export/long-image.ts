@@ -1,5 +1,5 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
-import { detectScrollTarget, throttledCaptureViewport, wait, waitForVisualStability } from "./utils";
+import { detectScrollTarget, throttledCaptureViewport, waitForExportReadiness } from "./utils";
 
 const MAX_CANVAS_PIXELS = 80_000_000;
 
@@ -57,9 +57,7 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
     // 1. Hide UI
     document.documentElement.classList.add("clickdeck-exporting");
     
-    // We intentionally let fixed elements repeat as per MVP restrictions, 
-    // but we might need a short delay to let hiding take effect.
-    await wait(100);
+    await waitForExportReadiness(100);
 
     const viewportHeight = scrollTarget.getClientHeight();
     const viewportWidth = scrollTarget.getClientWidth();
@@ -80,8 +78,7 @@ export async function exportLongImageSnapshot(logger: ClickDeckLogger): Promise<
     while (currentY < totalHeight) {
       scrollTarget.setScrollTop(currentY);
       
-      // Wait for rendering and any lazy loads or scroll events
-      await waitForVisualStability(300);
+      await waitForExportReadiness(300);
       
       // Request screenshot from background using throttled utility
       const img = await throttledCaptureViewport(logger);

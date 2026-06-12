@@ -1,6 +1,6 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
 import { detectPresentationSlides, syncPresentationHostState } from "../content/presentation-mode";
-import { detectScrollTarget, throttledCaptureViewport, wait, waitForVisualStability } from "./utils";
+import { detectScrollTarget, throttledCaptureViewport, waitForExportReadiness } from "./utils";
 import { downloadPdfBlob, imageElementToJpegDataUrl, SimpleImagePdf } from "./simple-image-pdf";
 
 declare global {
@@ -17,7 +17,7 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
 
   try {
     document.documentElement.classList.add("clickdeck-exporting");
-    await wait(100);
+    await waitForExportReadiness(100);
 
     const viewportHeight = scrollTarget.getClientHeight();
     const viewportWidth = scrollTarget.getClientWidth();
@@ -34,7 +34,7 @@ export async function exportImagePdfLongSnapshot(logger: ClickDeckLogger): Promi
 
     while (currentY < totalHeight) {
       scrollTarget.setScrollTop(currentY);
-      await waitForVisualStability(300);
+      await waitForExportReadiness(300);
 
       const img = await throttledCaptureViewport(logger);
       const actualY = scrollTarget.getScrollTop();
@@ -72,7 +72,7 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
 
   try {
     document.documentElement.classList.add("clickdeck-exporting");
-    await wait(100);
+    await waitForExportReadiness(100);
 
     const viewportHeight = scrollTarget.getClientHeight();
     const viewportWidth = scrollTarget.getClientWidth();
@@ -125,7 +125,7 @@ export async function exportImagePdfA4Snapshot(logger: ClickDeckLogger): Promise
 
     while (currentY < totalHeight) {
       scrollTarget.setScrollTop(currentY);
-      await waitForVisualStability(300);
+      await waitForExportReadiness(300);
 
       const img = await throttledCaptureViewport(logger);
       const actualY = scrollTarget.getScrollTop();
@@ -199,7 +199,7 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
     document.documentElement.classList.add("clickdeck-exporting", "clickdeck-presenting");
     neutralizeTransformedAncestors(transformedAncestorStates);
     window.scrollTo(0, 0);
-    await wait(100);
+    await waitForExportReadiness(100);
 
     const dpr = window.devicePixelRatio || 1;
     const pdfWidth = 1920;
@@ -227,7 +227,7 @@ export async function exportImagePdfSlidesSnapshot(logger: ClickDeckLogger): Pro
         logger
       });
 
-      await waitForVisualStability(300);
+      await waitForExportReadiness(300);
 
       const img = await throttledCaptureViewport(logger);
 
