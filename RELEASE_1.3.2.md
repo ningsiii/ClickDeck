@@ -6,6 +6,7 @@ ClickDeck v1.3.2 is a release-preparation update for the current MVP. It package
 
 - Updated the shipped extension version to `1.3.2`.
 - Updated the in-panel version label to match the release package.
+- Improved toolbar activation feedback for old tabs, local HTML files, and browser-restricted pages.
 - Refreshed the README download references for the `v1.3.2` package.
 - Prepared a fuller English listing description that covers visual edit suggestions and external AI review handoff.
 - Rebuilt the extension package as a fresh `v1.3.2` ZIP artifact.
@@ -23,7 +24,18 @@ ClickDeck v1.3.2 is a release-preparation update for the current MVP. It package
 3. Open `chrome://extensions/` or `edge://extensions/`.
 4. Enable **Developer mode**.
 5. Click **Load unpacked** and choose the extracted folder.
-6. If you already installed an older unpacked version, reload it after replacing the files.
+6. If you want to edit local `file://` HTML files, open ClickDeck's **Details** page in `chrome://extensions/` and enable **Allow access to file URLs**.
+7. If you already installed an older unpacked version, reload it after replacing the files.
+
+## Local HTML Permission
+
+Chrome and Edge do not let extensions access local `file://` pages by default. For local HTML demos or presentations:
+
+1. Open `chrome://extensions/` or `edge://extensions/`.
+2. Find **ClickDeck**.
+3. Click **Details**.
+4. Enable **Allow access to file URLs** / **允许访问文件网址**.
+5. Reload the local HTML file, then click the ClickDeck toolbar icon again.
 
 ## Product Boundary Reminder
 
@@ -81,6 +93,7 @@ ClickDeck v1.3.2 是一次发布准备版本，重点是把当前 MVP 的安装�
 
 - 扩展版本号升级到 `1.3.2`
 - 面板中的版本显示同步更新
+- 改进旧标签页、本地 HTML 和浏览器受限页面上的插件图标点击反馈
 - README 的下载链接和 release 指向更新为 `v1.3.2`
 - 补充了更完整的英文描述，覆盖“修改意见”和“评审 prompt 交接”
 - 重新生成了 `v1.3.2` 发布包
