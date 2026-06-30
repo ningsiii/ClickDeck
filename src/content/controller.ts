@@ -32,6 +32,7 @@ import { exportImagePdfLongSnapshot, exportImagePdfA4Snapshot, exportImagePdfSli
 import { createIntentOverlay, type IntentOverlay } from "./intent-overlay";
 import { createIntentDraftPanel, type IntentDraftPanel } from "./intent-draft-panel";
 import { createIntentRegion, type IntentOperation, type IntentRegion } from "./intent-region";
+import { buildIntentDraftVisualPlan, pickNextIntentColor } from "./intent-draft-state";
 import { collectVisualUnits, findVisualUnitsInBox, type RectLike } from "./visual-units";
 import { buildRegionContext, summarizeVisualUnit, type GuideCandidate, type RegionContext, type ActiveAlignmentGuide } from "./region-context";
 import { createMoveTargetBox, type MoveTargetBox } from "./intent-ghost";
@@ -193,6 +194,44 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   function removeIntentDraftMarkers(draft: IntentDraftState): void {
     draft.sourceMarker.remove();
     draft.targetMarker?.remove();
+  }
+
+  function refreshIntentDraftMarkers(): void {
+    const visualPlan = buildIntentDraftVisualPlan(
+      intentDrafts.map(draft => ({
+        id: draft.operation.id,
+        action: draft.operation.action,
+        color: draft.color,
+        hasTarget: Boolean(draft.targetContext)
+      })),
+      getPanelLabels().intentDelBadge
+    );
+
+    const planById = new Map(visualPlan.map(item => [item.id, item]));
+    for (const draft of intentDrafts) {
+      const plan = planById.get(draft.operation.id);
+      if (!plan) continue;
+
+      draft.sourceMarker.remove();
+      draft.sourceMarker = createIntentMarker(
+        draft.context.region,
+        draft.color,
+        plan.sourceLabel,
+        draft.operation.action === "remove" ? "remove" : "source"
+      );
+
+      draft.targetMarker?.remove();
+      if (draft.targetContext && plan.targetLabel) {
+        draft.targetMarker = createIntentMarker(
+          draft.targetContext.region,
+          draft.color,
+          plan.targetLabel,
+          "target"
+        );
+      } else {
+        draft.targetMarker = undefined;
+      }
+    }
   }
 
   function getEffectivePatches(): EditorPatch[] {
@@ -992,10 +1031,14 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
             source: region,
             createdAt: Date.now()
           };
-          const color = intentColors[intentDrafts.length % intentColors.length];
-          const sourceMarker = createIntentMarker(region, color, `${intentDrafts.length + 1}`);
+          const color = pickNextIntentColor(
+            intentDrafts.map(draft => draft.color),
+            intentColors
+          );
+          const sourceMarker = createIntentMarker(region, color, "");
           
           intentDrafts.push({ operation, context, color, sourceMarker });
+          refreshIntentDraftMarkers();
 
           if (!intentDraftPanel) {
             intentDraftPanel = createIntentDraftPanel(
@@ -1012,12 +1055,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                     moveTargetBox.destroy();
                     moveTargetBox = null;
                     if (intentDrafts[idx].targetContext) {
-                      intentDrafts[idx].targetMarker = createIntentMarker(
-                        intentDrafts[idx].targetContext!.region, 
-                        intentDrafts[idx].color, 
-                        `${idx + 1}B`, 
-                        "target"
-                      );
+                      refreshIntentDraftMarkers();
                     }
                   }
 
@@ -1033,6 +1071,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                 const draft = intentDrafts.find(d => d.operation.id === opId);
                 if (draft) removeIntentDraftMarkers(draft);
                 intentDrafts = intentDrafts.filter(d => d.operation.id !== opId);
+                refreshIntentDraftMarkers();
                 if (intentDrafts.length === 0) {
                   intentDraftPanel?.hide();
                 }
@@ -1046,6 +1085,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                 const draft = intentDrafts.find(d => d.operation.id === opId);
                 if (draft) removeIntentDraftMarkers(draft);
                 intentDrafts = intentDrafts.filter(d => d.operation.id !== opId);
+                refreshIntentDraftMarkers();
                 if (intentDrafts.length === 0) {
                   intentDraftPanel?.hide();
                 }
@@ -1097,13 +1137,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                     if (idx !== -1) {
                       intentDrafts[idx].targetContext = targetContext;
                       intentDrafts[idx].operation.target = targetContext.region;
-                      intentDrafts[idx].targetMarker?.remove();
-                      intentDrafts[idx].targetMarker = createIntentMarker(
-                        targetContext.region,
-                        intentDrafts[idx].color,
-                        `${idx + 1}B`,
-                        "target"
-                      );
+                      refreshIntentDraftMarkers();
                       pulseIntentMarker(intentDrafts[idx].targetMarker);
                     }
                   },
@@ -1207,19 +1241,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                 const draft = intentDrafts[idx];
                 draft.operation.action = action;
                 draft.context.region.action = action;
-                
-                if (draft.sourceMarker) {
-                  draft.sourceMarker.remove();
-                  if (action === "move") {
-                    draft.sourceMarker = createIntentMarker(draft.context.region, draft.color, `${idx + 1}A`);
-                  } else if (action === "remove") {
-                    const panelLabels = getPanelLabels();
-                    draft.sourceMarker = createIntentMarker(draft.context.region, draft.color, `${idx + 1} ${panelLabels.intentDelBadge}`, "remove");
-                  } else {
-                    draft.sourceMarker = createIntentMarker(draft.context.region, draft.color, `${idx + 1}`);
-                  }
-                }
-                
+
                 if (action !== "move") {
                   if (moveTargetBox) {
                     moveTargetBox.destroy();
@@ -1232,6 +1254,8 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
                   draft.targetContext = undefined;
                   draft.operation.target = undefined;
                 }
+
+                refreshIntentDraftMarkers();
               }
             );
             document.documentElement.appendChild(intentDraftPanel.element);
