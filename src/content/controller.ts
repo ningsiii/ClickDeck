@@ -19,7 +19,7 @@ import { canAutoStartTextEditing, createElementLocator, describeElement, placeCa
 import { getAskGeminiPrompt, type AskGeminiPromptKey } from "../export/ask-gemini";
 import { getPanelLabels, getPanelLanguage } from "./i18n";
 import { createOverlay, type ClickDeckOverlay } from "./overlay";
-import { createPanel, type ClickDeckPanel, type PanelAction, type SelectionContext } from "./panel";
+import { createPanel, type ClickDeckPanel, type PanelAction, type PanelLayout, type SelectionContext } from "./panel";
 import { getEditableTarget, getTabSwitchTarget, isLargeContainer, resolveEditableTarget } from "./selection";
 import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
@@ -60,6 +60,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   let selectedElement: HTMLElement | null = null;
   let overlay: ClickDeckOverlay | null = null;
   let panel: ClickDeckPanel | null = null;
+  let panelLayout: PanelLayout | null = null;
   let intentOverlay: IntentOverlay | null = null;
   let intentDraftPanel: IntentDraftPanel | null = null;
   let intentDrafts: IntentDraftState[] = [];
@@ -1283,6 +1284,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
               }
             );
             document.documentElement.appendChild(intentDraftPanel.element);
+            if (panelLayout) {
+              intentDraftPanel.setAnchorLayout(panelLayout);
+            }
           }
           
           intentDraftPanel.show();
@@ -1330,9 +1334,14 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     setEditorActive(state, true);
     overlay = createOverlay(rootId);
     panel = createPanel(handlePanelAction, {
-      onCollapsedChange: syncCollapsedBrowsingMode
+      onCollapsedChange: syncCollapsedBrowsingMode,
+      onLayoutChange: (layout) => {
+        panelLayout = layout;
+        intentDraftPanel?.setAnchorLayout(layout);
+      }
     });
     overlay.root.append(panel.element);
+    panel.syncLayout();
     refreshHistoryButtons();
     panel.setReplaceMediaAvailability(false, "none");
     panel.setSelectionContext("none");

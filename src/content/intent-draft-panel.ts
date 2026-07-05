@@ -1,4 +1,5 @@
 import { getPanelLabels } from "./i18n";
+import type { PanelLayout } from "./panel";
 import type { IntentOperation, IntentAction } from "./intent-region";
 
 const STYLE_ID = "clickdeck-intent-draft-style";
@@ -9,6 +10,7 @@ export type IntentDraftPanel = {
   addDraft: (operation: IntentOperation, color?: string) => void;
   hide: () => void;
   show: () => void;
+  setAnchorLayout: (layout: PanelLayout) => void;
 };
 
 export function createIntentDraftPanel(
@@ -26,12 +28,31 @@ export function createIntentDraftPanel(
   const element = document.createElement("div");
   element.className = "clickdeck-intent-draft clickdeck-intent-draft--hidden";
   element.dataset.clickdeck = "true";
-  
+
+  element.innerHTML = `
+    <button class="clickdeck-intent-draft__rail" type="button" aria-label="${labels.intentSection}">
+      <span class="clickdeck-intent-draft__tabs"></span>
+    </button>
+    <div class="clickdeck-intent-draft__sheet">
+      <div class="clickdeck-intent-draft__sheet-header">
+        <span class="clickdeck-intent-draft__sheet-title">${labels.intentSection}</span>
+        <button class="clickdeck-button clickdeck-button--icon clickdeck-intent-draft__collapse" type="button" aria-label="${labels.collapse}" title="${labels.collapse}">⇤</button>
+      </div>
+    </div>
+  `;
+
+  const rail = element.querySelector(".clickdeck-intent-draft__rail") as HTMLButtonElement;
+  const tabs = element.querySelector(".clickdeck-intent-draft__tabs") as HTMLSpanElement;
+  const sheet = element.querySelector(".clickdeck-intent-draft__sheet") as HTMLDivElement;
+  const collapseButton = element.querySelector(".clickdeck-intent-draft__collapse") as HTMLButtonElement;
   const cardsContainer = document.createElement("div");
   cardsContainer.className = "clickdeck-intent-draft__cards";
-  element.appendChild(cardsContainer);
+  sheet.appendChild(cardsContainer);
 
   const cards = new Map<string, HTMLDivElement>();
+  let expanded = true;
+  let manuallyHidden = false;
+  let currentLayout: PanelLayout | null = null;
 
   function createCardDOM(operation: IntentOperation, color = "#3b82f6") {
     const card = document.createElement("div");
@@ -189,17 +210,62 @@ export function createIntentDraftPanel(
 
     cardsContainer.appendChild(card);
     cards.set(operation.id, card);
+    expanded = true;
     updateContainerVisibility();
     textarea.focus();
   }
 
+  function renderTabs() {
+    tabs.innerHTML = "";
+    const items = Array.from(cards.values());
+    items.forEach((card) => {
+      const tab = document.createElement("span");
+      tab.className = "clickdeck-intent-draft__tab";
+      tab.style.background = card.style.getPropertyValue("--clickdeck-intent-color") || "#3b82f6";
+      tabs.appendChild(tab);
+    });
+  }
+
+  function syncAnchorPosition() {
+    if (!currentLayout) return;
+    const railWidth = 18;
+    const sheetWidth = 280;
+    const preferLeft = currentLayout.left + currentLayout.width / 2 > window.innerWidth / 2;
+    const top = Math.max(12, currentLayout.top + 12);
+    const totalExpandedWidth = railWidth + sheetWidth;
+    const left = preferLeft
+      ? currentLayout.left - (expanded ? totalExpandedWidth : railWidth)
+      : currentLayout.left + currentLayout.width;
+
+    element.classList.toggle("clickdeck-intent-draft--left", preferLeft);
+    element.classList.toggle("clickdeck-intent-draft--right", !preferLeft);
+    element.classList.toggle("clickdeck-intent-draft--expanded", expanded);
+    element.style.top = `${top}px`;
+    element.style.left = `${Math.max(8, left)}px`;
+  }
+
   function updateContainerVisibility() {
-    if (cards.size === 0) {
+    renderTabs();
+
+    const shouldHide = manuallyHidden || cards.size === 0 || currentLayout?.collapsed;
+    if (shouldHide) {
       element.classList.add("clickdeck-intent-draft--hidden");
     } else {
       element.classList.remove("clickdeck-intent-draft--hidden");
     }
+    syncAnchorPosition();
   }
+
+  rail.addEventListener("click", () => {
+    if (cards.size === 0) return;
+    expanded = true;
+    updateContainerVisibility();
+  });
+
+  collapseButton.addEventListener("click", () => {
+    expanded = false;
+    updateContainerVisibility();
+  });
 
   return {
     element,
@@ -210,12 +276,18 @@ export function createIntentDraftPanel(
       createCardDOM(operation, color);
     },
     hide: () => {
-      element.classList.add("clickdeck-intent-draft--hidden");
+      manuallyHidden = true;
+      updateContainerVisibility();
     },
     show: () => {
+      manuallyHidden = false;
       if (cards.size > 0) {
-        element.classList.remove("clickdeck-intent-draft--hidden");
+        updateContainerVisibility();
       }
+    },
+    setAnchorLayout: (layout) => {
+      currentLayout = layout;
+      updateContainerVisibility();
     }
   };
 }
@@ -227,22 +299,91 @@ function injectBaseStyles(): void {
   style.textContent = `
     .clickdeck-intent-draft {
       position: fixed;
-      top: 16px;
-      right: 280px; /* Right next to the main panel (248px + 16px padding + gap) */
+      z-index: 2147483647;
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      transition: opacity 0.2s ease;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .clickdeck-intent-draft--hidden {
+      display: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .clickdeck-intent-draft__rail {
+      width: 18px;
+      min-width: 18px;
+      padding: 8px 3px;
+      border: 1px solid rgba(120, 84, 53, 0.22);
+      background: #fffaf2;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      cursor: pointer;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      min-height: 96px;
+    }
+    .clickdeck-intent-draft--left .clickdeck-intent-draft__rail {
+      order: 2;
+      border-left: none;
+      border-radius: 0 12px 12px 0;
+    }
+    .clickdeck-intent-draft--right .clickdeck-intent-draft__rail {
+      order: 1;
+      border-right: none;
+      border-radius: 12px 0 0 12px;
+    }
+    .clickdeck-intent-draft__tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+    .clickdeck-intent-draft__tab {
+      flex: 1 1 0;
+      min-height: 28px;
+      border-radius: 999px;
+      opacity: 0.95;
+    }
+    .clickdeck-intent-draft__sheet {
       width: 280px;
       background: #fff;
       border: 1px solid rgba(120, 84, 53, 0.22);
       border-radius: 12px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-      z-index: 2147483647;
-      transition: opacity 0.2s;
-      font-family: Inter, system-ui, sans-serif;
       max-height: calc(100vh - 32px);
       overflow-y: auto;
+      display: none;
     }
-    .clickdeck-intent-draft--hidden {
-      opacity: 0;
-      pointer-events: none;
+    .clickdeck-intent-draft--expanded .clickdeck-intent-draft__sheet {
+      display: block;
+    }
+    .clickdeck-intent-draft--left .clickdeck-intent-draft__sheet {
+      order: 1;
+      border-right: none;
+      border-radius: 12px 0 0 12px;
+    }
+    .clickdeck-intent-draft--right .clickdeck-intent-draft__sheet {
+      order: 2;
+      border-left: none;
+      border-radius: 0 12px 12px 0;
+    }
+    .clickdeck-intent-draft__sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 12px 0;
+    }
+    .clickdeck-intent-draft__sheet-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6f5f52;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .clickdeck-intent-draft__cards {
+      padding-top: 8px;
     }
     .clickdeck-intent-draft__editing {
       display: flex;

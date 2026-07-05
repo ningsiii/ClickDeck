@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createIntentDraftPanel } from "./intent-draft-panel";
 import type { IntentOperation } from "./intent-region";
+import type { PanelLayout } from "./panel";
 
 describe("intent-draft-panel", () => {
   beforeEach(() => {
@@ -32,6 +33,14 @@ describe("intent-draft-panel", () => {
       }
     };
   }
+
+  const mockLayout: PanelLayout = {
+    left: 600,
+    top: 40,
+    width: 248,
+    height: 500,
+    collapsed: false
+  };
 
   it("should block empty intent save for normal intent", () => {
     const onSave = vi.fn();
@@ -130,5 +139,42 @@ describe("intent-draft-panel", () => {
     // Target button should exist and have the active class for move
     expect(btnTarget).not.toBeNull();
     expect(btnTarget.classList.contains("clickdeck-intent-draft__target-btn--active")).toBe(true);
+  });
+
+  it("shows one colored tab per draft and expands the whole drawer together", () => {
+    const panel = createIntentDraftPanel(vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    panel.setAnchorLayout(mockLayout);
+
+    const first = createMockOperation();
+    const second = createMockOperation();
+    second.id = "op-2";
+    second.source.id = "reg-2";
+
+    panel.addDraft(first, "#e85d75");
+    panel.addDraft(second, "#16a085");
+
+    const tabs = panel.element.querySelectorAll(".clickdeck-intent-draft__tab");
+    expect(tabs).toHaveLength(2);
+    expect((tabs[0] as HTMLElement).style.background).toContain("232, 93, 117");
+    expect((tabs[1] as HTMLElement).style.background).toContain("22, 160, 133");
+
+    const collapse = panel.element.querySelector(".clickdeck-intent-draft__collapse") as HTMLButtonElement;
+    collapse.click();
+    expect(panel.element.classList.contains("clickdeck-intent-draft--expanded")).toBe(false);
+
+    const rail = panel.element.querySelector(".clickdeck-intent-draft__rail") as HTMLButtonElement;
+    rail.click();
+    expect(panel.element.classList.contains("clickdeck-intent-draft--expanded")).toBe(true);
+  });
+
+  it("hides the drawer when the main panel is collapsed", () => {
+    const panel = createIntentDraftPanel(vi.fn(), vi.fn(), vi.fn(), vi.fn());
+    panel.setAnchorLayout(mockLayout);
+    panel.addDraft(createMockOperation(), "#e85d75");
+
+    expect(panel.element.classList.contains("clickdeck-intent-draft--hidden")).toBe(false);
+
+    panel.setAnchorLayout({ ...mockLayout, collapsed: true });
+    expect(panel.element.classList.contains("clickdeck-intent-draft--hidden")).toBe(true);
   });
 });

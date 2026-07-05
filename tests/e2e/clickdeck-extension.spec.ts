@@ -703,4 +703,51 @@ test.describe("ClickDeck core editing workflows", () => {
     expect(finalFontSize).toBe(updatedFontSize);
   });
 
+  test("16. Intent drawer docks to the main panel with color tabs and follows collapse/move", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    const heading = page.getByRole("heading", { name: "Quarterly Product Review" });
+    const mouse = page.mouse;
+
+    for (const [start, end] of [
+      [{ x: 40, y: 40 }, { x: 140, y: 120 }],
+      [{ x: 180, y: 60 }, { x: 280, y: 140 }]
+    ] as const) {
+      await heading.click();
+      await page.locator("[data-action='add-intent']").click();
+      await mouse.move(start.x, start.y);
+      await mouse.down();
+      await mouse.move(end.x, end.y);
+      await mouse.up();
+    }
+
+    const drawer = page.locator(".clickdeck-intent-draft");
+    await expect(drawer).toBeVisible();
+    await expect(page.locator(".clickdeck-intent-draft__tab")).toHaveCount(2);
+
+    await page.locator(".clickdeck-intent-draft__collapse").click();
+    await expect(drawer).not.toHaveClass(/clickdeck-intent-draft--expanded/);
+
+    const panel = page.locator(".clickdeck-panel");
+    const header = panel.locator(".clickdeck-panel__header");
+    const drawerBefore = await drawer.boundingBox();
+    const headerBox = await header.boundingBox();
+    expect(drawerBefore).not.toBeNull();
+    expect(headerBox).not.toBeNull();
+    if (!drawerBefore || !headerBox) return;
+
+    await mouse.move(headerBox.x + 20, headerBox.y + 10);
+    await mouse.down();
+    await mouse.move(headerBox.x - 80, headerBox.y + 40);
+    await mouse.up();
+
+    const drawerAfterMove = await drawer.boundingBox();
+    expect(drawerAfterMove).not.toBeNull();
+    expect(drawerAfterMove!.x).toBeLessThan(drawerBefore.x - 40);
+
+    await panel.locator("[data-internal-action='collapse']").click();
+    await expect(drawer).toBeHidden();
+  });
+
 });

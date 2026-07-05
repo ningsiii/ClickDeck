@@ -40,6 +40,7 @@ export type SavedEditsNoticeOptions = {
 export type ClickDeckPanel = {
   element: HTMLDivElement;
   destroy: () => void;
+  syncLayout: () => void;
   setHint: (text: string) => void;
   setHistoryAvailability: (canUndo: boolean, canRedo: boolean) => void;
   setReplaceMediaAvailability: (enabled: boolean, mediaType: "image" | "video" | "none") => void;
@@ -50,8 +51,17 @@ export type ClickDeckPanel = {
   hideSavedEditsNotice: () => void;
 };
 
+export type PanelLayout = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  collapsed: boolean;
+};
+
 export type PanelOptions = {
   onCollapsedChange?: (collapsed: boolean) => void;
+  onLayoutChange?: (layout: PanelLayout) => void;
 };
 
 export function createPanel(onAction: (action: PanelAction) => void, options: PanelOptions = {}): ClickDeckPanel {
@@ -261,9 +271,11 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       if (action === "collapse") {
         element.classList.add("clickdeck-panel--collapsed");
         options.onCollapsedChange?.(true);
+        emitLayoutChange();
       } else if (action === "restore") {
         element.classList.remove("clickdeck-panel--collapsed");
         options.onCollapsedChange?.(false);
+        emitLayoutChange();
       } else if (action === "transparency") {
         if (element.classList.contains("clickdeck-panel--opacity-70")) {
           element.classList.remove("clickdeck-panel--opacity-70");
@@ -334,6 +346,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       element.style.left = `${x}px`;
       element.style.top = `${y}px`;
       element.style.right = "auto";
+      emitLayoutChange();
     });
 
     window.addEventListener("mouseup", () => {
@@ -435,10 +448,24 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
 
   updateContextUI();
 
+  function emitLayoutChange(): void {
+    const rect = element.getBoundingClientRect();
+    options.onLayoutChange?.({
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      collapsed: element.classList.contains("clickdeck-panel--collapsed")
+    });
+  }
+
   return {
     element,
     destroy: () => {
       element.remove();
+    },
+    syncLayout: () => {
+      emitLayoutChange();
     },
     setHint: (text) => {
       const hint = element.querySelector(".clickdeck-panel__hint");
