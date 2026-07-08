@@ -22,14 +22,15 @@ export type ElementLocator = {
 };
 
 export type SelectedElementState = {
-  element: HTMLElement;
+  element: Element;
   descriptor: string;
 };
 
 export type StylePatch = {
   id: string;
   kind: "style";
-  targetElement: HTMLElement;
+  batchId?: string;
+  targetElement: Element;
   targetDescriptor: string;
   targetLocator?: ElementLocator;
   property: StyleProperty;
@@ -41,7 +42,8 @@ export type StylePatch = {
 export type ContentPatch = {
   id: string;
   kind: "content";
-  targetElement: HTMLElement;
+  batchId?: string;
+  targetElement: Element;
   targetDescriptor: string;
   targetLocator?: ElementLocator;
   before: string;
@@ -52,7 +54,8 @@ export type ContentPatch = {
 export type AttributePatch = {
   id: string;
   kind: "attribute";
-  targetElement: HTMLElement;
+  batchId?: string;
+  targetElement: Element;
   targetDescriptor: string;
   targetLocator?: ElementLocator;
   attribute: "src";
@@ -169,7 +172,7 @@ export function serializePatches(patches: EditorPatch[]): PersistedPatch[] {
   return persisted;
 }
 
-export function findElementByLocator(locator: ElementLocator): HTMLElement | null {
+export function findElementByLocator(locator: ElementLocator): Element | null {
   const candidates: string[] = [];
   if (locator.cssPath) candidates.push(locator.cssPath);
   if (locator.nthOfTypePath) candidates.push(locator.nthOfTypePath);
@@ -177,7 +180,7 @@ export function findElementByLocator(locator: ElementLocator): HTMLElement | nul
   for (const selector of candidates) {
     try {
       const el = document.querySelector(selector);
-      if (!(el instanceof HTMLElement)) {
+      if (!(el instanceof Element)) {
         continue;
       }
       if (el.tagName.toLowerCase() !== locator.tagName.toLowerCase()) {
@@ -208,6 +211,13 @@ export function hydratePersistedPatches(
     }
 
     if (entry.kind === "style") {
+      if (!(target instanceof HTMLElement)) {
+        logger?.warn?.("Persisted style patch target is not an HTMLElement; skipping", {
+          target: entry.targetDescriptor,
+          locator: entry.targetLocator
+        });
+        continue;
+      }
       patches.push({
         id: entry.id,
         kind: "style",
@@ -223,6 +233,13 @@ export function hydratePersistedPatches(
     }
 
     if (entry.kind === "attribute") {
+      if (!(target instanceof HTMLElement)) {
+        logger?.warn?.("Persisted attribute patch target is not an HTMLElement; skipping", {
+          target: entry.targetDescriptor,
+          locator: entry.targetLocator
+        });
+        continue;
+      }
       patches.push({
         id: entry.id,
         kind: "attribute",

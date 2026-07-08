@@ -314,6 +314,51 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(page.locator("[data-action='replace-image']")).toBeHidden();
   });
 
+  test("edits simple inline SVG text with undo and redo", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await page.evaluate(() => {
+      const host = document.createElement("section");
+      host.id = "svg-text-fixture";
+      host.innerHTML = `
+        <svg id="editable-svg" width="220" height="80" style="display:block; width:220px; height:80px;">
+          <text id="editable-svg-text" x="12" y="42">Hello</text>
+          <text x="12" y="66"><tspan id="editable-svg-tspan">World</tspan></text>
+        </svg>
+      `;
+      document.body.prepend(host);
+    });
+    await activateExtension(page);
+
+    await page.locator("#editable-svg-text").click();
+    await expect(page.locator(".clickdeck-panel__complex-notice")).toContainText("svg");
+
+    const editButton = page.locator("[data-action='edit-svg-text']");
+    await expect(editButton).toBeVisible();
+    await expect(editButton).toBeEnabled();
+    await expect(page.locator(".clickdeck-panel__svg-text-status")).toContainText("Simple editable SVG text detected");
+
+    await editButton.click();
+    const modal = page.locator(".clickdeck-svg-text-modal");
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText("Longer text may overflow");
+
+    const inputs = modal.locator(".clickdeck-svg-text-modal__input");
+    await inputs.nth(0).fill("Lens");
+    await inputs.nth(1).fill("Deck");
+    await modal.locator("[data-svg-text-action='apply']").click();
+
+    await expect(page.locator("#editable-svg-text")).toHaveText("Lens");
+    await expect(page.locator("#editable-svg-tspan")).toHaveText("Deck");
+
+    await page.locator("[data-action='undo']").click();
+    await expect(page.locator("#editable-svg-text")).toHaveText("Hello");
+    await expect(page.locator("#editable-svg-tspan")).toHaveText("World");
+
+    await page.locator("[data-action='redo']").click();
+    await expect(page.locator("#editable-svg-text")).toHaveText("Lens");
+    await expect(page.locator("#editable-svg-tspan")).toHaveText("Deck");
+  });
+
   test("6. Save/Restore persistence", async ({ page, demoPageUrl }) => {
     // Clear storage first
     await page.goto(demoPageUrl);

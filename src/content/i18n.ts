@@ -59,6 +59,16 @@ export type PanelLabels = {
   complexCanvasHint: string;
   complexFormulaHint: string;
   complexIframeHint: string;
+  svgTextSection: string;
+  editSvgText: string;
+  svgTextEditableHint: string;
+  svgTextNoneEditable: string;
+  svgTextComplex: string;
+  svgTextWarning: string;
+  svgTextEditorTitle: string;
+  svgTextApply: string;
+  svgTextCancel: string;
+  svgTextItemPrefix: string;
   smaller: string;
   larger: string;
   round: string;
@@ -216,6 +226,16 @@ const englishLabels: PanelLabels = {
   complexCanvasHint: "Canvas content is drawn output. Only the whole block size and spacing can be adjusted.",
   complexFormulaHint: "Formula regions support only outer size and spacing adjustments. Edit the source formula separately.",
   complexIframeHint: "Embedded iframe content is not edited internally. Modify the loaded page or srcdoc source first.",
+  svgTextSection: "SVG text",
+  editSvgText: "Edit SVG text",
+  svgTextEditableHint: "Simple editable SVG text detected. Text does not reflow automatically.",
+  svgTextNoneEditable: "No editable SVG text was detected. It may already be converted into shapes.",
+  svgTextComplex: "SVG text was detected, but the structure is too complex to edit safely. Update the original SVG code instead.",
+  svgTextWarning: "SVG text does not reflow automatically. Longer text may overflow.",
+  svgTextEditorTitle: "Edit SVG text",
+  svgTextApply: "Apply",
+  svgTextCancel: "Close",
+  svgTextItemPrefix: "Text",
   smaller: "-",
   larger: "+",
   round: "Round",
@@ -373,6 +393,16 @@ const chineseLabels: PanelLabels = {
   complexCanvasHint: "Canvas 内容是绘制结果，只能调整整体尺寸和间距，不能直接修改内部内容。",
   complexFormulaHint: "公式区域仅支持整体大小和间距调整，内部内容需要修改源公式。",
   complexIframeHint: "iframe 是嵌入页面，不进入内部结构；内部内容需要先修改所加载页面或 srcdoc 源代码。",
+  svgTextSection: "SVG 文字",
+  editSvgText: "修改 SVG 文字",
+  svgTextEditableHint: "检测到可编辑 SVG 文字，仅支持简单文字替换，不会自动重新排版。",
+  svgTextNoneEditable: "未检测到可编辑 SVG 文字，可能已被转为图形。",
+  svgTextComplex: "检测到 SVG 文字，但结构较复杂，当前无法直接修改。请先修改该 SVG 的原始结构代码。",
+  svgTextWarning: "SVG 文字不会自动重新排版，文字变长可能会溢出。",
+  svgTextEditorTitle: "修改 SVG 文字",
+  svgTextApply: "应用",
+  svgTextCancel: "关闭",
+  svgTextItemPrefix: "文字",
   smaller: "-",
   larger: "+",
   round: "圆形",

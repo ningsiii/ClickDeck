@@ -1,19 +1,20 @@
 import type { ElementLocator } from "../state/editor-state";
 import { getComplexElementKind } from "./complex-elements";
 
-export function describeElement(element: HTMLElement): string {
+export function describeElement(element: Element): string {
   const id = element.id ? `#${element.id}` : "";
-  const className = typeof element.className === "string" && element.className.trim()
-    ? `.${element.className.trim().split(/\s+/).slice(0, 2).join(".")}`
+  const classAttr = element.getAttribute("class")?.trim() ?? "";
+  const className = classAttr
+    ? `.${classAttr.split(/\s+/).slice(0, 2).join(".")}`
     : "";
   return `${element.tagName.toLowerCase()}${id}${className}`;
 }
 
-export function isClickDeckUiElement(element: HTMLElement): boolean {
+export function isClickDeckUiElement(element: Element): boolean {
   return Boolean(element.closest("[data-clickdeck='true']"));
 }
 
-export function createElementLocator(element: HTMLElement): ElementLocator {
+export function createElementLocator(element: Element): ElementLocator {
   const tagName = element.tagName.toLowerCase();
   const idHint = element.id ? `#${element.id}` : undefined;
   const classHint = pickStableClassHint(element);
@@ -55,7 +56,10 @@ export function createElementLocator(element: HTMLElement): ElementLocator {
   };
 }
 
-function pickBackgroundImageHint(element: HTMLElement): string | undefined {
+function pickBackgroundImageHint(element: Element): string | undefined {
+  if (!(element instanceof HTMLElement)) {
+    return undefined;
+  }
   try {
     const style = window.getComputedStyle(element);
     const bg = style.getPropertyValue("background-image");
@@ -67,7 +71,7 @@ function pickBackgroundImageHint(element: HTMLElement): string | undefined {
   }
 }
 
-function pickSemanticRole(element: HTMLElement): string | undefined {
+function pickSemanticRole(element: Element): string | undefined {
   const tagName = element.tagName.toLowerCase();
   if (/^h[1-6]$/.test(tagName)) return "heading";
   if (tagName === "p") return "paragraph";
@@ -77,7 +81,7 @@ function pickSemanticRole(element: HTMLElement): string | undefined {
   if (tagName === "input" || tagName === "textarea" || tagName === "select") return "input";
   if (tagName === "table") return "tableLike";
   
-  const className = (typeof element.className === "string" ? element.className : "").toLowerCase();
+  const className = (element.getAttribute("class") ?? "").toLowerCase();
   if (className.includes("card")) return "cardLike";
   if (className.includes("section") || className.includes("container") || className.includes("wrapper")) return "sectionLike";
   if (className.includes("chart") || className.includes("graph")) return "chartLike";
@@ -85,7 +89,7 @@ function pickSemanticRole(element: HTMLElement): string | undefined {
   return undefined;
 }
 
-function pickSemanticAncestor(element: HTMLElement): string | undefined {
+function pickSemanticAncestor(element: Element): string | undefined {
   let curr = element.parentElement;
   while (curr && curr !== document.body && curr !== document.documentElement) {
     const role = pickSemanticRole(curr);
@@ -106,13 +110,13 @@ function pickSemanticAncestor(element: HTMLElement): string | undefined {
   return undefined;
 }
 
-function pickSiblingDescriptor(element: HTMLElement, isPrevious: boolean): string | undefined {
+function pickSiblingDescriptor(element: Element, isPrevious: boolean): string | undefined {
   const sibling = isPrevious ? element.previousElementSibling : element.nextElementSibling;
-  if (!sibling || !(sibling instanceof HTMLElement)) return undefined;
+  if (!sibling || !(sibling instanceof Element)) return undefined;
   return describeElement(sibling);
 }
 
-function assessSelectorStability(element: HTMLElement, _paths: { cssPath: string; nthOfTypePath: string }): { stability: "high" | "medium" | "low"; reason: string } {
+function assessSelectorStability(element: Element, _paths: { cssPath: string; nthOfTypePath: string }): { stability: "high" | "medium" | "low"; reason: string } {
   if (element.id) {
     return { stability: "high", reason: "Has ID" };
   }
@@ -236,7 +240,7 @@ export function findMeaningfulDescendant(root: HTMLElement): HTMLElement | null 
   return null;
 }
 
-function pickRoleHint(element: HTMLElement): string | undefined {
+function pickRoleHint(element: Element): string | undefined {
   const ariaLabel = element.getAttribute("aria-label")?.trim();
   if (ariaLabel) return ariaLabel.slice(0, 80);
 
@@ -246,13 +250,13 @@ function pickRoleHint(element: HTMLElement): string | undefined {
   return undefined;
 }
 
-function pickTextSnippet(element: HTMLElement): string | undefined {
+function pickTextSnippet(element: Element): string | undefined {
   const raw = (element.textContent ?? "").replace(/\s+/g, " ").trim();
   if (!raw) return undefined;
   return raw.length > 80 ? `${raw.slice(0, 77)}...` : raw;
 }
 
-function pickImageHint(element: HTMLElement): string | undefined {
+function pickImageHint(element: Element): string | undefined {
   if (element.tagName.toLowerCase() !== "img") return undefined;
   const img = element as HTMLImageElement;
   const alt = img.alt?.trim();
@@ -263,8 +267,8 @@ function pickImageHint(element: HTMLElement): string | undefined {
   return basename || undefined;
 }
 
-function pickStableClassHint(element: HTMLElement): string | undefined {
-  const className = typeof element.className === "string" ? element.className : "";
+function pickStableClassHint(element: Element): string | undefined {
+  const className = element.getAttribute("class") ?? "";
   const classes = className
     .split(/\s+/)
     .map((value) => value.trim())
@@ -292,13 +296,13 @@ function isLikelyStableToken(value: string): boolean {
   return true;
 }
 
-export function isElementVisible(element: HTMLElement): boolean {
+export function isElementVisible(element: Element): boolean {
   const rect = element.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) {
     return false;
   }
 
-  let current: HTMLElement | null = element;
+  let current: Element | null = element;
   while (current && current !== document.body && current !== document.documentElement) {
     const style = window.getComputedStyle(current);
     if (style.display === "none" || style.visibility === "hidden" || parseFloat(style.opacity) < 0.05) {
@@ -310,7 +314,7 @@ export function isElementVisible(element: HTMLElement): boolean {
   return true;
 }
 
-export function getSlideContext(element: HTMLElement): string | undefined {
+export function getSlideContext(element: Element): string | undefined {
   const container = element.closest('section, .slide, .page, [data-slide], [data-page], [aria-roledescription="slide"]');
   if (!container || !(container instanceof HTMLElement)) {
     return undefined;
@@ -355,9 +359,9 @@ function safeBasename(urlOrPath: string): string {
   }
 }
 
-function buildCssPath(element: HTMLElement): string {
+function buildCssPath(element: Element): string {
   const parts: string[] = [];
-  let current: HTMLElement | null = element;
+  let current: Element | null = element;
   while (current && current.tagName.toLowerCase() !== "html") {
     if (current.id) {
       parts.push(`#${cssEscape(current.id)}`);
@@ -372,9 +376,9 @@ function buildCssPath(element: HTMLElement): string {
   return selector || simpleSelector(element);
 }
 
-function buildNthOfTypePath(element: HTMLElement): string {
+function buildNthOfTypePath(element: Element): string {
   const parts: string[] = [];
-  let current: HTMLElement | null = element;
+  let current: Element | null = element;
   while (current && current.tagName.toLowerCase() !== "html") {
     const tag = current.tagName.toLowerCase();
     const index = nthOfTypeIndex(current);
@@ -386,28 +390,28 @@ function buildNthOfTypePath(element: HTMLElement): string {
   return selector || `${element.tagName.toLowerCase()}:nth-of-type(${nthOfTypeIndex(element)})`;
 }
 
-function simpleSelector(element: HTMLElement): string {
+function simpleSelector(element: Element): string {
   const tag = element.tagName.toLowerCase();
   const index = nthOfTypeIndex(element);
   return `${tag}:nth-of-type(${index})`;
 }
 
-function nthOfTypeIndex(element: HTMLElement): number {
+function nthOfTypeIndex(element: Element): number {
   const parent = element.parentElement;
   if (!parent) return 1;
   const tag = element.tagName;
-  const siblings = Array.from(parent.children).filter((child) => (child as HTMLElement).tagName === tag);
+  const siblings = Array.from(parent.children).filter((child) => child.tagName === tag);
   const index = siblings.indexOf(element) + 1;
   return index > 0 ? index : 1;
 }
 
-function getSiblingIndex(element: HTMLElement): number {
+function getSiblingIndex(element: Element): number {
   const parent = element.parentElement;
   if (!parent) return 0;
   return Array.from(parent.children).indexOf(element);
 }
 
-function pickParentDescriptor(element: HTMLElement): string | undefined {
+function pickParentDescriptor(element: Element): string | undefined {
   let current = element.parentElement;
   while (current && current.tagName.toLowerCase() !== "html") {
     const hasId = Boolean(current.id);

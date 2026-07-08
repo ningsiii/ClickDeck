@@ -4,7 +4,7 @@ export type ClickDeckOverlay = {
   root: HTMLDivElement;
   outline: HTMLDivElement;
   destroy: () => void;
-  updateOutline: (target: HTMLElement | null) => void;
+  updateOutline: (target: Element | null) => void;
 };
 
 export function createOverlay(rootId: string): ClickDeckOverlay {
@@ -31,7 +31,7 @@ export function createOverlay(rootId: string): ClickDeckOverlay {
   };
 }
 
-function updateOutline(outline: HTMLDivElement, target: HTMLElement | null): void {
+function updateOutline(outline: HTMLDivElement, target: Element | null): void {
   if (!target) {
     outline.style.display = "none";
     return;
@@ -292,6 +292,13 @@ function injectBaseStyles(rootId: string): void {
       margin-bottom: 4px;
     }
 
+    .clickdeck-panel__sub-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #7a6554;
+    }
+
     .clickdeck-panel__advanced {
       margin-top: 12px;
       border-top: 1px solid rgba(120, 84, 53, 0.14);
@@ -485,6 +492,42 @@ function injectBaseStyles(rootId: string): void {
       display: flex;
       gap: 6px;
       justify-content: flex-end;
+    }
+
+    .clickdeck-svg-text-modal__rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: min(360px, calc(100vh - 260px));
+      overflow-y: auto;
+    }
+
+    .clickdeck-svg-text-modal__row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .clickdeck-svg-text-modal__label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b4e35;
+    }
+
+    .clickdeck-svg-text-modal__input {
+      width: 100%;
+      min-height: 34px;
+      padding: 0 10px;
+      border: 1px solid #e8d5b0;
+      border-radius: 6px;
+      background: #fff;
+      color: #3d2f24;
+      font-size: 13px;
+    }
+
+    .clickdeck-svg-text-modal__input:focus {
+      outline: 2px solid #c8a47a;
+      outline-offset: -1px;
     }
 
     .clickdeck-notice {

@@ -161,12 +161,12 @@ const PROMPT_COPY = {
   }
 } as const;
 
-function getLocalHtmlSnippet(el: HTMLElement | undefined): string | null {
+function getLocalHtmlSnippet(el: Element | undefined): string | null {
   if (!el) return null;
   
   try {
     // Create a clone to strip clickdeck UI
-    const clone = el.cloneNode(true) as HTMLElement;
+    const clone = el.cloneNode(true) as Element;
     const clickdeckElements = clone.querySelectorAll("[id^='clickdeck-'], [class*='clickdeck-']");
     clickdeckElements.forEach(n => n.remove());
     

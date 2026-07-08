@@ -278,3 +278,60 @@ describe("createPanel prompt preview language roles", () => {
     panel.destroy();
   });
 });
+
+describe("createPanel SVG text editor", () => {
+  it("enables SVG text edit entry only for editable SVG state", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    panel.setSelectionContext("svg");
+    panel.setSvgTextEditorState({ mode: "none", message: "No editable SVG text." });
+
+    const button = panel.element.querySelector<HTMLButtonElement>("[data-action='edit-svg-text']");
+    const status = panel.element.querySelector<HTMLElement>(".clickdeck-panel__svg-text-status");
+    expect(button?.disabled).toBe(true);
+    expect(status?.textContent).toContain("No editable SVG text");
+
+    panel.setSvgTextEditorState({ mode: "editable", message: "Editable SVG text detected." });
+    expect(button?.disabled).toBe(false);
+    expect(status?.textContent).toContain("Editable SVG text detected");
+
+    panel.destroy();
+  });
+
+  it("renders SVG text editor modal and applies edited values", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    let applied: { id: string; label: string; value: string }[] | null = null;
+    panel.showSvgTextEditor({
+      items: [
+        { id: "text-1", label: "Text 1", value: "Hello" },
+        { id: "text-2", label: "Text 2", value: "World" }
+      ],
+      warning: "Longer text may overflow.",
+      onApply: (updates) => {
+        applied = updates;
+      }
+    });
+
+    const overlay = panel.element.querySelector<HTMLElement>(".clickdeck-svg-text-overlay");
+    expect(overlay).not.toBeNull();
+    expect(overlay?.textContent).toContain("Longer text may overflow");
+
+    const inputs = overlay?.querySelectorAll<HTMLInputElement>(".clickdeck-svg-text-modal__input") ?? [];
+    expect(inputs).toHaveLength(2);
+    inputs[0].value = "Changed";
+    inputs[1].value = "Again";
+
+    overlay?.querySelector<HTMLButtonElement>("[data-svg-text-action='apply']")?.click();
+
+    expect(applied).toEqual([
+      { id: "text-1", label: "Text 1", value: "Changed" },
+      { id: "text-2", label: "Text 2", value: "Again" }
+    ]);
+    expect(panel.element.querySelector(".clickdeck-svg-text-overlay")).toBeNull();
+
+    panel.destroy();
+  });
+});

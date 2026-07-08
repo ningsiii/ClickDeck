@@ -6,6 +6,18 @@ export type ComplexElementInfo = {
   promptLabel: string;
 };
 
+export type EditableSvgTextItem = {
+  id: string;
+  label: string;
+  value: string;
+  target: SVGTextElement | SVGTSpanElement;
+};
+
+export type SvgTextEditState =
+  | { mode: "editable"; items: EditableSvgTextItem[] }
+  | { mode: "none" }
+  | { mode: "complex" };
+
 const FORMULA_SELECTOR = "math, .katex, .mathjax, mjx-container";
 
 export function getComplexElementKind(element: Element | null | undefined): ComplexElementKind | null {
@@ -76,15 +88,21 @@ export function isInsideClickDeckUi(element: Element): boolean {
 }
 
 export function getComplexElementPromptNotes(element: Element, isZh: boolean): string[] {
-  const info = getComplexElementInfo(element);
+  const info = getComplexElementInfo(resolvePromptTarget(element));
   if (!info) {
     return [];
   }
 
+  const isSvgTextTarget = isSimpleSvgTextTarget(element);
+
   if (isZh) {
     const lines = [`   复杂元素：${info.promptLabel}。`];
     if (info.kind === "svg") {
-      lines.push("   说明：这是 inline SVG，当前只修改其外层样式，不进入内部 path/text/viewBox 结构。");
+      lines.push(
+        isSvgTextTarget
+          ? "   说明：这是 inline SVG。当前只替换已检测到的简单 SVG 文字内容，不修改内部路径、图形或 viewBox 结构。"
+          : "   说明：这是 inline SVG，当前只修改其外层样式，不进入内部 path/text/viewBox 结构。"
+      );
     } else if (info.kind === "canvas") {
       lines.push("   说明：这是 canvas，内容是绘制结果；当前只修改外层样式，不识别或修改内部绘图对象。");
     } else if (info.kind === "formula") {
@@ -97,7 +115,11 @@ export function getComplexElementPromptNotes(element: Element, isZh: boolean): s
 
   const lines = [`   Complex element: ${info.promptLabel}.`];
   if (info.kind === "svg") {
-    lines.push("   Note: This is inline SVG. Only outer styles are changed; internal path/text/viewBox structure is not edited.");
+    lines.push(
+      isSvgTextTarget
+        ? "   Note: This is inline SVG. Only detected simple SVG text content is changed; internal paths, graphics, and viewBox structure are not edited."
+        : "   Note: This is inline SVG. Only outer styles are changed; internal path/text/viewBox structure is not edited."
+    );
   } else if (info.kind === "canvas") {
     lines.push("   Note: This is canvas. Its content is drawn output; only outer styles are changed.");
   } else if (info.kind === "formula") {
@@ -106,6 +128,81 @@ export function getComplexElementPromptNotes(element: Element, isZh: boolean): s
     lines.push(`   Note: This is embedded iframe content${getIframeDetails(element, false)}. Only the outer iframe is changed; internal DOM is not edited.`);
   }
   return lines;
+}
+
+function isSimpleSvgTextTarget(element: Element): boolean {
+  const tagName = element.tagName.toLowerCase();
+  return tagName === "text" || tagName === "tspan";
+}
+
+export function getSvgTextEditState(element: Element | null | undefined): SvgTextEditState | null {
+  if (!(element instanceof SVGSVGElement)) {
+    return null;
+  }
+
+  const textElements = Array.from(element.querySelectorAll("text"));
+  if (textElements.length === 0) {
+    return { mode: "none" };
+  }
+
+  const items: EditableSvgTextItem[] = [];
+  let sawComplex = false;
+
+  for (const textEl of textElements) {
+    if (isInsideUnsupportedSvgContainer(textEl) || textEl.querySelector("textPath, foreignObject")) {
+      sawComplex = true;
+      continue;
+    }
+
+    if (textEl.children.length === 0) {
+      const value = normalizeSvgText(textEl.textContent);
+      if (value) {
+        items.push({
+          id: `text-${items.length + 1}`,
+          label: `Text ${items.length + 1}`,
+          value,
+          target: textEl
+        });
+      }
+      continue;
+    }
+
+    const childElements = Array.from(textEl.children);
+    const hasOnlySimpleTspans =
+      childElements.length > 0 &&
+      childElements.every((child) => child.tagName.toLowerCase() === "tspan") &&
+      childElements.every((child) => child.children.length === 0) &&
+      hasNoDirectTextOutsideChildren(textEl);
+
+    if (!hasOnlySimpleTspans) {
+      sawComplex = true;
+      continue;
+    }
+
+    for (const child of childElements) {
+      const tspan = child as SVGTSpanElement;
+      const value = normalizeSvgText(tspan.textContent);
+      if (!value) {
+        continue;
+      }
+      items.push({
+        id: `text-${items.length + 1}`,
+        label: `Text ${items.length + 1}`,
+        value,
+        target: tspan
+      });
+    }
+  }
+
+  if (sawComplex) {
+    return { mode: "complex" };
+  }
+
+  if (items.length === 0) {
+    return { mode: "none" };
+  }
+
+  return { mode: "editable", items };
 }
 
 function getFormulaPromptLabel(element: Element): string {
@@ -137,4 +234,28 @@ function getIframeDetails(element: Element, isZh: boolean): string {
     details.push(isZh ? "包含 srcdoc" : "has srcdoc");
   }
   return details.length ? ` (${details.join(", ")})` : "";
+}
+
+function resolvePromptTarget(element: Element): Element {
+  if (getComplexElementKind(element)) {
+    return element;
+  }
+  return element.closest(`svg, canvas, iframe, ${FORMULA_SELECTOR}`) ?? element;
+}
+
+function isInsideUnsupportedSvgContainer(element: SVGTextElement): boolean {
+  return Boolean(element.closest("defs, mask, clipPath, foreignObject"));
+}
+
+function hasNoDirectTextOutsideChildren(element: SVGTextElement): boolean {
+  return Array.from(element.childNodes).every((node) => {
+    if (node.nodeType !== Node.TEXT_NODE) {
+      return true;
+    }
+    return !(node.textContent ?? "").trim();
+  });
+}
+
+function normalizeSvgText(value: string | null | undefined): string {
+  return (value ?? "").replace(/\s+/g, " ").trim();
 }

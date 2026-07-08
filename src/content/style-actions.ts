@@ -46,7 +46,7 @@ export type AppliedStyleChange = {
 
 export function applyStyleAction(
   logger: ClickDeckLogger,
-  element: HTMLElement,
+  element: Element & { style: CSSStyleDeclaration },
   action: StyleAction
 ): AppliedStyleChange[] | null {
   const computed = window.getComputedStyle(element);
@@ -348,7 +348,7 @@ export function applyStyleAction(
 }
 
 function buildFormulaScaleChanges(
-  element: HTMLElement,
+  element: Element & { style: CSSStyleDeclaration },
   computed: CSSStyleDeclaration,
   direction: -1 | 1
 ): AppliedStyleChange[] {
@@ -361,7 +361,7 @@ function buildFormulaScaleChanges(
 }
 
 function buildMediaScaleChanges(
-  element: HTMLElement,
+  element: Element & { style: CSSStyleDeclaration },
   computed: CSSStyleDeclaration,
   nextWidth: string
 ): AppliedStyleChange[] {

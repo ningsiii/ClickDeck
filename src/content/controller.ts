@@ -19,7 +19,7 @@ import { canAutoStartTextEditing, createElementLocator, describeElement, placeCa
 import { getAskGeminiPrompt, type AskGeminiPromptKey } from "../export/ask-gemini";
 import { getPanelLabels, getPanelLanguage } from "./i18n";
 import { createOverlay, type ClickDeckOverlay } from "./overlay";
-import { createPanel, type ClickDeckPanel, type PanelAction, type PanelLayout, type SelectionContext } from "./panel";
+import { createPanel, type ClickDeckPanel, type PanelAction, type PanelLayout, type SelectionContext, type SvgTextEditorItem } from "./panel";
 import { getEditableTarget, getTabSwitchTarget, isLargeContainer, resolveEditableTarget } from "./selection";
 import { applyStyleAction, type StyleAction } from "./style-actions";
 import { exportHtmlSnapshot } from "../export/html";
@@ -36,7 +36,7 @@ import { buildIntentDraftVisualPlan, pickNextIntentColor } from "./intent-draft-
 import { collectVisualUnits, findVisualUnitsInBox, type RectLike } from "./visual-units";
 import { buildRegionContext, summarizeVisualUnit, type GuideCandidate, type RegionContext, type ActiveAlignmentGuide } from "./region-context";
 import { createMoveTargetBox, type MoveTargetBox } from "./intent-ghost";
-import { getComplexElementKind } from "./complex-elements";
+import { getComplexElementKind, getSvgTextEditState } from "./complex-elements";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -57,8 +57,8 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   const state = createEditorState();
   const history = createEditHistory();
   let active = false;
-  let hoveredElement: HTMLElement | null = null;
-  let selectedElement: HTMLElement | null = null;
+  let hoveredElement: Element | null = null;
+  let selectedElement: Element | null = null;
   let overlay: ClickDeckOverlay | null = null;
   let panel: ClickDeckPanel | null = null;
   let panelLayout: PanelLayout | null = null;
@@ -76,7 +76,33 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   const containerTags = new Set(["div", "section", "article", "main", "header", "footer", "nav", "aside"]);
   const intentColors = ["#e85d75", "#16a085", "#d97706", "#2563eb", "#8b5cf6", "#0f766e"];
 
-  function getSelectionContext(target: HTMLElement | null): SelectionContext {
+  function refreshSvgTextEditorState(target: Element | null): void {
+    if (!(target instanceof SVGSVGElement)) {
+      panel?.setSvgTextEditorState(null);
+      return;
+    }
+
+    const svgTextState = getSvgTextEditState(target);
+    if (!svgTextState) {
+      panel?.setSvgTextEditorState(null);
+      return;
+    }
+
+    if (svgTextState.mode === "editable") {
+      panel?.setSvgTextEditorState({
+        mode: "editable",
+        message: labels.svgTextEditableHint
+      });
+      return;
+    }
+
+    panel?.setSvgTextEditorState({
+      mode: svgTextState.mode,
+      message: svgTextState.mode === "complex" ? labels.svgTextComplex : labels.svgTextNoneEditable
+    });
+  }
+
+  function getSelectionContext(target: Element | null): SelectionContext {
     if (!target) {
       return "none";
     }
@@ -91,7 +117,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     if (tag === "video") {
       return "video";
     }
-    if (textTags.has(tag) || canAutoStartTextEditing(target)) {
+    if (textTags.has(tag) || (target instanceof HTMLElement && canAutoStartTextEditing(target))) {
       return "text";
     }
     if (containerTags.has(tag)) {
@@ -408,12 +434,20 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return [];
     }
 
+    const groupBatchId = last.batchId;
     const groupCreatedAt = last.createdAt;
     const groupTarget = last.targetDescriptor;
     const collected: EditorPatch[] = [last];
 
     while (stack.length > 0) {
       const previous = stack[stack.length - 1];
+      if (groupBatchId) {
+        if (!previous || previous.batchId !== groupBatchId) {
+          break;
+        }
+        collected.push(stack.pop() as EditorPatch);
+        continue;
+      }
       if (
         !previous ||
         previous.kind !== "style" ||
@@ -437,7 +471,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
   function applyPatchValue(patch: EditorPatch, value: string): void {
     if (patch.kind === "style") {
-      patch.targetElement.style[patch.property] = value;
+      if ("style" in patch.targetElement) {
+        (patch.targetElement as Element & { style: CSSStyleDeclaration }).style[patch.property] = value;
+      }
     } else if (patch.kind === "attribute") {
       if (patch.attribute === "src" && patch.targetElement instanceof HTMLImageElement) {
         patch.targetElement.src = value;
@@ -520,7 +556,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    const rawTarget = event.target as HTMLElement;
+    const rawTarget = event.target as Element;
     const hadSelectionContext = Boolean(selectedElement || editingElement);
 
     // If clicking inside the currently editing element, do not intercept
@@ -529,7 +565,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    if (selectedElement && rawTarget === selectedElement && isLargeContainer(selectedElement)) {
+    if (selectedElement instanceof HTMLElement && rawTarget === selectedElement && isLargeContainer(selectedElement)) {
       event.preventDefault();
       event.stopPropagation();
       clearSelection("double-click large container");
@@ -572,10 +608,11 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     const mediaType = tag === "img" ? "image" : tag === "video" ? "video" : "none";
     panel?.setReplaceMediaAvailability(mediaType !== "none", mediaType);
     panel?.setSelectionContext(getSelectionContext(target));
+    refreshSvgTextEditorState(target);
 
     // Only auto-start in-place text editing for text-like elements.
     // Non-text elements (img/button/input/...) must not be forced into contenteditable.
-    if (canAutoStartTextEditing(target)) {
+    if (target instanceof HTMLElement && canAutoStartTextEditing(target)) {
       editingElement = target;
       originalText = target.textContent ?? "";
       target.setAttribute("contenteditable", "true");
@@ -597,11 +634,12 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     panel?.setHint(labels.selectHint);
     panel?.setReplaceMediaAvailability(false, "none");
     panel?.setSelectionContext("none");
+    panel?.setSvgTextEditorState(null);
     updateOutline();
     logger.info("Selection cleared", { reason });
   }
 
-  function selectElement(target: HTMLElement, reason: string): void {
+  function selectElement(target: Element, reason: string): void {
     stopEditing();
     selectedElement = target;
     const descriptor = describeElement(target);
@@ -611,6 +649,7 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     const mediaType = tag === "img" ? "image" : tag === "video" ? "video" : "none";
     panel?.setReplaceMediaAvailability(mediaType !== "none", mediaType);
     panel?.setSelectionContext(getSelectionContext(target));
+    refreshSvgTextEditorState(target);
     updateOutline();
     logger.info("Element selected", { descriptor, reason });
   }
@@ -650,6 +689,10 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       event.stopPropagation();
 
       const direction = event.shiftKey ? "backward" : "forward";
+      if (!(selectedElement instanceof HTMLElement)) {
+        return;
+      }
+
       const next = getTabSwitchTarget(selectedElement, direction);
       if (!next || next === selectedElement) {
         return;
@@ -660,18 +703,18 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   }
 
   function handleStyleAction(action: StyleAction): void {
-    if (!selectedElement) {
+    if (!selectedElement || !("style" in selectedElement)) {
       return;
     }
 
-    const changes = applyStyleAction(logger, selectedElement, action);
+    const targetElement = selectedElement as Element & { style: CSSStyleDeclaration };
+    const changes = applyStyleAction(logger, targetElement, action);
     if (!changes || changes.length === 0) {
       return;
     }
 
     const createdAt = Date.now();
     const baseId = `${createdAt}-${state.patches.length + 1}`;
-    const targetElement = selectedElement;
     const targetDescriptor = describeElement(targetElement);
     const targetLocator = createElementLocator(targetElement);
     const patches = changes.map((change, index) => {
@@ -700,6 +743,67 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
     updateOutline();
     refreshHistoryButtons();
     persistPatches();
+  }
+
+  function applySvgTextEdits(targetSvg: SVGSVGElement, updates: SvgTextEditorItem[]): void {
+    const svgTextState = getSvgTextEditState(targetSvg);
+    if (!svgTextState || svgTextState.mode !== "editable") {
+      return;
+    }
+
+    const itemMap = new Map(svgTextState.items.map((item) => [item.id, item]));
+    const patchTargets = updates
+      .map((update) => {
+        const item = itemMap.get(update.id);
+        if (!item) {
+          return null;
+        }
+        const nextValue = update.value;
+        const before = item.target.textContent ?? "";
+        if (before === nextValue) {
+          return null;
+        }
+        item.target.textContent = nextValue;
+        const patch: ContentPatch = {
+          id: "",
+          kind: "content",
+          targetElement: item.target,
+          targetDescriptor: describeElement(item.target),
+          targetLocator: createElementLocator(item.target),
+          before,
+          after: nextValue,
+          createdAt: 0
+        };
+        return patch;
+      })
+      .filter((patch): patch is ContentPatch => Boolean(patch));
+
+    if (patchTargets.length === 0) {
+      return;
+    }
+
+    const createdAt = Date.now();
+    const batchId = `svg-text-${createdAt}-${state.patches.length + 1}`;
+    const baseId = `${createdAt}-${state.patches.length + 1}`;
+    const patches = patchTargets.map((patch, index) => ({
+      ...patch,
+      id: `${baseId}-${index + 1}`,
+      batchId,
+      createdAt
+    }));
+
+    for (const patch of patches) {
+      recordContentPatch(state, patch);
+    }
+    pushPatchGroup(history.undoStack, patches);
+    history.redoStack.length = 0;
+    refreshHistoryButtons();
+    persistPatches();
+    refreshSvgTextEditorState(targetSvg);
+    logger.info("SVG text edits applied", {
+      patchIds: patches.map((patch) => patch.id),
+      target: describeElement(targetSvg)
+    });
   }
 
   function handlePanelAction(action: PanelAction): void {
@@ -847,6 +951,28 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
 
     if (action === "redo") {
       redoLastPatch();
+      return;
+    }
+
+    if (action === "edit-svg-text") {
+      if (!(selectedElement instanceof SVGSVGElement)) {
+        return;
+      }
+      const targetSvg = selectedElement;
+      const svgTextState = getSvgTextEditState(targetSvg);
+      if (!svgTextState || svgTextState.mode !== "editable") {
+        refreshSvgTextEditorState(targetSvg);
+        return;
+      }
+      panel?.showSvgTextEditor({
+        items: svgTextState.items.map((item, index) => ({
+          id: item.id,
+          label: `${labels.svgTextItemPrefix} ${index + 1}`,
+          value: item.value
+        })),
+        warning: labels.svgTextWarning,
+        onApply: (updates) => applySvgTextEdits(targetSvg, updates)
+      });
       return;
     }
 
@@ -1008,6 +1134,9 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
         return;
       }
       const colorValue = action.slice(6); // Remove "color:" prefix
+      if (!(selectedElement instanceof HTMLElement)) {
+        return;
+      }
       const before = selectedElement.style.color;
       selectedElement.style.color = colorValue;
       const patch: StylePatch = {

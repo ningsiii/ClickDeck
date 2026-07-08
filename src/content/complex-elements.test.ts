@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { findComplexElementFromTarget, getComplexElementKind, getComplexElementPromptNotes } from "./complex-elements";
+import { findComplexElementFromTarget, getComplexElementKind, getComplexElementPromptNotes, getSvgTextEditState } from "./complex-elements";
 
 describe("complex element detection", () => {
   it("resolves SVG children to the outer svg", () => {
@@ -40,5 +40,57 @@ describe("complex element detection", () => {
     expect(notes).toContain("iframe / srcdoc");
     expect(notes).toContain("has srcdoc");
     expect(notes).not.toContain("Secret full content");
+  });
+
+  it("detects simple editable svg text and tspan content", () => {
+    document.body.innerHTML = `
+      <svg id="chart">
+        <text id="plain-text">Hello</text>
+        <text id="tspan-text"><tspan id="leaf-tspan">World</tspan></text>
+      </svg>
+    `;
+
+    const svg = document.querySelector("svg#chart") as SVGSVGElement | null;
+    const state = getSvgTextEditState(svg);
+
+    expect(state?.mode).toBe("editable");
+    if (state?.mode !== "editable") {
+      return;
+    }
+    expect(state.items).toHaveLength(2);
+    expect(state.items.map((item) => item.value)).toEqual(["Hello", "World"]);
+    expect(state.items[0].target.id).toBe("plain-text");
+    expect(state.items[1].target.id).toBe("leaf-tspan");
+  });
+
+  it("marks unsupported svg text structures as complex", () => {
+    document.body.innerHTML = `
+      <svg id="chart">
+        <text><textPath href="#curve">Curved</textPath></text>
+      </svg>
+    `;
+
+    const svg = document.querySelector("svg#chart") as SVGSVGElement | null;
+    const state = getSvgTextEditState(svg);
+
+    expect(state?.mode).toBe("complex");
+  });
+
+  it("describes svg text node edits as inline SVG changes", () => {
+    document.body.innerHTML = `
+      <svg id="chart">
+        <text><tspan id="leaf-tspan">World</tspan></text>
+      </svg>
+    `;
+
+    const tspan = document.querySelector("tspan#leaf-tspan") as SVGTSpanElement | null;
+    expect(tspan).not.toBeNull();
+    if (!tspan) {
+      return;
+    }
+    const notes = getComplexElementPromptNotes(tspan, false).join("\n");
+
+    expect(notes).toContain("inline SVG");
+    expect(notes).toContain("Only detected simple SVG text content is changed");
   });
 });

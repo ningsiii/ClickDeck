@@ -16,6 +16,7 @@ export type PanelAction =
   | "export-long-image"
   | "replace-image"
   | "replace-video"
+  | "edit-svg-text"
   | "add-intent"
   | "ask-gemini-flow"
   | "ask-gemini-focus"
@@ -37,6 +38,23 @@ export type SavedEditsNoticeOptions = {
   onClear: () => void;
 };
 
+export type SvgTextEditorItem = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type SvgTextEditorState = {
+  mode: "editable" | "none" | "complex";
+  message: string;
+};
+
+export type SvgTextEditorOptions = {
+  items: SvgTextEditorItem[];
+  warning: string;
+  onApply: (updates: SvgTextEditorItem[]) => void;
+};
+
 export type ClickDeckPanel = {
   element: HTMLDivElement;
   destroy: () => void;
@@ -49,6 +67,8 @@ export type ClickDeckPanel = {
   showPromptPreview: (options: PromptPreviewOptions) => void;
   showSavedEditsNotice: (options: SavedEditsNoticeOptions) => void;
   hideSavedEditsNotice: () => void;
+  setSvgTextEditorState: (state: SvgTextEditorState | null) => void;
+  showSvgTextEditor: (options: SvgTextEditorOptions) => void;
 };
 
 export type PanelLayout = {
@@ -159,6 +179,13 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         ${buttonMarkup("image-width-larger", labels.larger, false, undefined, "clickdeck-button--media-size")}
         ${buttonMarkup("image-maxwidth-100", labels.imageMax100)}
       </div>
+    </div>
+    <div class="clickdeck-panel__section" data-section="svg-text" data-context="svg">
+      <div class="clickdeck-panel__section-title">${labels.svgTextSection}</div>
+      <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
+        ${buttonMarkup("edit-svg-text", labels.editSvgText)}
+      </div>
+      <div class="clickdeck-panel__sub-hint clickdeck-panel__svg-text-status"></div>
     </div>
     <div class="clickdeck-panel__section" data-section="history" data-context="text,container,image,video,svg,canvas,formula,iframe">
       <div class="clickdeck-panel__section-title">${labels.history}</div>
@@ -381,6 +408,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
   let replaceMediaType: "image" | "video" | "none" = "none";
   let canPresent = false;
   let currentContext: SelectionContext = "none";
+  let svgTextEditorState: SvgTextEditorState | null = null;
 
   const getComplexNotice = (context: SelectionContext): { title: string; body: string } | null => {
     if (context === "svg") return { title: labels.complexSelectedSvg, body: labels.complexSvgHint };
@@ -409,6 +437,14 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       complexNotice.hidden = !notice;
       complexTitle.textContent = notice?.title ?? "";
       complexBody.textContent = notice?.body ?? "";
+    }
+
+    const svgTextStatus = element.querySelector<HTMLElement>(".clickdeck-panel__svg-text-status");
+    const svgTextButton = element.querySelector<HTMLButtonElement>("[data-action='edit-svg-text']");
+    if (svgTextStatus && svgTextButton) {
+      svgTextStatus.hidden = currentContext !== "svg" || !svgTextEditorState;
+      svgTextStatus.textContent = svgTextEditorState?.message ?? "";
+      svgTextButton.disabled = currentContext !== "svg" || svgTextEditorState?.mode !== "editable";
     }
 
     const colorPickerEl = element.querySelector<HTMLInputElement>(".clickdeck-color-picker");
@@ -470,6 +506,10 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         const isVideo = currentContext === "video";
         button.disabled = !isVideo || !canReplaceMedia || replaceMediaType !== "video";
         button.style.display = isVideo ? "" : "none";
+        return;
+      }
+      if (action === "edit-svg-text") {
+        button.disabled = currentContext !== "svg" || svgTextEditorState?.mode !== "editable";
         return;
       }
       button.disabled = currentContext === "none";
@@ -621,6 +661,60 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
     },
     hideSavedEditsNotice: () => {
       element.querySelector(".clickdeck-notice")?.remove();
+    },
+    setSvgTextEditorState: (state) => {
+      svgTextEditorState = state;
+      updateContextUI();
+    },
+    showSvgTextEditor: (options) => {
+      element.querySelector(".clickdeck-svg-text-overlay")?.remove();
+
+      const overlay = document.createElement("div");
+      overlay.className = "clickdeck-prompt-overlay clickdeck-svg-text-overlay";
+      overlay.dataset.clickdeck = "true";
+
+      const rows = options.items
+        .map(
+          (item, index) => `
+        <label class="clickdeck-svg-text-modal__row" data-svg-text-id="${escapeHtml(item.id)}">
+          <span class="clickdeck-svg-text-modal__label">${escapeHtml(item.label || `${labels.svgTextItemPrefix} ${index + 1}`)}</span>
+          <input class="clickdeck-svg-text-modal__input" type="text" value="${escapeHtml(item.value)}" />
+        </label>`
+        )
+        .join("");
+
+      overlay.innerHTML = `
+        <div class="clickdeck-prompt-modal clickdeck-svg-text-modal">
+          <div class="clickdeck-prompt-modal__header">
+            <span class="clickdeck-prompt-modal__title">${labels.svgTextEditorTitle}</span>
+          </div>
+          <div class="clickdeck-prompt-modal__warning">${escapeHtml(options.warning)}</div>
+          <div class="clickdeck-svg-text-modal__rows">${rows}</div>
+          <div class="clickdeck-prompt-modal__footer">
+            <button class="clickdeck-button clickdeck-button--primary" data-svg-text-action="apply" type="button">${labels.svgTextApply}</button>
+            <button class="clickdeck-button" data-svg-text-action="close" type="button">${labels.svgTextCancel}</button>
+          </div>
+        </div>
+      `;
+
+      overlay.querySelector<HTMLButtonElement>("[data-svg-text-action='close']")?.addEventListener("click", () => {
+        overlay.remove();
+      });
+
+      overlay.querySelector<HTMLButtonElement>("[data-svg-text-action='apply']")?.addEventListener("click", () => {
+        const updates = Array.from(overlay.querySelectorAll<HTMLElement>("[data-svg-text-id]")).map((row) => {
+          const input = row.querySelector<HTMLInputElement>(".clickdeck-svg-text-modal__input");
+          return {
+            id: row.dataset.svgTextId ?? "",
+            label: row.querySelector<HTMLElement>(".clickdeck-svg-text-modal__label")?.textContent ?? "",
+            value: input?.value ?? ""
+          };
+        });
+        options.onApply(updates);
+        overlay.remove();
+      });
+
+      element.appendChild(overlay);
     }
   };
 }

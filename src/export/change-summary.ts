@@ -24,7 +24,7 @@ const EMPTY_MESSAGE_ZH = "当前没有可总结的修改，请先在页面上做
 export type PromptChangeGroup = {
   key: string;
   target: string;
-  targetElement?: HTMLElement;
+  targetElement?: Element;
   locator: string;
   slideContext?: string;
   styleChanges: Map<string, { before: string; after: string }>;

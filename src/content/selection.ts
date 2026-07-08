@@ -8,7 +8,7 @@ export type EditableTargetResolutionSource =
   | "large-container-fallback"
   | "background-block";
 export type EditableTargetResolution = {
-  target: HTMLElement | null;
+  target: Element | null;
   source: EditableTargetResolutionSource;
 };
 
@@ -104,18 +104,18 @@ export function isLargeContainer(element: HTMLElement): boolean {
 
 export function getEditableTarget(
   target: EventTarget | null,
-  currentSelected?: HTMLElement | null
-): HTMLElement | null {
+  currentSelected?: Element | null
+): Element | null {
   return resolveEditableTarget(target, currentSelected).target;
 }
 
 export function resolveEditableTarget(
   target: EventTarget | null,
-  currentSelected?: HTMLElement | null
+  currentSelected?: Element | null
 ): EditableTargetResolution {
   const complexElement = findComplexElementFromTarget(target);
   if (complexElement) {
-    return { target: complexElement as unknown as HTMLElement, source: "direct" };
+    return { target: complexElement, source: "direct" };
   }
 
   if (!(target instanceof HTMLElement)) {

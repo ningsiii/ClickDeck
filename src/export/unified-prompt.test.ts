@@ -139,6 +139,45 @@ describe("buildUnifiedPrompt", () => {
     }
   });
 
+  it("describes SVG text replacement as inline SVG while preserving simple text diffs", () => {
+    document.body.innerHTML = `
+      <svg id="svg-text" width="120" height="60">
+        <text id="svg-text-node">Hello</text>
+      </svg>
+    `;
+    const targetElement = document.querySelector("text#svg-text-node") as SVGTextElement | null;
+    expect(targetElement).not.toBeNull();
+    if (!targetElement) {
+      return;
+    }
+
+    const patch: EditorPatch = {
+      id: "p-svg-text",
+      createdAt: Date.now(),
+      targetElement,
+      targetDescriptor: "svg text",
+      targetLocator: {
+        cssPath: "#svg-text text",
+        descriptor: "svg text",
+        tagName: "text",
+        nthOfTypePath: "svg:nth-of-type(1) text:nth-of-type(1)",
+        siblingIndex: 0
+      },
+      kind: "content",
+      before: "Hello",
+      after: "Lens"
+    } as unknown as EditorPatch;
+
+    const result = buildUnifiedPrompt([patch], [], { language: "en", page: dummyPage });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.prompt).toContain("Complex element: inline SVG.");
+      expect(result.prompt).toContain("Only detected simple SVG text content is changed");
+      expect(result.prompt).toContain('Text replaced: "Hello" with "Lens".');
+      expect(result.prompt).toContain('Final text should be: "Lens".');
+    }
+  });
+
   it("integrates Move intent prompt structure with Placement summary and Final alignment guide", () => {
     const intent: IntentPromptInput = {
       operation: { action: "move", id: "op1" } as any,
