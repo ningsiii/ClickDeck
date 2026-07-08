@@ -36,6 +36,7 @@ import { buildIntentDraftVisualPlan, pickNextIntentColor } from "./intent-draft-
 import { collectVisualUnits, findVisualUnitsInBox, type RectLike } from "./visual-units";
 import { buildRegionContext, summarizeVisualUnit, type GuideCandidate, type RegionContext, type ActiveAlignmentGuide } from "./region-context";
 import { createMoveTargetBox, type MoveTargetBox } from "./intent-ghost";
+import { getComplexElementKind } from "./complex-elements";
 
 export type ClickDeckController = {
   toggle: () => void;
@@ -78,6 +79,10 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
   function getSelectionContext(target: HTMLElement | null): SelectionContext {
     if (!target) {
       return "none";
+    }
+    const complexKind = getComplexElementKind(target);
+    if (complexKind) {
+      return complexKind;
     }
     const tag = target.tagName.toLowerCase();
     if (tag === "img") {

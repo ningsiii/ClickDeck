@@ -189,6 +189,31 @@ function injectBaseStyles(rootId: string): void {
       line-height: 1.4;
     }
 
+    .clickdeck-panel__complex-notice {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(120, 84, 53, 0.18);
+      border-radius: 8px;
+      background: #fff8ed;
+      color: #5b4635;
+    }
+
+    .clickdeck-panel__complex-notice[hidden] {
+      display: none;
+    }
+
+    .clickdeck-panel__complex-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .clickdeck-panel__complex-body {
+      font-size: 11px;
+      line-height: 1.45;
+      color: #7a6554;
+    }
+
     .clickdeck-panel__section {
       margin-top: 12px;
       padding-top: 12px;

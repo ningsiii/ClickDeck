@@ -113,6 +113,32 @@ describe("buildUnifiedPrompt", () => {
     }
   });
 
+  it("describes complex element patch targets and hides iframe srcdoc in snippets", () => {
+    document.body.innerHTML = `<iframe id="frame" srcdoc="<main>Nested source should stay hidden</main>"></iframe>`;
+    const targetElement = document.getElementById("frame") as HTMLIFrameElement;
+
+    const patch: EditorPatch = {
+      id: "p-complex",
+      createdAt: Date.now(),
+      targetElement,
+      targetDescriptor: "iframe#frame",
+      targetLocator: { cssPath: "#frame", descriptor: "iframe #frame", tagName: "iframe", nthOfTypePath: "iframe:nth-of-type(1)", siblingIndex: 0 },
+      kind: "style",
+      property: "maxWidth",
+      before: "",
+      after: "100%"
+    } as unknown as EditorPatch;
+
+    const result = buildUnifiedPrompt([patch], [], { language: "en", page: dummyPage });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.prompt).toContain("Complex element: iframe / srcdoc.");
+      expect(result.prompt).toContain("Only the outer iframe is changed");
+      expect(result.prompt).toContain('srcdoc="[srcdoc hidden]"');
+      expect(result.prompt).not.toContain("Nested source should stay hidden");
+    }
+  });
+
   it("integrates Move intent prompt structure with Placement summary and Final alignment guide", () => {
     const intent: IntentPromptInput = {
       operation: { action: "move", id: "op1" } as any,

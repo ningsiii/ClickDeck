@@ -269,6 +269,51 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(img).toHaveJSProperty("src", dataUrlSrc);
   });
 
+  test("selects complex elements as whole blocks with safe controls", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await page.evaluate(() => {
+      const host = document.createElement("section");
+      host.id = "complex-fixture";
+      host.innerHTML = `
+        <svg id="complex-svg" width="120" height="80" style="display:block; width:120px; height:80px;">
+          <rect id="complex-svg-rect" x="10" y="10" width="80" height="40" fill="#88c"></rect>
+        </svg>
+        <span id="complex-formula" class="katex" style="font-size:20px;"><span id="complex-formula-child">x + 1</span></span>
+        <iframe id="complex-iframe" srcdoc="<main><p>Nested content</p></main>" style="display:block; width:160px; height:80px;"></iframe>
+      `;
+      document.body.prepend(host);
+    });
+    await activateExtension(page);
+
+    await page.locator("#complex-svg-rect").click();
+    await expect(page.locator(".clickdeck-panel__complex-notice")).toContainText("svg");
+    await expect(page.locator("[data-section='typography']")).toBeHidden();
+    await expect(page.locator("[data-section='image-basic']")).toBeHidden();
+
+    const svgWidthBefore = await page.locator("#complex-svg").evaluate((element) => getComputedStyle(element).width);
+    await page.locator("[data-section='complex-basic'] [data-action='image-width-larger']").click();
+    const svgWidthAfter = await page.locator("#complex-svg").evaluate((element) => getComputedStyle(element).width);
+    expect(parseFloat(svgWidthAfter)).toBeGreaterThan(parseFloat(svgWidthBefore));
+
+    await page.locator("#complex-formula-child").click();
+    await expect(page.locator(".clickdeck-panel__complex-notice")).toContainText("formula");
+    await expect(page.locator("[data-section='complex-basic']")).toBeVisible();
+
+    await page.locator("#complex-iframe").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      element.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + 4,
+          clientY: rect.top + 4,
+        }),
+      );
+    });
+    await expect(page.locator(".clickdeck-panel__complex-notice")).toContainText("iframe");
+    await expect(page.locator("[data-action='replace-image']")).toBeHidden();
+  });
+
   test("6. Save/Restore persistence", async ({ page, demoPageUrl }) => {
     // Clear storage first
     await page.goto(demoPageUrl);

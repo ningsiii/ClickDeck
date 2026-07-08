@@ -1,5 +1,6 @@
 import type { EditorPatch } from "../state/editor-state";
 import { getSlideContext } from "../content/dom-utils";
+import { getComplexElementPromptNotes } from "../content/complex-elements";
 
 export type PromptBuildResult =
   | { ok: true; prompt: string; hasMediaReplacement: boolean }
@@ -152,6 +153,10 @@ export function buildAiEditPrompt(patches: EditorPatch[], options: PromptBuildOp
       } else {
         lines.push(`   Slide/Page Context: ${group.slideContext}`);
       }
+    }
+
+    if (group.targetElement) {
+      lines.push(...getComplexElementPromptNotes(group.targetElement, isZh));
     }
 
     if (group.textChange) {

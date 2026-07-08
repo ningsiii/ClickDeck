@@ -51,6 +51,14 @@ export type PanelLabels = {
   imageMax100: string;
   imageContain: string;
   imageCover: string;
+  complexSelectedSvg: string;
+  complexSelectedCanvas: string;
+  complexSelectedFormula: string;
+  complexSelectedIframe: string;
+  complexSvgHint: string;
+  complexCanvasHint: string;
+  complexFormulaHint: string;
+  complexIframeHint: string;
   smaller: string;
   larger: string;
   round: string;
@@ -200,6 +208,14 @@ const englishLabels: PanelLabels = {
   imageMax100: "Max 100%",
   imageContain: "Contain",
   imageCover: "Cover",
+  complexSelectedSvg: "Selected: svg",
+  complexSelectedCanvas: "Selected: canvas",
+  complexSelectedFormula: "Selected: formula",
+  complexSelectedIframe: "Selected: iframe",
+  complexSvgHint: "Supports outer scaling, spacing, export, and AI prompt handoff. Internal SVG editing is not supported.",
+  complexCanvasHint: "Canvas content is drawn output. Only the whole block size and spacing can be adjusted.",
+  complexFormulaHint: "Formula regions support only outer size and spacing adjustments. Edit the source formula separately.",
+  complexIframeHint: "Embedded iframe content is not edited internally. Modify the loaded page or srcdoc source first.",
   smaller: "-",
   larger: "+",
   round: "Round",
@@ -349,6 +365,14 @@ const chineseLabels: PanelLabels = {
   imageMax100: "最大 100%",
   imageContain: "完整显示",
   imageCover: "填满裁切",
+  complexSelectedSvg: "当前选中：svg",
+  complexSelectedCanvas: "当前选中：canvas",
+  complexSelectedFormula: "当前选中：公式",
+  complexSelectedIframe: "当前选中：iframe",
+  complexSvgHint: "支持整体缩放、间距、导出和 AI prompt 交接；不支持编辑 SVG 内部结构。",
+  complexCanvasHint: "Canvas 内容是绘制结果，只能调整整体尺寸和间距，不能直接修改内部内容。",
+  complexFormulaHint: "公式区域仅支持整体大小和间距调整，内部内容需要修改源公式。",
+  complexIframeHint: "iframe 是嵌入页面，不进入内部结构；内部内容需要先修改所加载页面或 srcdoc 源代码。",
   smaller: "-",
   larger: "+",
   round: "圆形",

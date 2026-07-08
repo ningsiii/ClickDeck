@@ -1,6 +1,7 @@
 import type { ClickDeckLogger } from "../diagnostics/logger";
 import type { StyleProperty } from "../state/style-token";
 import { describeElement } from "./dom-utils";
+import { getComplexElementKind } from "./complex-elements";
 
 export type StyleAction =
   | "font-smaller"
@@ -265,12 +266,20 @@ export function applyStyleAction(
       break;
     }
     case "image-width-smaller": {
+      if (getComplexElementKind(element) === "formula") {
+        changes = buildFormulaScaleChanges(element, computed, -1);
+        break;
+      }
       const current = element.style.width || computed.width;
       const next = stepSize(current, -1);
       changes = buildMediaScaleChanges(element, computed, next);
       break;
     }
     case "image-width-larger": {
+      if (getComplexElementKind(element) === "formula") {
+        changes = buildFormulaScaleChanges(element, computed, +1);
+        break;
+      }
       const current = element.style.width || computed.width;
       const next = stepSize(current, +1);
       changes = buildMediaScaleChanges(element, computed, next);
@@ -336,6 +345,19 @@ export function applyStyleAction(
   }
   logger.info("Style action applied", { action, target: describeElement(element) });
   return changes;
+}
+
+function buildFormulaScaleChanges(
+  element: HTMLElement,
+  computed: CSSStyleDeclaration,
+  direction: -1 | 1
+): AppliedStyleChange[] {
+  const current = readPixelValue(computed.fontSize, 16);
+  return [{
+    property: "fontSize",
+    before: element.style.fontSize,
+    after: `${clamp(current + 2 * direction, 8, 120)}px`
+  }];
 }
 
 function buildMediaScaleChanges(

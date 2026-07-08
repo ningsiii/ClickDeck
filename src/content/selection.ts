@@ -1,4 +1,5 @@
 import { findFirstEditableDescendant, findMeaningfulDescendant, isClickDeckUiElement } from "./dom-utils";
+import { findComplexElementFromTarget } from "./complex-elements";
 
 export type TabDirection = "forward" | "backward";
 export type EditableTargetResolutionSource =
@@ -112,6 +113,11 @@ export function resolveEditableTarget(
   target: EventTarget | null,
   currentSelected?: HTMLElement | null
 ): EditableTargetResolution {
+  const complexElement = findComplexElementFromTarget(target);
+  if (complexElement) {
+    return { target: complexElement as unknown as HTMLElement, source: "direct" };
+  }
+
   if (!(target instanceof HTMLElement)) {
     return { target: null, source: "none" };
   }

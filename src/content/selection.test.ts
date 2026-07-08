@@ -260,4 +260,46 @@ describe("isLargeContainer and getEditableTarget", () => {
       source: "background-block"
     });
   });
+
+  it("selects the outer svg when clicking inside inline SVG internals", async () => {
+    const { resolveEditableTarget } = await import("./selection");
+
+    document.body.innerHTML = `
+      <svg id="diagram" width="100" height="80">
+        <g>
+          <path id="shape" d="M0 0L10 10"></path>
+        </g>
+      </svg>
+    `;
+
+    const svg = document.getElementById("diagram") as unknown as HTMLElement;
+    const path = document.getElementById("shape") as unknown as HTMLElement;
+
+    expect(resolveEditableTarget(path)).toEqual({
+      target: svg,
+      source: "direct"
+    });
+  });
+
+  it("selects formula and iframe as whole complex blocks", async () => {
+    const { resolveEditableTarget } = await import("./selection");
+
+    document.body.innerHTML = `
+      <span class="katex" id="formula"><span id="formula-child">x</span></span>
+      <iframe id="embed" srcdoc="<p>Inner</p>"></iframe>
+    `;
+
+    const formula = document.getElementById("formula") as HTMLElement;
+    const formulaChild = document.getElementById("formula-child") as HTMLElement;
+    const iframe = document.getElementById("embed") as HTMLElement;
+
+    expect(resolveEditableTarget(formulaChild)).toEqual({
+      target: formula,
+      source: "direct"
+    });
+    expect(resolveEditableTarget(iframe)).toEqual({
+      target: iframe,
+      source: "direct"
+    });
+  });
 });

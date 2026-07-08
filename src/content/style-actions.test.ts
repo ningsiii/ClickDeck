@@ -187,6 +187,25 @@ describe("applyStyleAction", () => {
     video.remove();
   });
 
+  it("scales formula blocks through outer font size", () => {
+    const formula = document.createElement("span");
+    formula.className = "katex";
+    formula.style.fontSize = "20px";
+    formula.innerHTML = "<span>x + 1</span>";
+    document.body.appendChild(formula);
+
+    const largerChanges = applyStyleAction(logger, formula, "image-width-larger");
+    expect(formula.style.fontSize).toBe("22px");
+    expect(formula.style.width).toBe("");
+    expect(largerChanges?.map(change => change.property)).toEqual(["fontSize"]);
+
+    const smallerChanges = applyStyleAction(logger, formula, "image-width-smaller");
+    expect(formula.style.fontSize).toBe("20px");
+    expect(smallerChanges?.map(change => change.property)).toEqual(["fontSize"]);
+
+    formula.remove();
+  });
+
   it("applies image radius presets including round", () => {
     const img = document.createElement("img");
     document.body.appendChild(img);

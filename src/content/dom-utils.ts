@@ -1,4 +1,5 @@
 import type { ElementLocator } from "../state/editor-state";
+import { getComplexElementKind } from "./complex-elements";
 
 export function describeElement(element: HTMLElement): string {
   const id = element.id ? `#${element.id}` : "";
@@ -141,6 +142,9 @@ export function canAutoStartTextEditing(element: HTMLElement): boolean {
   }
 
   const tagName = element.tagName.toLowerCase();
+  if (getComplexElementKind(element)) {
+    return false;
+  }
   if (
     tagName === "img" ||
     tagName === "button" ||
@@ -148,7 +152,8 @@ export function canAutoStartTextEditing(element: HTMLElement): boolean {
     tagName === "textarea" ||
     tagName === "select" ||
     tagName === "svg" ||
-    tagName === "canvas"
+    tagName === "canvas" ||
+    tagName === "iframe"
   ) {
     return false;
   }

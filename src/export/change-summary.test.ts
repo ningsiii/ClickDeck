@@ -94,6 +94,31 @@ describe("buildAiEditPrompt", () => {
     }
   });
 
+  it("describes complex elements without dumping iframe srcdoc", () => {
+    document.body.innerHTML = `<main><iframe id="embed" srcdoc="<article>Hidden inner document</article>"></iframe></main>`;
+    const el = document.getElementById("embed") as HTMLIFrameElement;
+
+    const patch: StylePatch = {
+      id: "1",
+      kind: "style",
+      targetElement: el,
+      targetDescriptor: "iframe#embed",
+      targetLocator: { descriptor: "iframe #embed", tagName: "iframe", cssPath: "#embed", nthOfTypePath: "iframe:nth-of-type(1)", siblingIndex: 0 },
+      property: "maxWidth",
+      before: "",
+      after: "100%",
+      createdAt: 1
+    };
+
+    const result = buildAiEditPrompt([patch], PAGE_EN);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.prompt).toContain("Complex element: iframe / srcdoc");
+      expect(result.prompt).toContain("Only the outer iframe is changed");
+      expect(result.prompt).not.toContain("Hidden inner document");
+    }
+  });
+
   it("returns empty when all patches have been undone (empty effective list)", () => {
     const result = buildAiEditPrompt([], PAGE_EN);
     expect(result.ok).toBe(false);

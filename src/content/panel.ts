@@ -29,7 +29,7 @@ export type PromptPreviewOptions = {
   onCopy: (value: string, lang: "en" | "zh") => void;
 };
 
-export type SelectionContext = "none" | "text" | "image" | "video" | "container";
+export type SelectionContext = "none" | "text" | "image" | "video" | "container" | "svg" | "canvas" | "formula" | "iframe";
 
 export type SavedEditsNoticeOptions = {
   count: number;
@@ -87,8 +87,12 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
           <button class="clickdeck-button clickdeck-button--icon" data-internal-action="collapse" type="button" aria-label="${labels.collapse}" title="${labels.collapse}">−</button>
           <button class="clickdeck-button clickdeck-button--icon" data-action="close" type="button" aria-label="${labels.close}" title="${labels.close}">✕</button>
         </span>
-      </div>
+    </div>
     <div class="clickdeck-panel__hint">${labels.selectHint}</div>
+    <div class="clickdeck-panel__complex-notice" hidden>
+      <div class="clickdeck-panel__complex-title"></div>
+      <div class="clickdeck-panel__complex-body"></div>
+    </div>
     <div class="clickdeck-panel__module-title">${labels.visualEditing}</div>
     <div class="clickdeck-panel__section" data-section="typography" data-context="text">
       <div class="clickdeck-panel__section-title">${labels.typography}</div>
@@ -148,7 +152,15 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         </div>
       </div>
     </div>
-    <div class="clickdeck-panel__section" data-section="history" data-context="text,container,image,video">
+    <div class="clickdeck-panel__section" data-section="complex-basic" data-context="svg,canvas,formula,iframe">
+      <div class="clickdeck-panel__section-title">${labels.imageSize}</div>
+      <div class="clickdeck-panel__group clickdeck-panel__group--media-size">
+        ${buttonMarkup("image-width-smaller", labels.smaller, false, undefined, "clickdeck-button--media-size")}
+        ${buttonMarkup("image-width-larger", labels.larger, false, undefined, "clickdeck-button--media-size")}
+        ${buttonMarkup("image-maxwidth-100", labels.imageMax100)}
+      </div>
+    </div>
+    <div class="clickdeck-panel__section" data-section="history" data-context="text,container,image,video,svg,canvas,formula,iframe">
       <div class="clickdeck-panel__section-title">${labels.history}</div>
       <div class="clickdeck-panel__group">
         ${buttonMarkup("undo", labels.undo, true)}
@@ -172,7 +184,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
           ${iconButtonMarkup("letterspacing-increase", `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M7 9l-3 3l3 3M17 9l3 3l-3 3M8 4v16M16 4v16"/></svg>`, labels.increaseLetterSpacing)}
         </div>
       </div>
-      <div class="clickdeck-panel__section" data-section="spacing" data-context="text,container,image,video">
+      <div class="clickdeck-panel__section" data-section="spacing" data-context="text,container,image,video,svg,canvas,formula,iframe">
         <div class="clickdeck-panel__section-title">${labels.spacing}</div>
         <div class="clickdeck-panel__group clickdeck-panel__group--spacing" data-spacing-group="margin">
           <span class="clickdeck-panel__spacing-label">${labels.margin}</span>
@@ -370,6 +382,14 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
   let canPresent = false;
   let currentContext: SelectionContext = "none";
 
+  const getComplexNotice = (context: SelectionContext): { title: string; body: string } | null => {
+    if (context === "svg") return { title: labels.complexSelectedSvg, body: labels.complexSvgHint };
+    if (context === "canvas") return { title: labels.complexSelectedCanvas, body: labels.complexCanvasHint };
+    if (context === "formula") return { title: labels.complexSelectedFormula, body: labels.complexFormulaHint };
+    if (context === "iframe") return { title: labels.complexSelectedIframe, body: labels.complexIframeHint };
+    return null;
+  };
+
   const updateContextUI = (): void => {
     element.querySelectorAll<HTMLElement>(".clickdeck-panel__section[data-context]").forEach((section) => {
       const allowedContexts = (section.dataset.context ?? "").split(",").map((value) => value.trim());
@@ -378,7 +398,17 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
 
     const paddingGroup = element.querySelector<HTMLElement>('.clickdeck-panel__group--spacing[data-spacing-group="padding"]');
     if (paddingGroup) {
-      paddingGroup.hidden = currentContext === "image" || currentContext === "video";
+      paddingGroup.hidden = ["image", "video", "svg", "canvas", "formula", "iframe"].includes(currentContext);
+    }
+
+    const complexNotice = element.querySelector<HTMLElement>(".clickdeck-panel__complex-notice");
+    const complexTitle = element.querySelector<HTMLElement>(".clickdeck-panel__complex-title");
+    const complexBody = element.querySelector<HTMLElement>(".clickdeck-panel__complex-body");
+    const notice = getComplexNotice(currentContext);
+    if (complexNotice && complexTitle && complexBody) {
+      complexNotice.hidden = !notice;
+      complexTitle.textContent = notice?.title ?? "";
+      complexBody.textContent = notice?.body ?? "";
     }
 
     const colorPickerEl = element.querySelector<HTMLInputElement>(".clickdeck-color-picker");

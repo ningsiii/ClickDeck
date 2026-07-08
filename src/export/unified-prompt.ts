@@ -14,6 +14,7 @@ import {
   summarizeTextChange
 } from "./change-summary";
 import { isClickDeckUiElement } from "../content/dom-utils";
+import { getComplexElementPromptNotes } from "../content/complex-elements";
 
 const PROMPT_COPY = {
   en: {
@@ -174,6 +175,7 @@ function getLocalHtmlSnippet(el: HTMLElement | undefined): string | null {
     let outerHTML = clone.outerHTML;
     // Remove base64 data URLs if present to avoid prompt bloat
     outerHTML = outerHTML.replace(/src="data:[^"]+"/g, 'src="[data URL hidden]"');
+    outerHTML = outerHTML.replace(/srcdoc="[^"]*"/g, 'srcdoc="[srcdoc hidden]"');
     
     // Trim to 500 chars or 8 lines
     const lines = outerHTML.split('\n');
@@ -326,6 +328,9 @@ export function buildUnifiedPrompt(
     lines.push(`   ${copy.locatorField}: ${group.locator}`);
     if (group.slideContext) {
       lines.push(`   ${copy.slideContextField}: ${group.slideContext}`);
+    }
+    if (group.targetElement) {
+      lines.push(...getComplexElementPromptNotes(group.targetElement, isZh));
     }
 
     const snippet = getLocalHtmlSnippet(group.targetElement);

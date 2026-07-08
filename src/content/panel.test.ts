@@ -88,6 +88,48 @@ describe("createPanel selection context", () => {
 
     panel.destroy();
   });
+
+  it("shows complex element notice and only safe whole-block controls for SVG", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    panel.setSelectionContext("svg");
+    panel.setReplaceMediaAvailability(false, "none");
+
+    const notice = panel.element.querySelector<HTMLElement>(".clickdeck-panel__complex-notice");
+    const complexSize = panel.element.querySelector<HTMLElement>("[data-section='complex-basic']");
+    const typography = panel.element.querySelector<HTMLElement>("[data-section='typography']");
+    const imageBasic = panel.element.querySelector<HTMLElement>("[data-section='image-basic']");
+    const imageAdvanced = panel.element.querySelector<HTMLElement>("[data-section='image-advanced']");
+    const spacing = panel.element.querySelector<HTMLElement>("[data-section='spacing']");
+    const undo = panel.element.querySelector<HTMLButtonElement>("[data-action='undo']");
+
+    expect(notice?.hidden).toBe(false);
+    expect(notice?.textContent).toContain("Selected: svg");
+    expect(complexSize?.hidden).toBe(false);
+    expect(typography?.hidden).toBe(true);
+    expect(imageBasic?.hidden).toBe(true);
+    expect(imageAdvanced?.hidden).toBe(true);
+    expect(spacing?.hidden).toBe(false);
+    expect(undo?.disabled).toBe(true);
+
+    panel.destroy();
+  });
+
+  it("shows formula and iframe limitation notices", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    panel.setSelectionContext("formula");
+    expect(panel.element.querySelector(".clickdeck-panel__complex-notice")?.textContent).toContain("Selected: formula");
+    expect(panel.element.querySelector(".clickdeck-panel__complex-notice")?.textContent).toContain("source formula");
+
+    panel.setSelectionContext("iframe");
+    expect(panel.element.querySelector(".clickdeck-panel__complex-notice")?.textContent).toContain("Selected: iframe");
+    expect(panel.element.querySelector(".clickdeck-panel__complex-notice")?.textContent).toContain("Embedded iframe");
+
+    panel.destroy();
+  });
 });
 
 describe("createPanel saved edits notice", () => {
