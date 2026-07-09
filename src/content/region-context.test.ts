@@ -268,7 +268,8 @@ describe("Region Context", () => {
       targetEdge: "centerY" as const,
       sourceEdge: "centerY" as const,
       unitSummary: "Title",
-      deltaPx: 0
+      deltaPx: 0,
+      confidence: "high" as const
     }];
 
     const ctx = buildRegionContext(region, [], { activeAlignmentGuides });

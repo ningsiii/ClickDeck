@@ -27,6 +27,7 @@ type TargetGuidePosition = {
 };
 
 const GUIDE_ORTHOGONAL_MAX = 240;
+const SNAP_THRESHOLD_PX = 8;
 
 function getTargetGuidePositions(rect: RectLike): TargetGuidePosition[] {
   const centerX = rect.left + rect.width / 2;
@@ -59,7 +60,7 @@ function isGuideLocallyRelevant(rect: RectLike, candidate: GuideCandidate): bool
 export function computeActiveGuides(
   rect: RectLike,
   guideCandidates: GuideCandidate[],
-  threshold = 8
+  threshold = SNAP_THRESHOLD_PX
 ): ActiveAlignmentGuide[] {
   const targetPositions = getTargetGuidePositions(rect);
   const bestByAxis = new Map<"x" | "y", ActiveAlignmentGuide>();
@@ -79,13 +80,79 @@ export function computeActiveGuides(
           targetEdge: target.targetEdge,
           sourceEdge: candidate.sourceEdge,
           unitSummary: candidate.unitSummary,
-          deltaPx
+          deltaPx,
+          confidence: "high"
         });
       }
     }
   }
 
   return Array.from(bestByAxis.values()).sort((a, b) => a.axis.localeCompare(b.axis));
+}
+
+function getEdgePosition(rect: RectLike, edge: AlignmentEdge): number {
+  if (edge === "left") return rect.left;
+  if (edge === "right") return rect.right;
+  if (edge === "top") return rect.top;
+  if (edge === "bottom") return rect.bottom;
+  if (edge === "centerX") return rect.left + rect.width / 2;
+  return rect.top + rect.height / 2;
+}
+
+function offsetRect(rect: RectLike, dx: number, dy: number): RectLike {
+  return {
+    left: rect.left + dx,
+    top: rect.top + dy,
+    width: rect.width,
+    height: rect.height,
+    right: rect.right + dx,
+    bottom: rect.bottom + dy
+  };
+}
+
+export function snapRectToGuides(
+  rect: RectLike,
+  guideCandidates: GuideCandidate[],
+  threshold = SNAP_THRESHOLD_PX
+): { rect: RectLike; guides: ActiveAlignmentGuide[]; dx: number; dy: number } {
+  const guides = computeActiveGuides(rect, guideCandidates, threshold);
+  let dx = 0;
+  let dy = 0;
+
+  const xGuide = guides.find((guide) => guide.axis === "x");
+  if (xGuide) {
+    dx = xGuide.position - getEdgePosition(rect, xGuide.targetEdge);
+  }
+
+  const yGuide = guides.find((guide) => guide.axis === "y");
+  if (yGuide) {
+    dy = yGuide.position - getEdgePosition(rect, yGuide.targetEdge);
+  }
+
+  if (dx === 0 && dy === 0) {
+    return { rect, guides, dx, dy };
+  }
+
+  const snappedRect = offsetRect(rect, dx, dy);
+  const snappedGuides = computeActiveGuides(snappedRect, guideCandidates, threshold).map((guide) => ({
+    ...guide,
+    deltaPx: 0
+  }));
+  return { rect: snappedRect, guides: snappedGuides, dx, dy };
+}
+
+function formatGuideHint(guides: ActiveAlignmentGuide[]): string | null {
+  if (guides.length === 0) return null;
+  const xGuide = guides.find((guide) => guide.axis === "x");
+  const yGuide = guides.find((guide) => guide.axis === "y");
+  const parts: string[] = [];
+  if (xGuide) {
+    parts.push(`X: ${xGuide.targetEdge} -> ${xGuide.unitSummary}`);
+  }
+  if (yGuide) {
+    parts.push(`Y: ${yGuide.targetEdge} -> ${yGuide.unitSummary}`);
+  }
+  return parts.join(" | ");
 }
 
 export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBox {
@@ -166,6 +233,10 @@ export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBo
   let currentTy = 0;
   let tempDx = 0;
   let tempDy = 0;
+  let previewTx = 0;
+  let previewTy = 0;
+  let lastPreviewRect: RectLike = { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
+  let lastPreviewGuides: ActiveAlignmentGuide[] = [];
 
   function onMouseDown(e: MouseEvent) {
     if ((e.target as HTMLElement).closest('.clickdeck-ghost-preview__close')) return;
@@ -182,26 +253,39 @@ export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBo
     
     tempDx = e.clientX - startX;
     tempDy = e.clientY - startY;
-    element.style.transform = `translate(${currentTx + tempDx}px, ${currentTy + tempDy}px)`;
+    const baseRect = {
+      left: lastPreviewRect.left - previewTx,
+      top: lastPreviewRect.top - previewTy,
+      width: lastPreviewRect.width,
+      height: lastPreviewRect.height,
+      right: lastPreviewRect.right - previewTx,
+      bottom: lastPreviewRect.bottom - previewTy
+    };
+    const rawRect = offsetRect(baseRect, currentTx + tempDx, currentTy + tempDy);
+    const snapped = snapRectToGuides(rawRect, options.guideCandidates);
+    previewTx = currentTx + tempDx + snapped.dx;
+    previewTy = currentTy + tempDy + snapped.dy;
+    lastPreviewRect = snapped.rect;
+    lastPreviewGuides = snapped.guides;
+    element.style.transform = `translate(${previewTx}px, ${previewTy}px)`;
     
     // Update guide lines
     clearGuideLines();
-    const currentRect = element.getBoundingClientRect();
-    const activeGuides = computeActiveGuides(currentRect, options.guideCandidates);
-    activeGuides.forEach((guide) => drawGuideLine(guide.axis === "x", guide.position));
+    lastPreviewGuides.forEach((guide) => drawGuideLine(guide.axis === "x", guide.position));
+    uiContainer.textContent = formatGuideHint(lastPreviewGuides) ?? labels.intentDragToPlace;
   }
 
   function onMouseUp() {
     if (!isDragging) return;
     isDragging = false;
-    currentTx += tempDx;
-    currentTy += tempDy;
+    currentTx = previewTx;
+    currentTy = previewTy;
     tempDx = 0;
     tempDy = 0;
     element.classList.remove("clickdeck-ghost-preview--dragging");
     clearGuideLines();
-    const finalRect = element.getBoundingClientRect();
-    options.onChange(finalRect, computeActiveGuides(finalRect, options.guideCandidates));
+    uiContainer.textContent = formatGuideHint(lastPreviewGuides) ?? labels.intentDragToPlace;
+    options.onChange(lastPreviewRect, lastPreviewGuides);
   }
 
   element.addEventListener("mousedown", onMouseDown);
@@ -209,6 +293,15 @@ export function createMoveTargetBox(options: MoveTargetBoxOptions): MoveTargetBo
   document.addEventListener("mouseup", onMouseUp);
 
   (options.anchorElement ?? document.body).appendChild(element);
+  const initialRect = element.getBoundingClientRect();
+  lastPreviewRect = {
+    left: initialRect.left,
+    top: initialRect.top,
+    width: initialRect.width,
+    height: initialRect.height,
+    right: initialRect.right,
+    bottom: initialRect.bottom
+  };
 
   return {
     element,

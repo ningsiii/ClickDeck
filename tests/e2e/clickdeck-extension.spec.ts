@@ -611,26 +611,24 @@ test.describe("ClickDeck core editing workflows", () => {
 
     const initialBox = await ghostPreview.boundingBox();
     expect(initialBox).toBeTruthy();
+    const headingBox = await heading.boundingBox();
+    expect(headingBox).toBeTruthy();
 
     // Drag the ghost preview
     await mouse.move(initialBox!.x + 10, initialBox!.y + 10);
     await mouse.down();
-    // Move vertically downwards, keeping X same as startX, so dx=0, currentLeft=initialLeft.
-    await mouse.move(initialBox!.x + 10, initialBox!.y + 100);
-    
-    // The anchor rect's left is initialBox.x. Dragging such that dx=0 should align left exactly and show a guide line.
+    // Move close enough to the heading left edge so the ghost preview should really snap to it.
+    await mouse.move(headingBox!.x + 13, initialBox!.y + 80);
+
     const guideLine = page.locator(".clickdeck-ghost-guide-line").first();
     await expect(guideLine).toBeVisible();
-
-    // Now move it further right to satisfy the > 50px assertion
-    await mouse.move(initialBox!.x + 100, initialBox!.y + 100);
+    await expect(ghostPreview.locator(".clickdeck-ghost-preview__center-hint")).toContainText("X:");
 
     await mouse.up();
 
     const newBox = await ghostPreview.boundingBox();
     expect(newBox).toBeTruthy();
-    expect(newBox!.x).toBeGreaterThan(initialBox!.x + 50);
-    expect(newBox!.y).toBeGreaterThan(initialBox!.y + 50);
+    expect(newBox!.y).toBeGreaterThan(initialBox!.y + 20);
 
     // Verify 1B marker is the ghost preview itself and has the correct badge
     await expect(ghostPreview).toBeVisible();
@@ -647,6 +645,8 @@ test.describe("ClickDeck core editing workflows", () => {
     
     expect(promptText).toContain("type: move");
     expect(promptText).toContain("Target B source: dragged target box");
+    expect(promptText).toContain("Final alignment guide:");
+    expect(promptText).toContain("aligns with");
   });
 
   test("12. Remove intent marker", async ({ page, demoPageUrl }) => {

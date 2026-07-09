@@ -41,6 +41,7 @@ export type ActiveAlignmentGuide = {
   sourceEdge: AlignmentEdge;
   unitSummary: string;
   deltaPx: number;
+  confidence: "high";
 };
 
 export type RegionContext = {

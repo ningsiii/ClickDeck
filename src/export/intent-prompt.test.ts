@@ -322,7 +322,8 @@ describe("Intent Prompt Builder", () => {
         targetEdge: "centerY",
         sourceEdge: "centerY",
         unitSummary: "适用场景与人群",
-        deltaPx: 0
+        deltaPx: 0,
+        confidence: "high"
       }
     ];
 
@@ -443,7 +444,8 @@ describe("Intent Prompt Builder", () => {
         targetEdge: "centerY",
         sourceEdge: "centerY",
         unitSummary: "超越代码补全：直接引入页面级的评审诊断",
-        deltaPx: 0
+        deltaPx: 0,
+        confidence: "high"
       }
     ];
 
