@@ -168,7 +168,6 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         <div class="clickdeck-panel__group clickdeck-panel__group--media-size">
           ${buttonMarkup("image-width-smaller", labels.smaller, false, undefined, "clickdeck-button--media-size")}
           ${buttonMarkup("image-width-larger", labels.larger, false, undefined, "clickdeck-button--media-size")}
-          ${buttonMarkup("image-maxwidth-100", labels.imageMax100)}
         </div>
       </div>
     </div>
@@ -177,7 +176,6 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       <div class="clickdeck-panel__group clickdeck-panel__group--media-size">
         ${buttonMarkup("image-width-smaller", labels.smaller, false, undefined, "clickdeck-button--media-size")}
         ${buttonMarkup("image-width-larger", labels.larger, false, undefined, "clickdeck-button--media-size")}
-        ${buttonMarkup("image-maxwidth-100", labels.imageMax100)}
       </div>
     </div>
     <div class="clickdeck-panel__section" data-section="svg-text" data-context="svg">

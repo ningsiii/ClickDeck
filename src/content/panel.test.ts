@@ -72,6 +72,7 @@ describe("createPanel selection context", () => {
     const replaceVideo = panel.element.querySelector<HTMLButtonElement>("[data-action='replace-video']");
     const smaller = panel.element.querySelector<HTMLButtonElement>("[data-action='image-width-smaller']");
     const larger = panel.element.querySelector<HTMLButtonElement>("[data-action='image-width-larger']");
+    const max100 = panel.element.querySelector<HTMLButtonElement>("[data-action='image-maxwidth-100']");
     const sourceGroup = panel.element.querySelector<HTMLElement>(".clickdeck-panel__group--media-replace");
     const sizeGroup = panel.element.querySelector<HTMLElement>(".clickdeck-panel__group--media-size");
 
@@ -81,6 +82,7 @@ describe("createPanel selection context", () => {
     expect(replaceVideo?.classList.contains("clickdeck-button--media-source")).toBe(true);
     expect(smaller?.textContent).toBe("-");
     expect(larger?.textContent).toBe("+");
+    expect(max100).toBeNull();
     expect(smaller?.classList.contains("clickdeck-button--media-size")).toBe(true);
     expect(larger?.classList.contains("clickdeck-button--media-size")).toBe(true);
     expect(sourceGroup).not.toBeNull();
@@ -101,12 +103,14 @@ describe("createPanel selection context", () => {
     const typography = panel.element.querySelector<HTMLElement>("[data-section='typography']");
     const imageBasic = panel.element.querySelector<HTMLElement>("[data-section='image-basic']");
     const imageAdvanced = panel.element.querySelector<HTMLElement>("[data-section='image-advanced']");
+    const max100 = panel.element.querySelector<HTMLButtonElement>("[data-action='image-maxwidth-100']");
     const spacing = panel.element.querySelector<HTMLElement>("[data-section='spacing']");
     const undo = panel.element.querySelector<HTMLButtonElement>("[data-action='undo']");
 
     expect(notice?.hidden).toBe(false);
     expect(notice?.textContent).toContain("Selected: svg");
     expect(complexSize?.hidden).toBe(false);
+    expect(max100).toBeNull();
     expect(typography?.hidden).toBe(true);
     expect(imageBasic?.hidden).toBe(true);
     expect(imageAdvanced?.hidden).toBe(true);
@@ -141,10 +145,12 @@ describe("createPanel selection context", () => {
     const notice = panel.element.querySelector<HTMLElement>(".clickdeck-panel__complex-notice");
     const typography = panel.element.querySelector<HTMLElement>("[data-section='typography']");
     const imageBasic = panel.element.querySelector<HTMLElement>("[data-section='image-basic']");
+    const max100 = panel.element.querySelector<HTMLButtonElement>("[data-action='image-maxwidth-100']");
     const replaceImage = panel.element.querySelector<HTMLButtonElement>("[data-action='replace-image']");
     const replaceVideo = panel.element.querySelector<HTMLButtonElement>("[data-action='replace-video']");
 
     expect(notice?.textContent).toContain("Selected: canvas");
+    expect(max100).toBeNull();
     expect(typography?.hidden).toBe(true);
     expect(imageBasic?.hidden).toBe(true);
     expect(replaceImage?.style.display).toBe("none");
