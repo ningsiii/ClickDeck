@@ -130,6 +130,28 @@ describe("createPanel selection context", () => {
 
     panel.destroy();
   });
+
+  it("keeps canvas in safe whole-block mode without text or media replacement controls", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    panel.setSelectionContext("canvas");
+    panel.setReplaceMediaAvailability(true, "image");
+
+    const notice = panel.element.querySelector<HTMLElement>(".clickdeck-panel__complex-notice");
+    const typography = panel.element.querySelector<HTMLElement>("[data-section='typography']");
+    const imageBasic = panel.element.querySelector<HTMLElement>("[data-section='image-basic']");
+    const replaceImage = panel.element.querySelector<HTMLButtonElement>("[data-action='replace-image']");
+    const replaceVideo = panel.element.querySelector<HTMLButtonElement>("[data-action='replace-video']");
+
+    expect(notice?.textContent).toContain("Selected: canvas");
+    expect(typography?.hidden).toBe(true);
+    expect(imageBasic?.hidden).toBe(true);
+    expect(replaceImage?.style.display).toBe("none");
+    expect(replaceVideo?.style.display).toBe("none");
+
+    panel.destroy();
+  });
 });
 
 describe("createPanel saved edits notice", () => {
@@ -295,6 +317,21 @@ describe("createPanel SVG text editor", () => {
     panel.setSvgTextEditorState({ mode: "editable", message: "Editable SVG text detected." });
     expect(button?.disabled).toBe(false);
     expect(status?.textContent).toContain("Editable SVG text detected");
+
+    panel.destroy();
+  });
+
+  it("keeps SVG text edit entry disabled for complex SVG text structures", () => {
+    const panel = createPanel(() => undefined);
+    document.body.appendChild(panel.element);
+
+    panel.setSelectionContext("svg");
+    panel.setSvgTextEditorState({ mode: "complex", message: "Detected SVG text, but the structure is too complex." });
+
+    const button = panel.element.querySelector<HTMLButtonElement>("[data-action='edit-svg-text']");
+    const status = panel.element.querySelector<HTMLElement>(".clickdeck-panel__svg-text-status");
+    expect(button?.disabled).toBe(true);
+    expect(status?.textContent).toContain("too complex");
 
     panel.destroy();
   });

@@ -268,14 +268,26 @@ describe("isLargeContainer and getEditableTarget", () => {
       <svg id="diagram" width="100" height="80">
         <g>
           <path id="shape" d="M0 0L10 10"></path>
+          <rect id="block" x="0" y="0" width="10" height="10"></rect>
+          <text id="label">Hello</text>
         </g>
       </svg>
     `;
 
     const svg = document.getElementById("diagram") as unknown as HTMLElement;
     const path = document.getElementById("shape") as unknown as HTMLElement;
+    const rect = document.getElementById("block") as unknown as HTMLElement;
+    const text = document.getElementById("label") as unknown as HTMLElement;
 
     expect(resolveEditableTarget(path)).toEqual({
+      target: svg,
+      source: "direct"
+    });
+    expect(resolveEditableTarget(rect)).toEqual({
+      target: svg,
+      source: "direct"
+    });
+    expect(resolveEditableTarget(text)).toEqual({
       target: svg,
       source: "direct"
     });

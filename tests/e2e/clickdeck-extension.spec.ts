@@ -359,6 +359,32 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(page.locator("#editable-svg-tspan")).toHaveText("Deck");
   });
 
+  test("does not expose SVG text editing for complex SVG text structures", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await page.evaluate(() => {
+      const host = document.createElement("section");
+      host.id = "svg-complex-text-fixture";
+      host.innerHTML = `
+        <svg id="complex-svg-text" width="220" height="80" style="display:block; width:220px; height:80px;">
+          <defs>
+            <path id="curve" d="M10 50 Q 110 0 210 50"></path>
+          </defs>
+          <text id="complex-svg-text-node"><textPath href="#curve">Curved title</textPath></text>
+        </svg>
+      `;
+      document.body.prepend(host);
+    });
+    await activateExtension(page);
+
+    await page.locator("#complex-svg-text-node").click();
+    await expect(page.locator(".clickdeck-panel__complex-notice")).toContainText("svg");
+    await expect(page.locator(".clickdeck-panel__svg-text-status")).toContainText("structure is too complex");
+
+    const editButton = page.locator("[data-action='edit-svg-text']");
+    await expect(editButton).toBeVisible();
+    await expect(editButton).toBeDisabled();
+  });
+
   test("6. Save/Restore persistence", async ({ page, demoPageUrl }) => {
     // Clear storage first
     await page.goto(demoPageUrl);
