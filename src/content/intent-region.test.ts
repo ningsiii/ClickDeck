@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach } from "vitest";
 import {
+  compareRegionAnchors,
   normalizeRect,
   toDocumentRect,
   toRelativeRect,
@@ -214,5 +215,69 @@ describe("Intent Region Core Functions", () => {
     expect(region.anchor.locator?.descriptor).toContain("#slide1");
     expect(region.relativeBox?.left).toBe(25); // (200 / 800) * 100
     expect(region.relativeBox?.top).toBe(50);  // (300 / 600) * 100
+  });
+
+  it("compareRegionAnchors detects shared anchors by locator identity", () => {
+    const source = createIntentRegion({
+      action: "move",
+      userIntent: "",
+      viewportBox: normalizeRect({ left: 100, top: 100, width: 100, height: 100 }),
+      root: document.body
+    });
+    source.anchor = {
+      kind: "slide",
+      confidence: "high",
+      locator: { descriptor: "section #slide-1 .slide", tagName: "section", cssPath: "#slide-1", nthOfTypePath: "body > section:nth-of-type(1)", siblingIndex: 0 }
+    };
+
+    const target = createIntentRegion({
+      action: "move",
+      userIntent: "",
+      viewportBox: normalizeRect({ left: 200, top: 200, width: 100, height: 100 }),
+      root: document.body
+    });
+    target.anchor = {
+      kind: "slide",
+      confidence: "high",
+      locator: { descriptor: "section #slide-1 .slide", tagName: "section", cssPath: "#slide-1", nthOfTypePath: "body > section:nth-of-type(1)", siblingIndex: 0 }
+    };
+
+    expect(compareRegionAnchors(source, target)).toEqual({
+      shared: true,
+      differentSection: false,
+      confidence: "high"
+    });
+  });
+
+  it("compareRegionAnchors marks different anchors as low-confidence cross-section placement", () => {
+    const source = createIntentRegion({
+      action: "move",
+      userIntent: "",
+      viewportBox: normalizeRect({ left: 100, top: 100, width: 100, height: 100 }),
+      root: document.body
+    });
+    source.anchor = {
+      kind: "slide",
+      confidence: "high",
+      locator: { descriptor: "section #slide-1 .slide", tagName: "section", cssPath: "#slide-1", nthOfTypePath: "body > section:nth-of-type(1)", siblingIndex: 0 }
+    };
+
+    const target = createIntentRegion({
+      action: "move",
+      userIntent: "",
+      viewportBox: normalizeRect({ left: 200, top: 200, width: 100, height: 100 }),
+      root: document.body
+    });
+    target.anchor = {
+      kind: "section",
+      confidence: "high",
+      locator: { descriptor: "section #slide-2 .slide", tagName: "section", cssPath: "#slide-2", nthOfTypePath: "body > section:nth-of-type(2)", siblingIndex: 1 }
+    };
+
+    expect(compareRegionAnchors(source, target)).toEqual({
+      shared: false,
+      differentSection: true,
+      confidence: "low"
+    });
   });
 });

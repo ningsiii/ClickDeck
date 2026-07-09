@@ -1,4 +1,4 @@
-import { IntentOperation } from "../content/intent-region";
+import { compareRegionAnchors, IntentOperation } from "../content/intent-region";
 import { collectCssFacts, CssFacts } from "../content/css-facts";
 import { ActiveAlignmentGuide, AlignmentEdge, NearbyReference, RegionCandidate, RegionContext, summarizeVisualUnit } from "../content/region-context";
 
@@ -21,6 +21,15 @@ export type PromptBuildResult =
   | { ok: false; reason: "empty"; message: string };
 
 type PromptLanguage = IntentPromptOptions["language"];
+type ConstraintConfidence = "high" | "medium" | "low";
+type RelationType = "align" | "gap" | "adjacent" | "inside" | "centered";
+type ResolvedAxisConstraint = {
+  axis: "x" | "y";
+  text: string;
+  confidence: ConstraintConfidence;
+  relationType: RelationType;
+  source: "active-guide" | "nearby" | "anchor-center" | "placement-offset";
+};
 
 function isZh(language: PromptLanguage): boolean {
   return language === "zh";
@@ -260,45 +269,209 @@ function formatGuideConstraintLocalized(axis: "X" | "Y", guide: ActiveAlignmentG
   return `- ${axis} 轴：使用已记录参考线，Target B 的${formatAlignmentEdge(guide.targetEdge)}与 ${quoteReference(guide.unitSummary)} 的${formatAlignmentEdge(guide.sourceEdge)}对齐。`;
 }
 
-function appendPrimaryAxisConstraints(lines: string[], targetContext: RegionContext, language: PromptLanguage): void {
-  const guides = targetContext.activeAlignmentGuides ?? [];
-  const xGuide = guides.find(guide => guide.axis === "x");
-  const yGuide = guides.find(guide => guide.axis === "y");
+function getAnchorCenterHint(targetContext: RegionContext, axis: "x" | "y"): { confidence: ConstraintConfidence } | null {
+  const hints = targetContext.alignmentHints ?? [];
+  const needle = axis === "x" ? "Center X is close to anchor center X" : "Center Y is close to anchor center Y";
+  const hint = hints.find((candidate) => candidate.summary.includes(needle));
+  if (!hint) return null;
+  return { confidence: hint.confidence };
+}
 
-  const left = pickReference(targetContext, "left");
-  const right = pickReference(targetContext, "right");
-  const below = pickReference(targetContext, "below");
-  const above = pickReference(targetContext, "above");
+function getPlacementOffsetConstraint(
+  sourceContext: RegionContext,
+  targetContext: RegionContext,
+  axis: "x" | "y",
+  language: PromptLanguage
+): ResolvedAxisConstraint {
+  const useRelative = Boolean(sourceContext.region.relativeBox && targetContext.region.relativeBox);
+  const sourceBox = sourceContext.region.relativeBox ?? sourceContext.region.viewportBox;
+  const targetBox = targetContext.region.relativeBox ?? targetContext.region.viewportBox;
+  const unit = useRelative ? "%" : "px";
+
+  if (axis === "x") {
+    const delta = targetBox.left - sourceBox.left;
+    const direction = delta >= 0 ? (isZh(language) ? "右侧" : "to the right of") : (isZh(language) ? "左侧" : "to the left of");
+    return {
+      axis,
+      confidence: "low",
+      relationType: "gap",
+      source: "placement-offset",
+      text: isZh(language)
+        ? `- X 轴：将 Source A 保持在 Source A 左边界${direction}，偏移约 ${Math.round(Math.abs(delta))}${unit}。`
+        : `- X axis: use placement offset; Target B left edge is about ${Math.round(Math.abs(delta))}${unit} ${direction} Source A left edge.`
+    };
+  }
+
+  const delta = targetBox.top - sourceBox.top;
+  const direction = delta >= 0 ? (isZh(language) ? "下方" : "below") : (isZh(language) ? "上方" : "above");
+  return {
+    axis,
+    confidence: "low",
+    relationType: "gap",
+    source: "placement-offset",
+    text: isZh(language)
+      ? `- Y 轴：将 Source A 保持在 Source A 上边界${direction}，偏移约 ${Math.round(Math.abs(delta))}${unit}。`
+      : `- Y axis: use placement offset; Target B top edge is about ${Math.round(Math.abs(delta))}${unit} ${direction} Source A top edge.`
+  };
+}
+
+function resolveAxisConstraint(
+  sourceContext: RegionContext,
+  targetContext: RegionContext,
+  axis: "x" | "y",
+  language: PromptLanguage
+): ResolvedAxisConstraint {
+  const guides = targetContext.activeAlignmentGuides ?? [];
+  const guide = guides.find((candidate) => candidate.axis === axis);
+  if (guide) {
+    const isCenter = guide.targetEdge === "centerX" || guide.targetEdge === "centerY";
+    return {
+      axis,
+      confidence: "high",
+      relationType: isCenter ? "centered" : "align",
+      source: "active-guide",
+      text: formatGuideConstraintLocalized(axis === "x" ? "X" : "Y", guide, language)
+    };
+  }
+
+  if (axis === "x") {
+    const left = pickReference(targetContext, "left");
+    const right = pickReference(targetContext, "right");
+    const reference = left ?? right;
+    if (reference) {
+      return {
+        axis,
+        confidence: "medium",
+        relationType: reference.distance <= 16 ? "adjacent" : "gap",
+        source: "nearby",
+        text: formatXConstraintLocalized(reference, language)
+      };
+    }
+  } else {
+    const below = pickReference(targetContext, "below");
+    const above = pickReference(targetContext, "above");
+    const reference = below ?? above;
+    if (reference) {
+      return {
+        axis,
+        confidence: "medium",
+        relationType: reference.distance <= 16 ? "adjacent" : "gap",
+        source: "nearby",
+        text: formatYConstraintLocalized(reference, language)
+      };
+    }
+  }
+
+  const anchorCenter = getAnchorCenterHint(targetContext, axis);
+  if (anchorCenter) {
+    return {
+      axis,
+      confidence: anchorCenter.confidence,
+      relationType: "centered",
+      source: "anchor-center",
+      text: axis === "x"
+        ? t(language, "- X axis: center Source A within the shared anchor/container.", "- X 轴：将 Source A 在共享 anchor / 容器内水平居中。")
+        : t(language, "- Y axis: center Source A within the shared anchor/container.", "- Y 轴：将 Source A 在共享 anchor / 容器内垂直居中。")
+    };
+  }
+
+  return getPlacementOffsetConstraint(sourceContext, targetContext, axis, language);
+}
+
+function appendPrimaryAxisConstraints(lines: string[], sourceContext: RegionContext, targetContext: RegionContext, language: PromptLanguage): ResolvedAxisConstraint[] {
+  const xConstraint = resolveAxisConstraint(sourceContext, targetContext, "x", language);
+  const yConstraint = resolveAxisConstraint(sourceContext, targetContext, "y", language);
 
   lines.push(t(language, "Primary axis constraints:", "主轴约束:"));
-  if (left) {
-    lines.push(formatXConstraintLocalized(left, language));
-  } else if (right) {
-    lines.push(formatXConstraintLocalized(right, language));
-  } else if (xGuide) {
-    lines.push(formatGuideConstraintLocalized("X", xGuide, language));
-  } else {
-    lines.push(t(language, "- X axis: use Placement offset and Target B visual box as the primary horizontal constraint.", "- X 轴：使用“放置偏移”和 Target B 视觉框作为主要横向约束。"));
+  lines.push(xConstraint.text);
+  lines.push(yConstraint.text);
+  lines.push("");
+  return [xConstraint, yConstraint];
+}
+
+function appendSecondaryReferences(lines: string[], targetContext: RegionContext, primary: ResolvedAxisConstraint[], language: PromptLanguage): void {
+  const guides = targetContext.activeAlignmentGuides ?? [];
+  const primaryGuideAxes = new Set(primary.filter((constraint) => constraint.source === "active-guide").map((constraint) => constraint.axis));
+  const secondaryGuideLines = guides
+    .filter((guide) => !primaryGuideAxes.has(guide.axis))
+    .slice(0, 2)
+    .map((guide) => isZh(language)
+      ? `- Target B 的${formatAlignmentEdge(guide.targetEdge)}与 ${quoteReference(guide.unitSummary)} 的${formatAlignmentEdge(guide.sourceEdge)}对齐（delta: ${Math.round(guide.deltaPx)}px，confidence: ${guide.confidence}）。`
+      : `- Target B ${formatAlignmentEdge(guide.targetEdge)} aligns with ${quoteReference(guide.unitSummary)} ${formatAlignmentEdge(guide.sourceEdge)} (delta: ${Math.round(guide.deltaPx)}px, confidence: ${guide.confidence}).`);
+
+  const nearbyLines = targetContext.nearby
+    .filter((reference) => {
+      if ((reference.direction === "left" || reference.direction === "right") && primary.some((constraint) => constraint.axis === "x" && constraint.source === "nearby")) {
+        return false;
+      }
+      if ((reference.direction === "above" || reference.direction === "below") && primary.some((constraint) => constraint.axis === "y" && constraint.source === "nearby")) {
+        return false;
+      }
+      return true;
+    })
+    .slice(0, 2)
+    .map((reference) => isZh(language)
+      ? `- ${formatDirection(reference.direction, language)}：${reference.summary}，距离 ${Math.round(reference.distance)}px（confidence: medium）。`
+      : `- ${reference.direction}: ${reference.summary}, ${Math.round(reference.distance)}px away (confidence: medium).`);
+
+  if (secondaryGuideLines.length === 0 && nearbyLines.length === 0) {
+    lines.push(t(language, "Secondary references:", "次级参考:"));
+    lines.push(t(language, "- None beyond the primary constraints.", "- 除主约束外没有额外次级参考。"));
+    lines.push("");
+    return;
   }
 
-  if (below) {
-    lines.push(formatYConstraintLocalized(below, language));
-  } else if (above) {
-    lines.push(formatYConstraintLocalized(above, language));
-  } else if (yGuide) {
-    lines.push(formatGuideConstraintLocalized("Y", yGuide, language));
-  } else {
-    lines.push(t(language, "- Y axis: use Placement offset and Target B visual box as the primary vertical constraint.", "- Y 轴：使用“放置偏移”和 Target B 视觉框作为主要纵向约束。"));
-  }
+  lines.push(t(language, "Secondary references:", "次级参考:"));
+  secondaryGuideLines.forEach((line) => lines.push(line));
+  nearbyLines.forEach((line) => lines.push(line));
+  lines.push("");
+}
 
-  if (guides.length > 0) {
-    lines.push(t(language, "Secondary alignment guides:", "次级对齐参考线:"));
-    guides.slice(0, 2).forEach((guide) => {
-      lines.push(isZh(language)
-        ? `- Target B 的${formatAlignmentEdge(guide.targetEdge)}与 ${quoteReference(guide.unitSummary)} 的${formatAlignmentEdge(guide.sourceEdge)}对齐（delta: ${Math.round(guide.deltaPx)}px）。`
-        : `- Target B ${formatAlignmentEdge(guide.targetEdge)} aligns with ${quoteReference(guide.unitSummary)} ${formatAlignmentEdge(guide.sourceEdge)} (delta: ${Math.round(guide.deltaPx)}px).`);
-    });
+function detectRelationTypes(
+  sourceContext: RegionContext,
+  targetContext: RegionContext,
+  constraints: ResolvedAxisConstraint[],
+  language: PromptLanguage
+): string {
+  const types = new Set<RelationType>();
+  constraints.forEach((constraint) => types.add(constraint.relationType));
+  if (compareRegionAnchors(sourceContext.region, targetContext.region).shared) {
+    types.add("inside");
   }
+  const ordered = (["align", "gap", "adjacent", "inside", "centered"] as RelationType[]).filter((type) => types.has(type));
+  return isZh(language) ? ordered.join("、") : ordered.join(", ");
+}
+
+function appendAnchorAndCoordinateModel(lines: string[], sourceContext: RegionContext, targetContext: RegionContext, language: PromptLanguage): void {
+  const relation = compareRegionAnchors(sourceContext.region, targetContext.region);
+  lines.push(t(language, "Anchor and coordinate model:", "Anchor 与坐标系:"));
+  if (relation.shared) {
+    lines.push(t(language, `- Source A and Target B share the same ${sourceContext.region.anchor.kind} anchor. Use this shared anchor coordinate system as the primary placement frame.`, `- Source A 与 Target B 共享同一个 ${sourceContext.region.anchor.kind} anchor，应优先使用这个共享坐标系判断位置。`));
+  } else {
+    lines.push(t(language, "- Target B appears in a different anchor/section.", "- Target B 看起来位于不同的 anchor / section 中。"));
+    lines.push(t(language, `- Treat placement across anchors as lower confidence. Source anchor: ${formatAnchor(sourceContext)}. Target anchor: ${formatAnchor(targetContext)}.`, `- 跨 anchor 的放置关系应降低置信度。Source anchor：${formatAnchor(sourceContext)}；Target anchor：${formatAnchor(targetContext)}。`));
+  }
+  if (targetContext.region.relativeBox) {
+    lines.push(t(language, `- Relative box: ${formatRect(targetContext.region.relativeBox)} relative to target anchor.`, `- 相对框：${formatRect(targetContext.region.relativeBox)}（相对于 Target anchor）。`));
+  }
+  lines.push(t(language, `- Viewport box fallback: ${formatRect(targetContext.region.viewportBox)}.`, `- 视口坐标回退：${formatRect(targetContext.region.viewportBox)}。`));
+  if (targetContext.region.documentBox) {
+    lines.push(t(language, `- Document box fallback: ${formatRect(targetContext.region.documentBox)}.`, `- 文档坐标回退：${formatRect(targetContext.region.documentBox)}。`));
+  }
+  lines.push("");
+}
+
+function appendConfidenceNotes(lines: string[], sourceContext: RegionContext, targetContext: RegionContext, primary: ResolvedAxisConstraint[], language: PromptLanguage): void {
+  const relation = compareRegionAnchors(sourceContext.region, targetContext.region);
+  lines.push(t(language, "Confidence notes:", "置信度说明:"));
+  primary.forEach((constraint) => {
+    lines.push(isZh(language)
+      ? `- ${constraint.axis.toUpperCase()} 轴主约束：${constraint.confidence}（来源：${constraint.source}）。`
+      : `- ${constraint.axis.toUpperCase()} axis primary constraint: ${constraint.confidence} confidence (source: ${constraint.source}).`);
+  });
+  lines.push(relation.shared
+    ? t(language, `- Anchor relation: ${relation.confidence} confidence shared anchor.`, `- Anchor 关系：共享 anchor，置信度 ${relation.confidence}。`)
+    : t(language, `- Anchor relation: ${relation.confidence} confidence because Source A and Target B use different anchors/sections.`, `- Anchor 关系：Source A 与 Target B 使用不同 anchor / section，因此置信度为 ${relation.confidence}。`));
   lines.push("");
 }
 
@@ -436,7 +609,12 @@ export function appendMoveOperation(lines: string[], input: IntentPromptInput, o
   }
   lines.push("");
   appendPlacementOffset(lines, sourceContext, targetContext, language);
-  appendPrimaryAxisConstraints(lines, targetContext, language);
+  appendAnchorAndCoordinateModel(lines, sourceContext, targetContext, language);
+  const primaryConstraints = appendPrimaryAxisConstraints(lines, sourceContext, targetContext, language);
+  lines.push(`${t(language, "Relation types", "关系类型")}: ${detectRelationTypes(sourceContext, targetContext, primaryConstraints, language)}`);
+  lines.push("");
+  appendSecondaryReferences(lines, targetContext, primaryConstraints, language);
+  appendConfidenceNotes(lines, sourceContext, targetContext, primaryConstraints, language);
   appendContextBlock(lines, t(language, "Target B", "Target B"), targetContext, "", language);
   lines.push(t(language, "Target B placement reference:", "Target B 放置参考:"));
   if (targetContext.region.isGhostPreview) {

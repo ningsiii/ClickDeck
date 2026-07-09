@@ -36,6 +36,12 @@ export type IntentOperation = {
   createdAt: number;
 };
 
+export type AnchorRelation = {
+  shared: boolean;
+  differentSection: boolean;
+  confidence: "high" | "medium" | "low";
+};
+
 let nextRegionId = 1;
 let nextOperationId = 1;
 
@@ -254,5 +260,42 @@ export function createIntentOperation(source: IntentRegion, target?: IntentRegio
     source,
     target,
     createdAt: Date.now()
+  };
+}
+
+function getAnchorIdentity(anchor: RegionAnchor): string | null {
+  if (anchor.locator?.descriptor) {
+    return `${anchor.kind}:${anchor.locator.descriptor}`;
+  }
+  if (anchor.kind === "document") {
+    return "document";
+  }
+  return null;
+}
+
+export function compareRegionAnchors(source: IntentRegion, target: IntentRegion): AnchorRelation {
+  const sourceId = getAnchorIdentity(source.anchor);
+  const targetId = getAnchorIdentity(target.anchor);
+
+  if (sourceId && targetId && sourceId === targetId) {
+    return {
+      shared: true,
+      differentSection: false,
+      confidence: source.anchor.confidence === "high" && target.anchor.confidence === "high" ? "high" : "medium"
+    };
+  }
+
+  if (source.anchor.kind === target.anchor.kind && source.anchor.kind !== "document") {
+    return {
+      shared: false,
+      differentSection: false,
+      confidence: "medium"
+    };
+  }
+
+  return {
+    shared: false,
+    differentSection: source.anchor.kind !== target.anchor.kind || Boolean(sourceId && targetId && sourceId !== targetId),
+    confidence: "low"
   };
 }

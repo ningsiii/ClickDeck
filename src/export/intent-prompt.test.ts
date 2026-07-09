@@ -260,11 +260,17 @@ describe("Intent Prompt Builder", () => {
       expect(prompt).toContain("Placement offset:");
       expect(prompt).toContain("Target B left edge is about 48% to the right of Source A left edge.");
       expect(prompt).toContain("Target B top edge is about 7% above Source A top edge.");
+      expect(prompt).toContain("Anchor and coordinate model:");
+      expect(prompt).toContain("Source A and Target B share the same slide anchor.");
+      expect(prompt).toContain("Relative box:");
+      expect(prompt).toContain("Viewport box fallback:");
       expect(prompt).toContain("Primary axis constraints:");
-      expect(prompt).toContain("X axis: use Placement offset and Target B visual box as the primary horizontal constraint.");
+      expect(prompt).toContain("X axis: use placement offset; Target B left edge is about 48% to the right of Source A left edge.");
       expect(prompt).toContain("Y axis: keep Source A close below [Title], with about 24px vertical gap.");
-      expect(prompt).toContain("Placement references:");
-      expect(prompt).toContain("- above: [Title], 24px away; place Target B below this reference / preserve vertical spacing.");
+      expect(prompt).toContain("Relation types: gap, inside");
+      expect(prompt).toContain("Secondary references:");
+      expect(prompt).toContain("- None beyond the primary constraints.");
+      expect(prompt).toContain("Confidence notes:");
       expect(prompt).toContain("Final alignment guide:");
       expect(prompt).toContain("- No recorded active guide at drop; calculated high-confidence fallback: Left edge aligns with [Title] left edge (delta: 2px, confidence: high).");
       expect(prompt).toContain("- No recorded active guide at drop; calculated high-confidence fallback: Top edge is 24px below [Header] bottom edge (delta: 24px, confidence: high).");
@@ -333,9 +339,30 @@ describe("Intent Prompt Builder", () => {
       const prompt = result.prompt;
       expect(prompt).toContain("Primary axis constraints:");
       expect(prompt).toContain('X axis: place Source A close to the right of "适用场景与人群", with about 43px horizontal gap.');
-      expect(prompt).toContain('Y axis: keep Source A close above "超越代码补全：", with about 51px vertical gap.');
-      expect(prompt).toContain("Secondary alignment guides:");
-      expect(prompt).toContain('Target B center Y aligns with "适用场景与人群" center Y (delta: 0px).');
+      expect(prompt).toContain('Y axis: use recorded guide, Target B center Y aligns with "适用场景与人群" center Y.');
+      expect(prompt).toContain("Secondary references:");
+      expect(prompt).toContain('- below: 超越代码补全：, 51px away (confidence: medium).');
+    }
+  });
+
+  it("marks different anchors and lowers confidence when Source A and Target B use different sections", () => {
+    const input = mockRegionContext("move", "", false, [mockCandidate("image")]);
+    addTargetContext(input, "", true);
+    input.targetContext!.region.anchor = {
+      kind: "section",
+      confidence: "high",
+      locator: { descriptor: "section #slide-2 .slide", tagName: "section", cssPath: "#slide-2", nthOfTypePath: "body > section:nth-of-type(2)", siblingIndex: 1 }
+    };
+    input.targetContext!.region.relativeBox = undefined;
+
+    const result = buildIntentPrompt([input], { language: "en", page: { url: "", title: "" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const prompt = result.prompt;
+      expect(prompt).toContain("Target B appears in a different anchor/section.");
+      expect(prompt).toContain("Anchor relation: low confidence because Source A and Target B use different anchors/sections.");
+      expect(prompt).toContain("Viewport box fallback:");
+      expect(prompt).toContain("Document box fallback:");
     }
   });
 

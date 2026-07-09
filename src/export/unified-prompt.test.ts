@@ -221,8 +221,15 @@ describe("buildUnifiedPrompt", () => {
       expect(prompt).toContain("Treat Source A as the selected visual content group inside Source A's visual box");
       expect(prompt).toContain("Target B is below and shifted to the right of Source A");
       expect(prompt).toContain("Placement offset:");
+      expect(prompt).toContain("Anchor and coordinate model:");
+      expect(prompt).toContain("Viewport box fallback:");
       expect(prompt).toContain("Primary axis constraints:");
       expect(prompt).toContain("X axis: place Source A immediately to the left of [Title], with about 10px horizontal gap.");
+      expect(prompt).toContain("Y axis: use placement offset; Target B top edge is about 80px below Source A top edge.");
+      expect(prompt).toContain("Relation types: gap, adjacent");
+      expect(prompt).toContain("Secondary references:");
+      expect(prompt).toContain("- None beyond the primary constraints.");
+      expect(prompt).toContain("Confidence notes:");
       expect(prompt).toContain("Placement references:");
       expect(prompt).toContain("- right: [Title], 10px away; avoid overlap / preserve offset.");
       expect(prompt).toContain("Final alignment guide:");
@@ -267,7 +274,10 @@ describe("buildUnifiedPrompt", () => {
     if (resultZh.ok) {
       expect(resultZh.prompt).toContain("移动操作规则:");
       expect(resultZh.prompt).toContain("放置摘要:");
+      expect(resultZh.prompt).toContain("Anchor 与坐标系:");
       expect(resultZh.prompt).toContain("主轴约束:");
+      expect(resultZh.prompt).toContain("次级参考:");
+      expect(resultZh.prompt).toContain("置信度说明:");
       expect(resultZh.prompt).toContain("放置参考:");
       expect(resultZh.prompt).toContain("最终对齐参考:");
       expect(resultZh.prompt).toContain("X 轴：将 Source A 放在 \"适用场景与人群\" 的右侧附近");
