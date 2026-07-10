@@ -434,6 +434,16 @@ function buildVideoScaleChanges(
       property: "height",
       before: element.style.height,
       after: `${nextHeight}px`
+    },
+    {
+      property: "minWidth",
+      before: element.style.minWidth,
+      after: "0px"
+    },
+    {
+      property: "minHeight",
+      before: element.style.minHeight,
+      after: "0px"
     }
   ];
 }

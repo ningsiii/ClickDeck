@@ -179,12 +179,16 @@ describe("applyStyleAction", () => {
     const largerChanges = applyStyleAction(logger, video, "image-width-larger");
     expect(video.style.width).toBe("340px");
     expect(video.style.height).toBe("191.25px");
-    expect(largerChanges?.map(change => change.property)).toEqual(["width", "height"]);
+    expect(video.style.minWidth).toBe("0px");
+    expect(video.style.minHeight).toBe("0px");
+    expect(largerChanges?.map(change => change.property)).toEqual(["width", "height", "minWidth", "minHeight"]);
 
     const smallerChanges = applyStyleAction(logger, video, "image-width-smaller");
     expect(video.style.width).toBe("320px");
     expect(video.style.height).toBe("180px");
-    expect(smallerChanges?.map(change => change.property)).toEqual(["width", "height"]);
+    expect(video.style.minWidth).toBe("0px");
+    expect(video.style.minHeight).toBe("0px");
+    expect(smallerChanges?.map(change => change.property)).toEqual(["width", "height", "minWidth", "minHeight"]);
 
     video.remove();
   });
@@ -195,12 +199,15 @@ describe("applyStyleAction", () => {
 
     video.style.width = "320px";
     video.style.height = "480px";
+    video.style.minHeight = "256px";
     Object.defineProperty(video, "videoWidth", { value: 1920, configurable: true });
     Object.defineProperty(video, "videoHeight", { value: 1080, configurable: true });
 
-    applyStyleAction(logger, video, "image-width-smaller");
+    const changes = applyStyleAction(logger, video, "image-width-smaller");
     expect(video.style.width).toBe("300px");
     expect(video.style.height).toBe("168.75px");
+    expect(video.style.minHeight).toBe("0px");
+    expect(changes?.map(change => change.property)).toEqual(["width", "height", "minWidth", "minHeight"]);
 
     video.remove();
   });

@@ -11,5 +11,7 @@ export type StyleProperty =
   | "borderRadius"
   | "width"
   | "height"
+  | "minWidth"
+  | "minHeight"
   | "maxWidth"
   | "objectFit";
