@@ -10,12 +10,17 @@ ClickDeck v1.3.4 focuses on safer handling for modern complex HTML content and m
   - formula regions such as MathML, KaTeX, and MathJax
   - iframe / srcdoc blocks
 - Added simple inline SVG text editing directly on the page for safe `<text>` / `<tspan>` cases
+- Refined simple SVG text editing to use an anchored floating popover instead of a covering input overlay
 - Keeps complex SVG text structures protected with clear limitation hints
 - Improved Move Intent precision:
   - Target B now snaps to alignment guides instead of only showing them
   - move prompts describe X/Y axis constraints separately
   - Source A and Target B semantics are clearer
   - prompt output distinguishes primary constraints, secondary references, and confidence
+- Cleaned up media controls:
+  - the weak `Max 100%` button is hidden from the main panel
+  - replace and resize actions now sit on a single row
+- Fixed video resizing so `+ / -` uses intrinsic aspect ratio and can still shrink when page CSS sets blocking `min-height` or `min-width`
 
 ## Current scope
 
@@ -62,12 +67,19 @@ ClickDeck v1.3.4 重点补齐了现代复杂 HTML 元素的安全轻量编辑能
   - MathML / KaTeX / MathJax 等公式区域
   - iframe / srcdoc
 - 对简单、可控的 SVG `<text>` / `<tspan>` 提供页面内原位编辑
+- 简单 SVG 文字编辑从覆盖式输入框改为锚定浮层，减少错位和遮挡感
 - 对复杂 SVG 文字结构继续显示限制提示，避免误导用户进入深层编辑
 - Move Intent 精度升级：
   - Target B 会真实吸附到 guide
   - prompt 分开描述 X / Y 轴主约束
   - Source A 与 Target B 的语义更清楚
   - prompt 会区分主约束、辅助参考与置信度
+- 调整媒体控件：
+  - 主面板中不再显示作用弱的“最大 100%”按钮
+  - 替换按钮与 `- / +` 缩放按钮改为同排显示
+- 修正视频缩放：
+  - `+ / -` 现在优先使用视频原始比例
+  - 同步清除阻挡缩小的最小尺寸约束，避免出现“只变窄、不变矮”的错误效果
 
 ### 安装提醒
 
