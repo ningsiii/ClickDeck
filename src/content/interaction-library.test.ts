@@ -82,6 +82,37 @@ describe("createInteractionLibrary", () => {
     library.destroy();
   });
 
+  it("keeps left-index feedback static and uses neutral structural examples in every demo", () => {
+    const englishLibrary = createInteractionLibrary("en");
+    document.body.appendChild(englishLibrary.element);
+    const styleText = englishLibrary.element.querySelector("style")?.textContent ?? "";
+    expect(styleText).not.toContain(".clickdeck-interaction-library__item:hover");
+    const currentIndexRule = styleText.match(/\.clickdeck-interaction-library__item\[aria-current="true"\] \.clickdeck-interaction-library__item-index\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(currentIndexRule).not.toMatch(/transform|transition|box-shadow/);
+
+    let englishDemoText = "";
+    for (const pattern of interactionPatterns) {
+      englishLibrary.element.querySelector<HTMLButtonElement>(`[data-library-pattern='${pattern.id}']`)?.click();
+      englishDemoText += ` ${englishLibrary.element.querySelector(".clickdeck-interaction-library__demo-wrap")?.textContent ?? ""}`;
+    }
+    expect(englishDemoText).not.toMatch(/community|space project|digital archive|community event|project summary|item detail/i);
+    expect(englishDemoText).toContain("Logic 2");
+    expect(englishDemoText).toContain("Cause A");
+    englishLibrary.destroy();
+
+    const chineseLibrary = createInteractionLibrary("zh");
+    document.body.appendChild(chineseLibrary.element);
+    let chineseDemoText = "";
+    for (const pattern of interactionPatterns) {
+      chineseLibrary.element.querySelector<HTMLButtonElement>(`[data-library-pattern='${pattern.id}']`)?.click();
+      chineseDemoText += ` ${chineseLibrary.element.querySelector(".clickdeck-interaction-library__demo-wrap")?.textContent ?? ""}`;
+    }
+    expect(chineseDemoText).not.toMatch(/社区|空间项目|数字档案|社区活动|项目摘要|项目详情/);
+    expect(chineseDemoText).toContain("逻辑二");
+    expect(chineseDemoText).toContain("因 A");
+    chineseLibrary.destroy();
+  });
+
   it("switches and previews patterns on hover or keyboard focus without a click", () => {
     vi.useFakeTimers();
     try {
@@ -96,7 +127,7 @@ describe("createInteractionLibrary", () => {
       expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(true);
 
       vi.advanceTimersByTime(150);
-      expect(library.element.querySelector("[data-demo-renderer='tabs'] [data-demo-output]")?.textContent).toContain("Data content");
+      expect(library.element.querySelector("[data-demo-renderer='tabs'] [data-demo-output]")?.textContent).toContain("Logic 2");
 
       const drawerItem = library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']");
       drawerItem?.focus();
@@ -139,7 +170,7 @@ describe("createInteractionLibrary", () => {
     const search = library.element.querySelector<HTMLInputElement>("[data-demo-action='live-filter']");
     expect(search).not.toBeNull();
     if (search) {
-      search.value = "community";
+      search.value = "A";
       search.dispatchEvent(new Event("input", { bubbles: true }));
     }
     const searchItems = library.element.querySelectorAll<HTMLElement>("[data-demo-search]");

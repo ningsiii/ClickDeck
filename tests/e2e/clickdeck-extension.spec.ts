@@ -939,7 +939,16 @@ test.describe("ClickDeck core editing workflows", () => {
     await library.locator("[data-library-relation='comparison-change']").click();
     await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
     await expect(library.locator("[data-library-pattern][data-filter-match='true']")).toHaveCount(3);
-    await library.locator("[data-library-pattern='compare-slider']").hover();
+    const compareItem = library.locator("[data-library-pattern='compare-slider']");
+    const compareItemBeforeHover = await compareItem.boundingBox();
+    await compareItem.hover();
+    const compareItemAfterHover = await compareItem.boundingBox();
+    expect(compareItemBeforeHover).not.toBeNull();
+    expect(compareItemAfterHover).not.toBeNull();
+    expect(compareItemAfterHover?.width).toBe(compareItemBeforeHover?.width);
+    expect(compareItemAfterHover?.height).toBe(compareItemBeforeHover?.height);
+    await expect(compareItem).toHaveCSS("transform", "none");
+    await expect(compareItem).toHaveCSS("box-shadow", "none");
 
     const slider = library.locator("[data-demo-action='compare-slider']");
     await expect(slider).toBeVisible();

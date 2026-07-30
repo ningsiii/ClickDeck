@@ -545,27 +545,19 @@ const libraryStyles = `
     color: #4e3b2c;
     text-align: left;
     cursor: pointer;
-    transition: opacity 180ms ease, transform 180ms ease, background 180ms ease, border-color 180ms ease;
   }
   .clickdeck-interaction-library__item[data-filter-match="false"] {
     opacity: 0.3;
   }
-  .clickdeck-interaction-library__item[data-filter-match="false"]:hover,
-  .clickdeck-interaction-library__item[data-filter-match="false"]:focus-visible {
-    opacity: 0.72;
-  }
-  .clickdeck-interaction-library__item:hover,
   .clickdeck-interaction-library__item:focus-visible {
-    border-color: #dec9a6;
-    background: #fff;
-    transform: translateX(3px);
-    outline: none;
+    outline: 2px solid #f2b37f;
+    outline-offset: -2px;
   }
   .clickdeck-interaction-library__item[aria-current="true"] {
     opacity: 1;
-    border-color: #f2b37f;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(79, 48, 21, 0.08);
+    border-color: transparent;
+    border-left-color: #f97316;
+    background: rgba(249, 115, 22, 0.06);
   }
   .clickdeck-interaction-library__item-index {
     display: grid;
@@ -577,12 +569,10 @@ const libraryStyles = `
     color: #9b6f45;
     font-size: 11px;
     font-weight: 800;
-    transition: color 180ms ease, background 180ms ease, transform 180ms ease;
   }
   .clickdeck-interaction-library__item[aria-current="true"] .clickdeck-interaction-library__item-index {
     background: #f97316;
     color: #fff;
-    transform: rotate(-4deg) scale(1.05);
   }
   .clickdeck-interaction-library__item-copy {
     min-width: 0;
@@ -885,7 +875,7 @@ function renderDemo(renderer: InteractionDemoRenderer, language: InteractionLibr
   switch (renderer) {
     case "carousel":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="carousel" data-index="0">
-        <div class="cd-demo__surface" data-demo-output>${t("项目 A · 当前突出显示", "Item A · currently featured")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("A · 当前项", "A · current")}</div>
         <div class="cd-demo__row">
           <button type="button" data-demo-action="carousel-prev" aria-label="${t("上一项", "Previous")}">←</button>
           <button type="button" data-demo-action="carousel-dot" data-index="0" aria-pressed="true">1</button>
@@ -897,141 +887,141 @@ function renderDemo(renderer: InteractionDemoRenderer, language: InteractionLibr
     case "preview":
       return `<div class="cd-demo cd-demo__split" data-demo-renderer="preview">
         <div class="cd-demo__stack">
-          <button type="button" data-demo-action="preview" data-value="${t("空间项目预览", "Space project preview")}" aria-pressed="true">${t("空间", "Space")}</button>
-          <button type="button" data-demo-action="preview" data-value="${t("社区项目预览", "Community project preview")}" aria-pressed="false">${t("社区", "Community")}</button>
-          <button type="button" data-demo-action="preview" data-value="${t("数字项目预览", "Digital project preview")}" aria-pressed="false">${t("数字", "Digital")}</button>
+          <button type="button" data-demo-action="preview" data-value="${t("A 的预览", "Preview A")}" aria-pressed="true">A</button>
+          <button type="button" data-demo-action="preview" data-value="${t("B 的预览", "Preview B")}" aria-pressed="false">B</button>
+          <button type="button" data-demo-action="preview" data-value="${t("C 的预览", "Preview C")}" aria-pressed="false">C</button>
         </div>
-        <div class="cd-demo__surface" data-demo-output>${t("空间项目预览", "Space project preview")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("A 的预览", "Preview A")}</div>
       </div>`;
     case "spotlight":
       return `<div class="cd-demo cd-demo__cards" data-demo-renderer="spotlight">
-        ${[1, 2, 3].map((index) => `<button class="cd-demo__card${index === 1 ? " is-active" : " is-dimmed"}" type="button" data-demo-action="spotlight" data-index="${index}" aria-pressed="${index === 1}">${t(`项目 ${index}`, `Item ${index}`)}</button>`).join("")}
+        ${["A", "B", "C"].map((key, index) => `<button class="cd-demo__card${index === 0 ? " is-active" : " is-dimmed"}" type="button" data-demo-action="spotlight" data-index="${index}" aria-pressed="${index === 0}">${key}</button>`).join("")}
       </div>`;
     case "filter":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="filter">
         <div class="cd-demo__row">
           <button type="button" data-demo-action="filter" data-kind="all" aria-pressed="true">${t("全部", "All")}</button>
-          <button type="button" data-demo-action="filter" data-kind="space" aria-pressed="false">${t("空间", "Space")}</button>
-          <button type="button" data-demo-action="filter" data-kind="digital" aria-pressed="false">${t("数字", "Digital")}</button>
+          <button type="button" data-demo-action="filter" data-kind="type-1" aria-pressed="false">${t("类型 1", "Type 1")}</button>
+          <button type="button" data-demo-action="filter" data-kind="type-2" aria-pressed="false">${t("类型 2", "Type 2")}</button>
         </div>
         <div class="cd-demo__cards">
-          <div class="cd-demo__card" data-demo-kind="space">${t("空间 A", "Space A")}</div>
-          <div class="cd-demo__card" data-demo-kind="digital">${t("数字 B", "Digital B")}</div>
-          <div class="cd-demo__card" data-demo-kind="space">${t("空间 C", "Space C")}</div>
+          <div class="cd-demo__card" data-demo-kind="type-1">A</div>
+          <div class="cd-demo__card" data-demo-kind="type-2">B</div>
+          <div class="cd-demo__card" data-demo-kind="type-1">C</div>
         </div>
       </div>`;
     case "tabs":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="tabs">
         <div class="cd-demo__row" role="tablist">
-          <button type="button" role="tab" data-demo-action="tab" data-value="${t("概览内容", "Overview content")}" aria-selected="true">${t("概览", "Overview")}</button>
-          <button type="button" role="tab" data-demo-action="tab" data-value="${t("数据内容", "Data content")}" aria-selected="false">${t("数据", "Data")}</button>
-          <button type="button" role="tab" data-demo-action="tab" data-value="${t("方法内容", "Method content")}" aria-selected="false">${t("方法", "Method")}</button>
+          <button type="button" role="tab" data-demo-action="tab" data-value="${t("逻辑一", "Logic 1")}" aria-selected="true">${t("逻辑一", "Logic 1")}</button>
+          <button type="button" role="tab" data-demo-action="tab" data-value="${t("逻辑二", "Logic 2")}" aria-selected="false">${t("逻辑二", "Logic 2")}</button>
+          <button type="button" role="tab" data-demo-action="tab" data-value="${t("逻辑三", "Logic 3")}" aria-selected="false">${t("逻辑三", "Logic 3")}</button>
         </div>
-        <div class="cd-demo__surface" role="tabpanel" data-demo-output>${t("概览内容", "Overview content")}</div>
+        <div class="cd-demo__surface" role="tabpanel" data-demo-output>${t("逻辑一", "Logic 1")}</div>
       </div>`;
     case "live-filter":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="live-filter">
-        <input data-demo-action="live-filter" type="search" placeholder="${t("输入“社区”试试", "Try “community”")}" aria-label="${t("筛选项目", "Filter items")}" />
+        <input data-demo-action="live-filter" type="search" placeholder="${t("输入 A", "Type A")}" aria-label="${t("筛选条目", "Filter entries")}" />
         <div class="cd-demo__stack">
-          <div class="cd-demo__panel" data-demo-search="${t("社区 花园", "community garden")}">${t("社区花园", "Community garden")}</div>
-          <div class="cd-demo__panel" data-demo-search="${t("数字 档案", "digital archive")}">${t("数字档案", "Digital archive")}</div>
-          <div class="cd-demo__panel" data-demo-search="${t("社区 活动", "community event")}">${t("社区活动", "Community event")}</div>
+          <div class="cd-demo__panel" data-demo-search="a1">A1</div>
+          <div class="cd-demo__panel" data-demo-search="b1">B1</div>
+          <div class="cd-demo__panel" data-demo-search="a2">A2</div>
         </div>
       </div>`;
     case "sort":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="sort" data-direction="desc">
-        <div class="cd-demo__row"><button type="button" data-demo-action="sort">${t("时间：新 → 旧", "Date: newest → oldest")}</button></div>
+        <div class="cd-demo__row"><button type="button" data-demo-action="sort">${t("顺序：3 → 1", "Order: 3 → 1")}</button></div>
         <div class="cd-demo__stack" data-demo-list>
-          <div class="cd-demo__panel" data-value="2026">2026 · Delta</div>
-          <div class="cd-demo__panel" data-value="2025">2025 · Cedar</div>
-          <div class="cd-demo__panel" data-value="2024">2024 · Bay</div>
+          <div class="cd-demo__panel" data-value="3">3 · C</div>
+          <div class="cd-demo__panel" data-value="2">2 · B</div>
+          <div class="cd-demo__panel" data-value="1">1 · A</div>
         </div>
       </div>`;
     case "disclosure":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="disclosure">
-        <details open><summary>${t("项目摘要", "Project summary")}</summary><p>${t("这是可按需展开的补充细节。", "This is supplementary detail revealed on demand.")}</p></details>
-        <details><summary>${t("实施说明", "Implementation note")}</summary><p>${t("核心信息不应藏在这里。", "Core information should not be hidden here.")}</p></details>
+        <details open><summary>${t("逻辑一", "Logic 1")}</summary><p>${t("补充 A", "Detail A")}</p></details>
+        <details><summary>${t("逻辑二", "Logic 2")}</summary><p>${t("补充 B", "Detail B")}</p></details>
       </div>`;
     case "drawer":
       return `<div class="cd-demo cd-demo__drawer-stage" data-demo-renderer="drawer">
-        <div style="padding:12px"><button type="button" data-demo-action="drawer-open">${t("查看详情", "Open detail")}</button></div>
-        <div class="cd-demo__drawer" data-demo-drawer><strong>${t("项目详情", "Item detail")}</strong><p>${t("保留左侧上下文。", "The original context remains visible.")}</p><button type="button" data-demo-action="drawer-close">${t("关闭", "Close")}</button></div>
+        <div style="padding:12px"><button type="button" data-demo-action="drawer-open">${t("展开 A", "Open A")}</button></div>
+        <div class="cd-demo__drawer" data-demo-drawer><strong>${t("A 的详情", "Detail A")}</strong><p>${t("左侧 A 保持可见", "A remains visible")}</p><button type="button" data-demo-action="drawer-close">${t("关闭", "Close")}</button></div>
       </div>`;
     case "dialog":
       return `<div class="cd-demo cd-demo__dialog-stage" data-demo-renderer="dialog">
-        <div style="padding:12px"><button type="button" data-demo-action="dialog-open">${t("打开确认", "Open confirmation")}</button></div>
+        <div style="padding:12px"><button type="button" data-demo-action="dialog-open">${t("确认 A", "Confirm A")}</button></div>
         <div class="cd-demo__scrim" data-demo-dialog>
-          <div class="cd-demo__mini-dialog" role="dialog" aria-modal="true"><strong>${t("确认操作", "Confirm action")}</strong><p>${t("只处理一个明确任务。", "Handle one focused task.")}</p><button type="button" data-demo-action="dialog-close">${t("完成", "Done")}</button></div>
+          <div class="cd-demo__mini-dialog" role="dialog" aria-modal="true"><strong>${t("A → B？", "A → B?")}</strong><p>${t("确认单一步骤", "Confirm one step")}</p><button type="button" data-demo-action="dialog-close">${t("完成", "Done")}</button></div>
         </div>
       </div>`;
     case "master-detail":
       return `<div class="cd-demo cd-demo__split" data-demo-renderer="master-detail">
         <div class="cd-demo__stack">
-          <button type="button" data-demo-action="master-detail" data-value="${t("A 的详情", "Detail for A")}" aria-pressed="true">${t("项目 A", "Item A")}</button>
-          <button type="button" data-demo-action="master-detail" data-value="${t("B 的详情", "Detail for B")}" aria-pressed="false">${t("项目 B", "Item B")}</button>
-          <button type="button" data-demo-action="master-detail" data-value="${t("C 的详情", "Detail for C")}" aria-pressed="false">${t("项目 C", "Item C")}</button>
+          <button type="button" data-demo-action="master-detail" data-value="${t("A 的详情", "Detail A")}" aria-pressed="true">A</button>
+          <button type="button" data-demo-action="master-detail" data-value="${t("B 的详情", "Detail B")}" aria-pressed="false">B</button>
+          <button type="button" data-demo-action="master-detail" data-value="${t("C 的详情", "Detail C")}" aria-pressed="false">C</button>
         </div>
-        <div class="cd-demo__surface" data-demo-output>${t("A 的详情", "Detail for A")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("A 的详情", "Detail A")}</div>
       </div>`;
     case "timeline":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="timeline">
         <div class="cd-demo__nodes">
-          ${["Q1", "Q2", "Q3", "Q4"].map((label, index) => `<button class="cd-demo__node" type="button" data-demo-action="timeline" data-value="${t(`${label} 节点事件`, `${label} event`)}" aria-pressed="${index === 0}">${label}</button>`).join("")}
+          ${["1", "2", "3", "4"].map((label, index) => `<button class="cd-demo__node" type="button" data-demo-action="timeline" data-value="${t(`节点 ${label}`, `Point ${label}`)}" aria-pressed="${index === 0}">${label}</button>`).join("")}
         </div>
-        <div class="cd-demo__surface" data-demo-output>${t("Q1 节点事件", "Q1 event")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("节点 1", "Point 1")}</div>
       </div>`;
     case "stepper":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="stepper" data-step="0">
         <div class="cd-demo__row">${[1, 2, 3].map((index) => `<span class="cd-demo__pair${index === 1 ? " is-linked" : ""}" data-demo-step-indicator="${index - 1}">${index}</span>`).join("")}</div>
-        <div class="cd-demo__surface" data-demo-output>${t("第 1 步：填写信息", "Step 1: Add details")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("步骤 1 · A", "Step 1 · A")}</div>
         <div class="cd-demo__row"><button type="button" data-demo-action="step-prev">←</button><button type="button" data-demo-action="step-next">→</button></div>
       </div>`;
     case "progressive-reveal":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="progressive-reveal" data-revealed="1">
-        <div class="cd-demo__reveal-item is-visible" data-demo-reveal="1">${t("1 · 先看到背景", "1 · Start with context")}</div>
-        <div class="cd-demo__reveal-item" data-demo-reveal="2">${t("2 · 再看到判断", "2 · Then see the judgment")}</div>
-        <div class="cd-demo__reveal-item" data-demo-reveal="3">${t("3 · 最后看到行动", "3 · Finish with action")}</div>
+        <div class="cd-demo__reveal-item is-visible" data-demo-reveal="1">${t("1 · 原因", "1 · Cause")}</div>
+        <div class="cd-demo__reveal-item" data-demo-reveal="2">${t("2 · 过程", "2 · Process")}</div>
+        <div class="cd-demo__reveal-item" data-demo-reveal="3">${t("3 · 结果", "3 · Result")}</div>
         <button type="button" data-demo-action="reveal-next">${t("继续揭示", "Reveal next")}</button>
       </div>`;
     case "view-switcher":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="view-switcher">
         <div class="cd-demo__row">
-          <button type="button" data-demo-action="view-switcher" data-value="${t("改版前：平均排列", "Before: flat hierarchy")}" aria-pressed="true">${t("改版前", "Before")}</button>
-          <button type="button" data-demo-action="view-switcher" data-value="${t("改版后：先主后次", "After: clear hierarchy")}" aria-pressed="false">${t("改版后", "After")}</button>
+          <button type="button" data-demo-action="view-switcher" data-value="${t("状态 A · 结构一", "State A · Structure 1")}" aria-pressed="true">${t("状态 A", "State A")}</button>
+          <button type="button" data-demo-action="view-switcher" data-value="${t("状态 B · 结构二", "State B · Structure 2")}" aria-pressed="false">${t("状态 B", "State B")}</button>
         </div>
-        <div class="cd-demo__surface" data-demo-output>${t("改版前：平均排列", "Before: flat hierarchy")}</div>
+        <div class="cd-demo__surface" data-demo-output>${t("状态 A · 结构一", "State A · Structure 1")}</div>
       </div>`;
     case "compare-slider":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="compare-slider">
         <div class="cd-demo__compare">
-          <div class="cd-demo__compare-layer">${t("之后 · 同一对象", "After · same object")}</div>
-          <div class="cd-demo__compare-layer cd-demo__compare-layer--after" data-demo-compare style="width:50%">${t("之前 · 同一对象", "Before · same object")}</div>
+          <div class="cd-demo__compare-layer">${t("状态 B", "State B")}</div>
+          <div class="cd-demo__compare-layer cd-demo__compare-layer--after" data-demo-compare style="width:50%">${t("状态 A", "State A")}</div>
         </div>
         <input class="cd-demo__compare-control" data-demo-action="compare-slider" type="range" min="10" max="90" value="50" aria-label="${t("调整对比分隔线", "Adjust comparison divider")}" />
       </div>`;
     case "linked-compare":
       return `<div class="cd-demo cd-demo__split" data-demo-renderer="linked-compare">
-        <div class="cd-demo__stack">${[1, 2, 3].map((index) => `<button class="cd-demo__pair${index === 1 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${index}">${t(`旧版 ${index}`, `Before ${index}`)}</button>`).join("")}</div>
-        <div class="cd-demo__stack">${[1, 2, 3].map((index) => `<button class="cd-demo__pair${index === 1 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${index}">${t(`新版 ${index}`, `After ${index}`)}</button>`).join("")}</div>
+        <div class="cd-demo__stack">${[1, 2, 3].map((index) => `<button class="cd-demo__pair${index === 1 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${index}">A${index}</button>`).join("")}</div>
+        <div class="cd-demo__stack">${[1, 2, 3].map((index) => `<button class="cd-demo__pair${index === 1 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${index}">B${index}</button>`).join("")}</div>
       </div>`;
     case "linked-highlight":
       return `<div class="cd-demo cd-demo__split" data-demo-renderer="linked-highlight">
-        <div class="cd-demo__stack">${["A", "B", "C"].map((key, index) => `<button class="cd-demo__pair${index === 0 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${key}">${t(`主张 ${key}`, `Claim ${key}`)}</button>`).join("")}</div>
-        <div class="cd-demo__stack">${["A", "B", "C"].map((key, index) => `<button class="cd-demo__pair${index === 0 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${key}">${t(`证据 ${key}`, `Evidence ${key}`)}</button>`).join("")}</div>
+        <div class="cd-demo__stack">${["A", "B", "C"].map((key, index) => `<button class="cd-demo__pair${index === 0 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${key}">${t(`因 ${key}`, `Cause ${key}`)}</button>`).join("")}</div>
+        <div class="cd-demo__stack">${["A", "B", "C"].map((key, index) => `<button class="cd-demo__pair${index === 0 ? " is-linked" : ""}" type="button" data-demo-action="link-pair" data-pair="${key}">${t(`果 ${key}`, `Effect ${key}`)}</button>`).join("")}</div>
       </div>`;
     case "cross-links":
       return `<div class="cd-demo cd-demo__stack" data-demo-renderer="cross-links">
-        <button type="button" data-demo-action="cross-link" data-target="2">${t("主张 B：查看对应证据 ↓", "Claim B: jump to evidence ↓")}</button>
-        <div class="cd-demo__panel">${t("中间内容保持存在", "Intervening content remains")}</div>
-        <div class="cd-demo__pair" data-demo-cross-target="2">${t("证据 B · 可返回主张", "Evidence B · return path available")}</div>
+        <button type="button" data-demo-action="cross-link" data-target="2">${t("逻辑 A → 逻辑 B ↓", "Logic A → Logic B ↓")}</button>
+        <div class="cd-demo__panel">${t("中间层 1", "Middle 1")}</div>
+        <div class="cd-demo__pair" data-demo-cross-target="2">${t("逻辑 B → 逻辑 A", "Logic B → Logic A")}</div>
       </div>`;
     case "popover":
       return `<div class="cd-demo cd-demo__popover-stage" data-demo-renderer="popover">
         <div class="cd-demo__row">
-          <span>${t("该指标采用", "This metric uses")}</span>
-          <button type="button" data-demo-action="popover" aria-expanded="false">${t("净推荐值 ?", "NPS ?")}</button>
+          <span>${t("符号说明", "Symbol note")}</span>
+          <button type="button" data-demo-action="popover" aria-expanded="false">A ?</button>
         </div>
-        <div class="cd-demo__popover" data-demo-popover hidden>${t("简短解释：推荐者比例减去贬损者比例。", "Short note: promoters minus detractors.")}</div>
+        <div class="cd-demo__popover" data-demo-popover hidden>${t("A = 1 + 2", "A = 1 + 2")}</div>
       </div>`;
   }
 }
@@ -1194,7 +1184,7 @@ export function createInteractionLibrary(
     if (!action) return;
 
     if (action === "carousel-prev" || action === "carousel-next" || action === "carousel-dot") {
-      const labels = [t("项目 A · 当前突出显示", "Item A · currently featured"), t("项目 B · 当前突出显示", "Item B · currently featured"), t("项目 C · 当前突出显示", "Item C · currently featured")];
+      const labels = [t("A · 当前项", "A · current"), t("B · 当前项", "B · current"), t("C · 当前项", "C · current")];
       const current = Number(demo.dataset.index ?? 0);
       const next = action === "carousel-dot"
         ? Number(button.dataset.index ?? 0)
@@ -1231,13 +1221,13 @@ export function createInteractionLibrary(
         ? Number(left.dataset.value) - Number(right.dataset.value)
         : Number(right.dataset.value) - Number(left.dataset.value));
       items.forEach((item) => list.appendChild(item));
-      button.textContent = direction === "asc" ? t("时间：旧 → 新", "Date: oldest → newest") : t("时间：新 → 旧", "Date: newest → oldest");
+      button.textContent = direction === "asc" ? t("顺序：1 → 3", "Order: 1 → 3") : t("顺序：3 → 1", "Order: 3 → 1");
     } else if (action === "drawer-open" || action === "drawer-close") {
       demo.querySelector("[data-demo-drawer]")?.classList.toggle("is-open", action === "drawer-open");
     } else if (action === "dialog-open" || action === "dialog-close") {
       demo.querySelector("[data-demo-dialog]")?.classList.toggle("is-open", action === "dialog-open");
     } else if (action === "step-prev" || action === "step-next") {
-      const labels = [t("第 1 步：填写信息", "Step 1: Add details"), t("第 2 步：确认选择", "Step 2: Confirm choices"), t("第 3 步：完成提交", "Step 3: Finish")];
+      const labels = [t("步骤 1 · A", "Step 1 · A"), t("步骤 2 · B", "Step 2 · B"), t("步骤 3 · C", "Step 3 · C")];
       const current = Number(demo.dataset.step ?? 0);
       const next = Math.max(0, Math.min(labels.length - 1, current + (action === "step-next" ? 1 : -1)));
       demo.dataset.step = String(next);
@@ -1283,7 +1273,7 @@ export function createInteractionLibrary(
 
       const input = demo.querySelector<HTMLInputElement>("[data-demo-action='live-filter'], [data-demo-action='compare-slider']");
       if (input?.dataset.demoAction === "live-filter") {
-        input.value = language === "zh" ? "社区" : "community";
+        input.value = "A";
         input.dispatchEvent(new Event("input", { bubbles: true }));
         return;
       }
