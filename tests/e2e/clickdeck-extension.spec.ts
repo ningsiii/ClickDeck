@@ -908,4 +908,40 @@ test.describe("ClickDeck core editing workflows", () => {
     expect(copiedPrompt).toContain("Option 0");
   });
 
+  test("18. Interaction dictionary filters 20 patterns and keeps demos usable on narrow screens", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    await page.locator("[data-internal-action='interaction-library']").click();
+
+    const library = page.locator(".clickdeck-interaction-library");
+    const dialog = library.locator(".clickdeck-interaction-library__dialog");
+    await expect(library).toBeVisible();
+    await expect(dialog).toContainText("Interaction dictionary · 20 patterns");
+    await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
+
+    await library.locator("[data-library-relation='comparison-change']").click();
+    await expect(library.locator("[data-library-pattern]")).toHaveCount(3);
+    await library.locator("[data-library-pattern='compare-slider']").click();
+
+    const slider = library.locator("[data-demo-action='compare-slider']");
+    await slider.fill("72");
+    const compareWidth = await library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width);
+    expect(compareWidth).toBe("72%");
+
+    await page.setViewportSize({ width: 390, height: 780 });
+    const dialogBox = await dialog.boundingBox();
+    const listBox = await library.locator(".clickdeck-interaction-library__list-pane").boundingBox();
+    const detailBox = await library.locator(".clickdeck-interaction-library__detail").boundingBox();
+    expect(dialogBox).not.toBeNull();
+    expect(listBox).not.toBeNull();
+    expect(detailBox).not.toBeNull();
+    expect(dialogBox!.x).toBeGreaterThanOrEqual(0);
+    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(390);
+    expect(detailBox!.y).toBeGreaterThan(listBox!.y);
+
+    await library.locator("[data-library-action='close']").click();
+    await expect(library).toHaveCount(0);
+  });
+
 });

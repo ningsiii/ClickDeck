@@ -1,5 +1,6 @@
 import type { StyleAction } from "./style-actions";
-import { getPanelLabels } from "./i18n";
+import { getPanelLabels, getPanelLanguage } from "./i18n";
+import { createInteractionLibrary, type InteractionLibraryView } from "./interaction-library";
 
 export type PanelAction =
   | StyleAction
@@ -87,6 +88,7 @@ export type PanelOptions = {
 
 export function createPanel(onAction: (action: PanelAction) => void, options: PanelOptions = {}): ClickDeckPanel {
   const labels = getPanelLabels();
+  let interactionLibrary: InteractionLibraryView | null = null;
   const panelLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo2-panel.png") : "brand/logo2-panel.png";
   const collapsedLogoUrl = typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("brand/logo-collapsed.png") : "brand/logo-collapsed.png";
   const element = document.createElement("div");
@@ -272,6 +274,13 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       </div>
     </div>
 
+    <div class="clickdeck-panel__section" data-section="interaction-library">
+      <div class="clickdeck-panel__section-title">${labels.interactionLibrarySection}</div>
+      <div class="clickdeck-panel__group" style="grid-template-columns: 1fr;">
+        <button class="clickdeck-button" data-internal-action="interaction-library" type="button" title="${escapeHtml(labels.interactionLibraryTooltip)}" aria-label="${escapeHtml(labels.interactionLibraryTooltip)}">${labels.interactionLibraryOpen}</button>
+      </div>
+    </div>
+
     <div class="clickdeck-panel__section" data-section="finish">
       <div class="clickdeck-panel__section-title">${labels.finish}</div>
       <div class="clickdeck-panel__group" style="grid-template-columns: repeat(2, 1fr);">
@@ -315,6 +324,11 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         } else {
           element.classList.add("clickdeck-panel--opacity-70");
         }
+      } else if (action === "interaction-library") {
+        interactionLibrary?.destroy();
+        interactionLibrary = createInteractionLibrary(getPanelLanguage());
+        element.appendChild(interactionLibrary.element);
+        interactionLibrary.focusInitial();
       }
       return;
     }
@@ -518,6 +532,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
   return {
     element,
     destroy: () => {
+      interactionLibrary?.destroy();
       element.remove();
     },
     syncLayout: () => {

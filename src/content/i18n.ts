@@ -145,6 +145,9 @@ export type PanelLabels = {
   askGeminiInteractionSelection: string;
   askGeminiInteractionSelectionTooltip: string;
   askGeminiCopied: string;
+  interactionLibrarySection: string;
+  interactionLibraryOpen: string;
+  interactionLibraryTooltip: string;
   copyFailed: string;
   addIntent: string;
   intentActionMove: string;
@@ -314,6 +317,9 @@ const englishLabels: PanelLabels = {
   askGeminiInteractionSelection: "Selected area",
   askGeminiInteractionSelectionTooltip: "Copy this, then use Select from screen in Gemini to choose one region.",
   askGeminiCopied: "Copied. Paste it into Review with AI.",
+  interactionLibrarySection: "Interaction reference",
+  interactionLibraryOpen: "Open dictionary · 20 patterns",
+  interactionLibraryTooltip: "Browse six information relationships and try 20 lightweight interaction micro-demos.",
   copyFailed: "Copy failed",
   addIntent: "Add suggestion",
   intentActionMove: "Move",
@@ -483,6 +489,9 @@ const chineseLabels: PanelLabels = {
   askGeminiInteractionSelection: "框选交互",
   askGeminiInteractionSelectionTooltip: "复制后，在 Gemini 中用 Select from screen 框选一个区域。",
   askGeminiCopied: "已复制，可粘贴给 AI 看页面",
+  interactionLibrarySection: "交互参考",
+  interactionLibraryOpen: "打开交互小字典 · 20 种",
+  interactionLibraryTooltip: "按 6 种信息关系查找，并体验 20 种轻量交互微演示。",
   copyFailed: "复制失败",
   addIntent: "添加修改意见",
   intentActionMove: "移动",
