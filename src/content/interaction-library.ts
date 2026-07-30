@@ -655,6 +655,13 @@ const libraryStyles = `
     color: #3d2f24;
     font-size: 11px;
   }
+  .cd-demo.is-previewing {
+    animation: cd-demo-preview-enter 280ms ease both;
+  }
+  @keyframes cd-demo-preview-enter {
+    from { opacity: 0.55; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .cd-demo button,
   .cd-demo input {
     font: inherit;
@@ -760,6 +767,12 @@ const libraryStyles = `
     background: #fff;
     box-shadow: 0 7px 18px rgba(49, 33, 18, 0.16);
     transform: translateX(-50%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-demo.is-previewing { animation: none; }
+    .cd-demo__card,
+    .cd-demo__drawer,
+    .cd-demo__compare-layer--after { transition: none; }
   }
   @media (max-width: 720px) {
     .clickdeck-interaction-library { padding: 8px; }
@@ -965,7 +978,7 @@ export function createInteractionLibrary(
           <h2 class="clickdeck-interaction-library__title" id="clickdeck-interaction-library-title">${t("交互小字典 · 20 种", "Interaction dictionary · 20 patterns")}</h2>
           <p class="clickdeck-interaction-library__subtitle">${options.onSelect
             ? t("选择一种方式，确认后写入当前修改意见；写入的文字仍可继续编辑。", "Choose a pattern, then write an editable description into the current suggestion.")
-            : t("先按信息关系查找，再点击名称体验微演示。它只用于理解，不会修改当前页面。", "Filter by information relationship, then select a pattern to try its micro-demo. Nothing is applied to the page.")}</p>
+            : t("先按信息关系查找，鼠标移入或键盘聚焦名称即可体验微演示。它只用于理解，不会修改当前页面。", "Filter by information relationship, then hover or focus a pattern to preview it. Nothing is applied to the page.")}</p>
         </div>
         <button class="clickdeck-interaction-library__close" data-library-action="close" type="button" aria-label="${t("关闭交互小字典", "Close interaction dictionary")}">×</button>
       </header>
@@ -987,6 +1000,7 @@ export function createInteractionLibrary(
 
   let activeRelation: InteractionRelationId | "all" = "all";
   let selectedId = interactionPatterns[0].id;
+  let previewTimer: number | null = null;
   const filtersElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__filters");
   const countElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__count");
   const listElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__list");
@@ -1062,7 +1076,15 @@ export function createInteractionLibrary(
     renderDetail();
   };
 
+  const clearPreviewTimer = (): void => {
+    if (previewTimer !== null) {
+      window.clearTimeout(previewTimer);
+      previewTimer = null;
+    }
+  };
+
   const close = (): void => {
+    clearPreviewTimer();
     document.removeEventListener("keydown", handleKeydown);
     element.remove();
   };
@@ -1153,6 +1175,67 @@ export function createInteractionLibrary(
     }
   };
 
+  const prefersReducedMotion = (): boolean => (
+    typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
+  const playCurrentPreview = (): void => {
+    clearPreviewTimer();
+    const demo = detailElement?.querySelector<HTMLElement>("[data-demo-renderer]");
+    if (!demo || prefersReducedMotion()) return;
+
+    demo.classList.add("is-previewing");
+    previewTimer = window.setTimeout(() => {
+      previewTimer = null;
+      if (!detailElement?.contains(demo)) return;
+
+      const input = demo.querySelector<HTMLInputElement>("[data-demo-action='live-filter'], [data-demo-action='compare-slider']");
+      if (input?.dataset.demoAction === "live-filter") {
+        input.value = language === "zh" ? "社区" : "community";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+      if (input?.dataset.demoAction === "compare-slider") {
+        input.value = "72";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return;
+      }
+
+      const disclosure = demo.querySelector<HTMLDetailsElement>("details");
+      if (disclosure) {
+        disclosure.open = true;
+        return;
+      }
+
+      const nextControl = demo.querySelector<HTMLElement>(
+        "[data-demo-action][aria-pressed='false'], "
+        + "[data-demo-action][aria-selected='false'], "
+        + "[data-demo-action='carousel-next'], "
+        + "[data-demo-action='drawer-open'], "
+        + "[data-demo-action='dialog-open'], "
+        + "[data-demo-action='step-next'], "
+        + "[data-demo-action='reveal-next'], "
+        + "[data-demo-action='link-pair'][data-pair='B'], "
+        + "[data-demo-action='cross-link'], "
+        + "[data-demo-action='popover'], "
+        + "[data-demo-action='sort']"
+      );
+      if (nextControl) handleDemoClick(nextControl, demo);
+    }, 140);
+  };
+
+  const activatePattern = (patternId: string, playPreview: boolean): void => {
+    if (!interactionPatterns.some((pattern) => pattern.id === patternId)) return;
+    clearPreviewTimer();
+    selectedId = patternId;
+    listElement?.querySelectorAll<HTMLElement>("[data-library-pattern]").forEach((item) => {
+      item.setAttribute("aria-current", String(item.dataset.libraryPattern === selectedId));
+    });
+    renderDetail();
+    if (playPreview) playCurrentPreview();
+  };
+
   const handleClick = (event: Event): void => {
     const target = event.target as HTMLElement;
     if (target === element || target.closest("[data-library-action='close']")) {
@@ -1176,9 +1259,7 @@ export function createInteractionLibrary(
 
     const patternButton = target.closest<HTMLElement>("[data-library-pattern]");
     if (patternButton?.dataset.libraryPattern) {
-      selectedId = patternButton.dataset.libraryPattern;
-      renderList();
-      renderDetail();
+      activatePattern(patternButton.dataset.libraryPattern, true);
       return;
     }
 
@@ -1209,8 +1290,23 @@ export function createInteractionLibrary(
     if (event.key === "Escape") close();
   }
 
+  const handlePatternPreview = (event: Event): void => {
+    const target = event.target as HTMLElement;
+    const patternButton = target.closest<HTMLElement>("[data-library-pattern]");
+    const patternId = patternButton?.dataset.libraryPattern;
+    if (!patternButton || !patternId) return;
+
+    if (event instanceof MouseEvent) {
+      const relatedTarget = event.relatedTarget;
+      if (relatedTarget instanceof Node && patternButton.contains(relatedTarget)) return;
+    }
+    activatePattern(patternId, true);
+  };
+
   element.addEventListener("click", handleClick);
   element.addEventListener("input", handleInput);
+  element.addEventListener("mouseover", handlePatternPreview);
+  element.addEventListener("focusin", handlePatternPreview);
   document.addEventListener("keydown", handleKeydown);
   render();
 

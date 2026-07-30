@@ -899,6 +899,12 @@ test.describe("ClickDeck core editing workflows", () => {
     await page.goto(demoPageUrl);
     await activateExtension(page);
 
+    const askGeminiGroup = page.locator(".clickdeck-panel__group--ask-gemini");
+    const interactionColumn = askGeminiGroup.locator("[data-ask-gemini-column='interaction']");
+    await expect(askGeminiGroup.locator(":scope > *")).toHaveCount(3);
+    await expect(interactionColumn.locator("[data-action='ask-gemini-interaction']")).toBeVisible();
+    await expect(interactionColumn.locator("[data-action='ask-gemini-interaction-selection']")).toBeVisible();
+
     await page.locator("[data-action='ask-gemini-interaction-selection']").click();
 
     await expect(page.locator(".clickdeck-panel")).toHaveClass(/clickdeck-panel--collapsed/);
@@ -922,12 +928,13 @@ test.describe("ClickDeck core editing workflows", () => {
 
     await library.locator("[data-library-relation='comparison-change']").click();
     await expect(library.locator("[data-library-pattern]")).toHaveCount(3);
-    await library.locator("[data-library-pattern='compare-slider']").click();
+    await library.locator("[data-library-pattern='compare-slider']").hover();
 
     const slider = library.locator("[data-demo-action='compare-slider']");
-    await slider.fill("72");
-    const compareWidth = await library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width);
-    expect(compareWidth).toBe("72%");
+    await expect(slider).toBeVisible();
+    await expect.poll(
+      () => library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)
+    ).toBe("72%");
 
     await page.setViewportSize({ width: 390, height: 780 });
     const dialogBox = await dialog.boundingBox();

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createInteractionLibrary,
   getInteractionIntentText,
@@ -76,6 +76,55 @@ describe("createInteractionLibrary", () => {
     library.destroy();
   });
 
+  it("switches and previews patterns on hover or keyboard focus without a click", () => {
+    vi.useFakeTimers();
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+
+      const tabsItem = library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']");
+      tabsItem?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+
+      expect(tabsItem?.getAttribute("aria-current")).toBe("true");
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")).not.toBeNull();
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(true);
+
+      vi.advanceTimersByTime(150);
+      expect(library.element.querySelector("[data-demo-renderer='tabs'] [data-demo-output]")?.textContent).toContain("Data content");
+
+      const drawerItem = library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']");
+      drawerItem?.focus();
+      expect(drawerItem?.getAttribute("aria-current")).toBe("true");
+      expect(library.element.querySelector("[data-demo-renderer='drawer']")).not.toBeNull();
+
+      library.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels a pending preview when the pointer quickly moves to another pattern", () => {
+    vi.useFakeTimers();
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']")
+        ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='compare-slider']")
+        ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+
+      vi.advanceTimersByTime(150);
+
+      expect(library.element.querySelector("[data-demo-renderer='drawer']")).toBeNull();
+      expect(library.element.querySelector<HTMLElement>("[data-demo-compare]")?.style.width).toBe("72%");
+
+      library.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("supports live filtering and compare-slider input", () => {
     const library = createInteractionLibrary("en");
     document.body.appendChild(library.element);
@@ -134,7 +183,8 @@ describe("createInteractionLibrary", () => {
     });
     document.body.appendChild(selectionLibrary.element);
 
-    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")
+      ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-action='select']")?.click();
 
     expect(selections).toHaveLength(1);

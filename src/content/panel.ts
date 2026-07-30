@@ -269,8 +269,10 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       <div class="clickdeck-panel__group clickdeck-panel__group--ask-gemini">
         ${buttonMarkup("ask-gemini-flow", labels.askGeminiFlow, false, labels.askGeminiFlowTooltip)}
         ${buttonMarkup("ask-gemini-focus", labels.askGeminiFocus, false, labels.askGeminiFocusTooltip)}
-        ${buttonMarkup("ask-gemini-interaction", labels.askGeminiInteraction, false, labels.askGeminiInteractionTooltip)}
-        ${buttonMarkup("ask-gemini-interaction-selection", labels.askGeminiInteractionSelection, false, labels.askGeminiInteractionSelectionTooltip)}
+        <div class="clickdeck-panel__ask-gemini-interaction" data-ask-gemini-column="interaction">
+          ${buttonMarkup("ask-gemini-interaction", labels.askGeminiInteraction, false, labels.askGeminiInteractionTooltip)}
+          ${buttonMarkup("ask-gemini-interaction-selection", labels.askGeminiInteractionSelection, false, labels.askGeminiInteractionSelectionTooltip)}
+        </div>
       </div>
     </div>
 
@@ -293,7 +295,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       </div>
     </div>
     <div class="clickdeck-panel__footer">
-      <span>v1.3.4</span>
+      <span>v1.3.5</span>
       <a href="https://github.com/ningsiii/ClickDeck/issues" target="_blank" rel="noopener noreferrer">Feedback</a>
       <a href="https://github.com/ningsiii/ClickDeck" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
