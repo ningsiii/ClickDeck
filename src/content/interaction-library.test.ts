@@ -152,12 +152,17 @@ describe("createInteractionLibrary", () => {
       stage?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
       expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(true);
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(510);
       expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 2");
 
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(2100);
       expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewStep).toBe("3");
+      expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewCycle).toBe("1");
       expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 1");
+
+      vi.advanceTimersByTime(1050);
+      expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewStep).toBe("1");
+      expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 2");
 
       stage?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
       expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewStep).toBeUndefined();
@@ -178,14 +183,27 @@ describe("createInteractionLibrary", () => {
 
       const clickStage = library.element.querySelector<HTMLElement>("[data-library-demo-stage]");
       clickStage?.click();
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(510);
       expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+
+      clickStage?.click();
+      vi.advanceTimersByTime(2000);
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+      expect(library.element.querySelector("[data-library-demo-stage]")?.getAttribute("data-preview-playing")).toBe("false");
+      expect(library.element.querySelector(".clickdeck-interaction-library__demo-label")?.textContent).toContain("Paused");
 
       clickStage?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
       const keyboardStage = library.element.querySelector<HTMLElement>("[data-library-demo-stage]");
       keyboardStage?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(510);
       expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+      keyboardStage?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      vi.advanceTimersByTime(2000);
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+
+      library.element.querySelector<HTMLButtonElement>("[data-demo-action='drawer-close']")?.click();
+      vi.advanceTimersByTime(2000);
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(false);
 
       library.destroy();
     } finally {
@@ -202,10 +220,10 @@ describe("createInteractionLibrary", () => {
       library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
       library.element.querySelector<HTMLElement>("[data-library-demo-stage]")
         ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(510);
 
       library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']")?.click();
-      vi.runAllTimers();
+      vi.advanceTimersByTime(5000);
 
       expect(library.element.querySelector("[data-demo-renderer='tabs']")).toBeNull();
       expect(library.element.querySelector("[data-demo-renderer='drawer']")).not.toBeNull();
@@ -232,10 +250,12 @@ describe("createInteractionLibrary", () => {
         library.element.querySelector<HTMLButtonElement>(`[data-library-pattern='${pattern.id}']`)?.click();
         library.element.querySelector<HTMLElement>("[data-library-demo-stage]")
           ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-        vi.runAllTimers();
+        vi.advanceTimersByTime(5000);
 
         const demo = library.element.querySelector<HTMLElement>(`[data-demo-renderer='${pattern.demoRenderer}']`);
-        expect(Number(demo?.dataset.previewStep ?? 0), pattern.id).toBeGreaterThanOrEqual(2);
+        expect(Number(demo?.dataset.previewCycle ?? 0), pattern.id).toBeGreaterThanOrEqual(1);
+        library.element.querySelector<HTMLElement>("[data-library-demo-stage]")
+          ?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
       }
 
       library.destroy();
@@ -287,7 +307,7 @@ describe("createInteractionLibrary", () => {
     const library = createInteractionLibrary("zh");
     document.body.appendChild(library.element);
 
-    expect(library.element.textContent).toContain("交互小字典 · 20 种");
+    expect(library.element.querySelector(".clickdeck-interaction-library__title")?.textContent).toBe("交互小字典");
     expect(library.element.textContent).toContain("同级浏览");
     library.element.querySelector<HTMLButtonElement>("[data-library-action='close']")?.click();
 

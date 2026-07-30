@@ -931,7 +931,7 @@ test.describe("ClickDeck core editing workflows", () => {
     const library = page.locator(".clickdeck-interaction-library");
     const dialog = library.locator(".clickdeck-interaction-library__dialog");
     await expect(library).toBeVisible();
-    await expect(dialog).toContainText("Interaction dictionary · 20 patterns");
+    await expect(dialog.locator(".clickdeck-interaction-library__title")).toHaveText("Interaction dictionary");
     await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
     await expect(library.locator(".clickdeck-interaction-library__item-index").first()).toHaveText("01");
     await expect(library.locator(".clickdeck-interaction-library__item-index").last()).toHaveText("20");
@@ -959,8 +959,9 @@ test.describe("ClickDeck core editing workflows", () => {
     expect(await library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)).toBe("50%");
     await library.locator("[data-library-demo-stage]").hover();
     await expect.poll(
-      () => library.locator("[data-demo-renderer='compare-slider']").getAttribute("data-preview-step")
-    ).toBe("3");
+      () => library.locator("[data-demo-renderer='compare-slider']").getAttribute("data-preview-cycle")
+    ).toBe("1");
+    await library.locator("[data-library-demo-stage]").click({ position: { x: 8, y: 8 } });
     await expect.poll(
       () => library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)
     ).toBe("50%");

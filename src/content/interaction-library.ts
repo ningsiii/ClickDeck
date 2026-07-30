@@ -690,7 +690,7 @@ const libraryStyles = `
     font-size: 11px;
   }
   .cd-demo.is-previewing {
-    animation: cd-demo-preview-enter 280ms ease both;
+    animation: cd-demo-preview-enter 380ms ease both;
   }
   @keyframes cd-demo-preview-enter {
     from { opacity: 0.55; transform: translateY(6px); }
@@ -708,7 +708,7 @@ const libraryStyles = `
     background: rgba(255, 255, 255, 0.08);
     color: #f7f4eb;
     cursor: pointer;
-    transition: transform 180ms ease, color 180ms ease, background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+    transition: transform 240ms ease, color 240ms ease, background 240ms ease, border-color 240ms ease, opacity 240ms ease;
   }
   .cd-demo button:hover,
   .cd-demo button:focus-visible {
@@ -742,7 +742,7 @@ const libraryStyles = `
     box-shadow: 0 12px 28px rgba(8, 19, 15, 0.3);
   }
   .cd-demo__surface.is-changing {
-    animation: cd-demo-state-change 360ms ease both;
+    animation: cd-demo-state-change 480ms ease both;
   }
   @keyframes cd-demo-state-change {
     0% { opacity: 0.45; transform: scale(0.96); filter: saturate(0.7); }
@@ -751,7 +751,7 @@ const libraryStyles = `
   }
   .cd-demo__muted { color: rgba(247, 244, 235, 0.64); }
   .cd-demo__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-  .cd-demo__card { min-height: 58px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: #205b48; color: #fff; transition: opacity 220ms, transform 220ms, background 220ms, box-shadow 220ms; }
+  .cd-demo__card { min-height: 58px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: #205b48; color: #fff; transition: opacity 300ms, transform 300ms, background 300ms, box-shadow 300ms; }
   .cd-demo__card:nth-child(2n) { background: #bc572f; }
   .cd-demo__card:nth-child(3n) { background: #9a7b2d; }
   .cd-demo__card.is-dimmed { opacity: 0.24; transform: scale(0.92); filter: saturate(0.45); }
@@ -777,7 +777,7 @@ const libraryStyles = `
     border-left: 1px solid rgba(255,255,255,.26);
     transform: translateX(102%);
     box-shadow: -14px 0 30px rgba(0,0,0,.26);
-    transition: transform 320ms cubic-bezier(.2,.8,.2,1);
+    transition: transform 440ms cubic-bezier(.2,.8,.2,1);
   }
   .cd-demo__drawer.is-open { transform: translateX(0); }
   .cd-demo__scrim {
@@ -790,7 +790,7 @@ const libraryStyles = `
     background: rgba(4, 12, 9, 0.72);
   }
   .cd-demo__scrim.is-open { display: flex; }
-  .cd-demo__mini-dialog { width: min(220px, 90%); padding: 12px; border-radius: 9px; background: #f1c75b; color: #17231f; box-shadow: 0 18px 38px rgba(0,0,0,.34); animation: cd-demo-dialog-in 260ms ease both; }
+  .cd-demo__mini-dialog { width: min(220px, 90%); padding: 12px; border-radius: 9px; background: #f1c75b; color: #17231f; box-shadow: 0 18px 38px rgba(0,0,0,.34); animation: cd-demo-dialog-in 360ms ease both; }
   @keyframes cd-demo-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.94); } }
   .cd-demo__nodes { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 12px 0; }
   .cd-demo__node { width: 30px; height: 30px; padding: 0 !important; border-radius: 50% !important; }
@@ -810,12 +810,12 @@ const libraryStyles = `
     background: linear-gradient(135deg, #f97316, #f1c75b);
     color: #17231f;
     border-right: 3px solid #fff;
-    transition: width 520ms cubic-bezier(.2,.8,.2,1);
+    transition: width 680ms cubic-bezier(.2,.8,.2,1);
   }
   .cd-demo__compare-control { width: 100%; margin-top: 8px; accent-color: #f1c75b; }
-  .cd-demo__pair { padding: 7px; border: 1px solid rgba(255,255,255,.17); border-radius: 7px; background: rgba(255,255,255,.08); color: #fff; transition: transform 220ms, background 220ms, border-color 220ms, box-shadow 220ms; }
+  .cd-demo__pair { padding: 7px; border: 1px solid rgba(255,255,255,.17); border-radius: 7px; background: rgba(255,255,255,.08); color: #fff; transition: transform 300ms, background 300ms, border-color 300ms, box-shadow 300ms; }
   .cd-demo__pair.is-linked { border-color: #f1c75b; background: #f1c75b; color: #17231f; transform: translateX(4px); box-shadow: 0 8px 20px rgba(241,199,91,.2); }
-  .cd-demo__reveal-item { display: none; padding: 7px; border-left: 3px solid #f97316; background: rgba(249,115,22,.18); color: #fff; animation: cd-demo-reveal-in 260ms ease both; }
+  .cd-demo__reveal-item { display: none; padding: 7px; border-left: 3px solid #f97316; background: rgba(249,115,22,.18); color: #fff; animation: cd-demo-reveal-in 360ms ease both; }
   @keyframes cd-demo-reveal-in { from { opacity: 0; transform: translateX(-8px); } }
   .cd-demo__reveal-item.is-visible { display: block; }
   .cd-demo__popover-stage { position: relative; min-height: 110px; padding: 24px 8px; }
@@ -1043,10 +1043,10 @@ export function createInteractionLibrary(
     <section class="clickdeck-interaction-library__dialog" role="dialog" aria-modal="true" aria-labelledby="clickdeck-interaction-library-title">
       <header class="clickdeck-interaction-library__header">
         <div>
-          <h2 class="clickdeck-interaction-library__title" id="clickdeck-interaction-library-title">${t("交互小字典 · 20 种", "Interaction dictionary · 20 patterns")}</h2>
+          <h2 class="clickdeck-interaction-library__title" id="clickdeck-interaction-library-title">${t("交互小字典", "Interaction dictionary")}</h2>
           <p class="clickdeck-interaction-library__subtitle">${options.onSelect
-            ? t("点击左侧选择一种方式；鼠标移入右侧演示区可观看完整动效。确认后写入的文字仍可继续编辑。", "Click a pattern on the left, then hover over the demo on the right to watch the full motion. The inserted description remains editable.")
-            : t("点击左侧名称切换方式，鼠标移入右侧演示区即可观看完整动效。它只用于理解，不会修改当前页面。", "Click a pattern on the left, then hover over the demo on the right to watch the full motion. Nothing is applied to the page.")}</p>
+            ? t("点击左侧选择方式；移入右侧后将慢速循环演示，点击演示可暂停并手动操作。确认后写入的文字仍可继续编辑。", "Click a pattern on the left. The demo loops slowly while hovered; click it to pause and interact manually. The inserted description remains editable.")
+            : t("点击左侧名称切换方式；移入右侧后将慢速循环演示，点击演示可暂停并手动操作。它不会修改当前页面。", "Click a pattern on the left. The demo loops slowly while hovered; click it to pause and interact manually. Nothing is applied to the page.")}</p>
         </div>
         <button class="clickdeck-interaction-library__close" data-library-action="close" type="button" aria-label="${t("关闭交互小字典", "Close interaction dictionary")}">×</button>
       </header>
@@ -1069,6 +1069,7 @@ export function createInteractionLibrary(
   let activeRelation: InteractionRelationId | "all" = "all";
   let selectedId = interactionPatterns[0].id;
   let previewTimers: number[] = [];
+  let previewPlaying = false;
   const filtersElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__filters");
   const countElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__count");
   const listElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__list");
@@ -1129,8 +1130,8 @@ export function createInteractionLibrary(
       <h3 class="clickdeck-interaction-library__detail-title">${patternName(pattern, language)}</h3>
       <div class="clickdeck-interaction-library__detail-en">${language === "zh" ? pattern.nameEn : pattern.nameZh}</div>
       <p class="clickdeck-interaction-library__summary">${pick(language, pattern.summaryZh, pattern.summaryEn)}</p>
-      <div class="clickdeck-interaction-library__demo-wrap" data-library-demo-stage tabindex="0" aria-label="${t("鼠标移入或按回车播放完整演示", "Hover or press Enter to play the full demo")}">
-        <div class="clickdeck-interaction-library__demo-label">${t("移入这里 · 自动播放完整动效", "Hover here · full motion autoplay")}</div>
+      <div class="clickdeck-interaction-library__demo-wrap" data-library-demo-stage tabindex="0" aria-label="${t("鼠标移入循环播放，点击暂停", "Hover to loop the demo; click to pause")}">
+        <div class="clickdeck-interaction-library__demo-label">${t("移入循环播放 · 点击暂停", "Hover to loop · click to pause")}</div>
         ${renderDemo(pattern.demoRenderer, language)}
       </div>
       <div class="clickdeck-interaction-library__facts">
@@ -1157,9 +1158,28 @@ export function createInteractionLibrary(
     renderDetail();
   };
 
+  const updatePreviewStageState = (playing: boolean): void => {
+    const stage = detailElement?.querySelector<HTMLElement>("[data-library-demo-stage]");
+    const label = stage?.querySelector<HTMLElement>(".clickdeck-interaction-library__demo-label");
+    if (!stage || !label) return;
+    stage.dataset.previewPlaying = String(playing);
+    stage.setAttribute(
+      "aria-label",
+      playing
+        ? t("循环演示中，点击暂停", "Demo looping; click to pause")
+        : t("演示已暂停，点击继续", "Demo paused; click to continue")
+    );
+    label.textContent = playing
+      ? t("循环演示中 · 点击暂停", "Looping · click to pause")
+      : t("已暂停 · 点击继续", "Paused · click to continue");
+  };
+
   const clearPreviewTimers = (): void => {
     previewTimers.forEach((timer) => window.clearTimeout(timer));
     previewTimers = [];
+    previewPlaying = false;
+    detailElement?.querySelector("[data-demo-renderer]")?.classList.remove("is-previewing");
+    updatePreviewStageState(false);
   };
 
   const close = (): void => {
@@ -1268,8 +1288,11 @@ export function createInteractionLibrary(
     const demo = detailElement?.querySelector<HTMLElement>("[data-demo-renderer]");
     if (!demo || prefersReducedMotion()) return;
 
+    previewPlaying = true;
     demo.classList.add("is-previewing");
     demo.dataset.previewStep = "0";
+    demo.dataset.previewCycle = "0";
+    updatePreviewStageState(true);
 
     const clickAction = (selector: string): void => {
       const control = demo.querySelector<HTMLElement>(selector);
@@ -1363,16 +1386,22 @@ export function createInteractionLibrary(
       );
     }
 
-    steps.forEach((step, index) => {
+    const scheduleStep = (index: number, delay: number): void => {
       const timer = window.setTimeout(() => {
         previewTimers = previewTimers.filter((candidate) => candidate !== timer);
-        if (!detailElement?.contains(demo)) return;
-        step();
+        if (!previewPlaying || !detailElement?.contains(demo)) return;
+        steps[index]();
         demo.dataset.previewStep = String(index + 1);
-        if (index === steps.length - 1) demo.classList.remove("is-previewing");
-      }, 240 + index * 420);
+        if (index === steps.length - 1) {
+          demo.dataset.previewCycle = String(Number(demo.dataset.previewCycle ?? 0) + 1);
+          scheduleStep(0, 1050);
+        } else {
+          scheduleStep(index + 1, 1050);
+        }
+      }, delay);
       previewTimers.push(timer);
-    });
+    };
+    if (steps.length > 0) scheduleStep(0, 500);
   };
 
   const resetCurrentPreview = (): void => {
@@ -1430,7 +1459,11 @@ export function createInteractionLibrary(
     }
 
     if (target.closest("[data-library-demo-stage]")) {
-      playCurrentPreview();
+      if (previewPlaying) {
+        clearPreviewTimers();
+      } else {
+        playCurrentPreview();
+      }
     }
   };
 
@@ -1459,7 +1492,11 @@ export function createInteractionLibrary(
     const target = event.target as HTMLElement;
     if ((event.key === "Enter" || event.key === " ") && target.matches("[data-library-demo-stage]")) {
       event.preventDefault();
-      playCurrentPreview();
+      if (previewPlaying) {
+        clearPreviewTimers();
+      } else {
+        playCurrentPreview();
+      }
     }
   }
 
