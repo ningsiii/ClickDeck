@@ -53,14 +53,14 @@ ClickDeck sits between Chrome DevTools and a full design tool. It is a lightweig
 ## Installation
 
 For most users, install ClickDeck from the GitHub Releases page:
-1. Go to the [Releases](https://github.com/ningsiii/ClickDeck/releases) page and download the attached asset named `ClickDeck-v1.3.4.zip`.
+1. Go to the [Releases](https://github.com/ningsiii/ClickDeck/releases) page and download the attached asset named `ClickDeck-v1.3.5.zip`.
 2. Do **not** use GitHub's auto-generated **Source code (zip)** archive for installation. That archive is the Vite source project, not the unpacked extension package.
-3. Extract the ZIP file to a folder on your computer. After extraction, you should see a `ClickDeck-v1.3.4/` folder that contains `manifest.json`.
+3. Extract the ZIP file to a folder on your computer. After extraction, you should see a `ClickDeck-v1.3.5/` folder that contains `manifest.json`.
 4. Open Chrome or Edge and navigate to `chrome://extensions/` or `edge://extensions/`.
 5. Enable **Developer mode** in the top right corner.
-6. Click **Load unpacked** and select the extracted `ClickDeck-v1.3.4/` folder that contains `manifest.json`.
+6. Click **Load unpacked** and select the extracted `ClickDeck-v1.3.5/` folder that contains `manifest.json`.
 7. If you want to edit local `file://` HTML files, open ClickDeck's **Details** page in `chrome://extensions/` and enable **Allow access to file URLs**.
-8. See the release notes in [`RELEASE_1.3.4.md`](RELEASE_1.3.4.md) if you want a short summary of what changed.
+8. See the release notes in [`RELEASE_1.3.5.md`](RELEASE_1.3.5.md) if you want a short summary of what changed.
 
 ## Local Development
 
@@ -152,14 +152,14 @@ ClickDeck 介于 Chrome DevTools 和完整设计工具之间。它是一个轻�
 ## 安装方法
 
 对于普通用户，请通过 GitHub Releases 安装 ClickDeck：
-1. 前往 [Releases](https://github.com/ningsiii/ClickDeck/releases) 页面，下载附件里的 `ClickDeck-v1.3.4.zip`。
+1. 前往 [Releases](https://github.com/ningsiii/ClickDeck/releases) 页面，下载附件里的 `ClickDeck-v1.3.5.zip`。
 2. 不要使用 GitHub 自动生成的 **Source code (zip)** 源码压缩包来安装。那个压缩包是 Vite 源码工程，不是可直接加载的扩展目录。
-3. 将 ZIP 文件解压到你电脑上的一个文件夹中。解压后你应该能看到一个包含 `manifest.json` 的 `ClickDeck-v1.3.4/` 文件夹。
+3. 将 ZIP 文件解压到你电脑上的一个文件夹中。解压后你应该能看到一个包含 `manifest.json` 的 `ClickDeck-v1.3.5/` 文件夹。
 4. 打开 Chrome 或 Edge 浏览器，访问 `chrome://extensions/` 或 `edge://extensions/`。
 5. 打开右上角的 **开发者模式 (Developer mode)**。
-6. 点击 **加载已解压的扩展程序 (Load unpacked)**，然后选择刚才解压出来、且内部包含 `manifest.json` 的 `ClickDeck-v1.3.4/` 文件夹。
+6. 点击 **加载已解压的扩展程序 (Load unpacked)**，然后选择刚才解压出来、且内部包含 `manifest.json` 的 `ClickDeck-v1.3.5/` 文件夹。
 7. 如果你要编辑本地 `file://` HTML 文件，请在 `chrome://extensions/` 里打开 ClickDeck 的 **详情 (Details)** 页面，并开启 **允许访问文件网址 (Allow access to file URLs)**。
-8. 如果你想先快速了解这版更新，可以查看 [`RELEASE_1.3.4.md`](RELEASE_1.3.4.md)。
+8. 如果你想先快速了解这版更新，可以查看 [`RELEASE_1.3.5.md`](RELEASE_1.3.5.md)。
 
 ## 本地开发
 
