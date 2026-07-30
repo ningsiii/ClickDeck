@@ -599,6 +599,31 @@ const libraryStyles = `
     font-size: 11px;
     font-weight: 700;
   }
+  .clickdeck-interaction-library__detail-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 14px;
+  }
+  .clickdeck-interaction-library__copy {
+    min-height: 32px;
+    padding: 6px 12px;
+    border: 1px solid #e2b77f;
+    border-radius: 9px;
+    background: #fffaf3;
+    color: #9f4613;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .clickdeck-interaction-library__copy:hover,
+  .clickdeck-interaction-library__copy:focus-visible {
+    border-color: #f97316;
+    background: #fff1df;
+    outline: 2px solid rgba(249, 115, 22, 0.28);
+    outline-offset: 2px;
+  }
   .clickdeck-interaction-library__detail-title {
     margin: 4px 0 2px;
     color: #3d2f24;
@@ -1070,10 +1095,17 @@ export function createInteractionLibrary(
   let selectedId = interactionPatterns[0].id;
   let previewTimers: number[] = [];
   let previewPlaying = false;
+  let copyFeedbackTimer: number | null = null;
   const filtersElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__filters");
   const countElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__count");
   const listElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__list");
   const detailElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__detail");
+
+  const clearCopyFeedbackTimer = (): void => {
+    if (copyFeedbackTimer === null) return;
+    window.clearTimeout(copyFeedbackTimer);
+    copyFeedbackTimer = null;
+  };
 
   const matchingPatterns = (): readonly InteractionPattern[] => (
     activeRelation === "all"
@@ -1121,14 +1153,20 @@ export function createInteractionLibrary(
 
   const renderDetail = (): void => {
     if (!detailElement) return;
+    clearCopyFeedbackTimer();
     const pattern = interactionPatterns.find((item) => item.id === selectedId) ?? interactionPatterns[0];
     const relation = relationFor(pattern.relationId);
     const prerequisites = language === "zh" ? pattern.prerequisitesZh : pattern.prerequisitesEn;
     const avoidWhen = language === "zh" ? pattern.avoidWhenZh : pattern.avoidWhenEn;
     detailElement.innerHTML = `
-      <div class="clickdeck-interaction-library__eyebrow">${pick(language, relation.nameZh, relation.nameEn)} · ${pick(language, relation.taskZh, relation.taskEn)}</div>
-      <h3 class="clickdeck-interaction-library__detail-title">${patternName(pattern, language)}</h3>
-      <div class="clickdeck-interaction-library__detail-en">${language === "zh" ? pattern.nameEn : pattern.nameZh}</div>
+      <div class="clickdeck-interaction-library__detail-heading">
+        <div>
+          <div class="clickdeck-interaction-library__eyebrow">${pick(language, relation.nameZh, relation.nameEn)} · ${pick(language, relation.taskZh, relation.taskEn)}</div>
+          <h3 class="clickdeck-interaction-library__detail-title">${patternName(pattern, language)}</h3>
+          <div class="clickdeck-interaction-library__detail-en">${language === "zh" ? pattern.nameEn : pattern.nameZh}</div>
+        </div>
+        <button class="clickdeck-interaction-library__copy" data-library-action="copy-pattern" type="button">${t("复制交互形式", "Copy pattern")}</button>
+      </div>
       <p class="clickdeck-interaction-library__summary">${pick(language, pattern.summaryZh, pattern.summaryEn)}</p>
       <div class="clickdeck-interaction-library__demo-wrap" data-library-demo-stage tabindex="0" aria-label="${t("鼠标移入循环播放，点击暂停", "Hover to loop the demo; click to pause")}">
         <div class="clickdeck-interaction-library__demo-label">${t("移入循环播放 · 点击暂停", "Hover to loop · click to pause")}</div>
@@ -1184,6 +1222,7 @@ export function createInteractionLibrary(
 
   const close = (): void => {
     clearPreviewTimers();
+    clearCopyFeedbackTimer();
     document.removeEventListener("keydown", handleKeydown);
     element.remove();
   };
@@ -1419,6 +1458,30 @@ export function createInteractionLibrary(
     renderDetail();
   };
 
+  const copySelectedPattern = (): void => {
+    const button = detailElement?.querySelector<HTMLButtonElement>("[data-library-action='copy-pattern']");
+    const pattern = interactionPatterns.find((item) => item.id === selectedId) ?? interactionPatterns[0];
+    if (!button) return;
+
+    const setFeedback = (label: string): void => {
+      clearCopyFeedbackTimer();
+      button.textContent = label;
+      copyFeedbackTimer = window.setTimeout(() => {
+        copyFeedbackTimer = null;
+        if (detailElement?.contains(button)) button.textContent = t("复制交互形式", "Copy pattern");
+      }, 1600);
+    };
+
+    if (!navigator.clipboard?.writeText) {
+      setFeedback(t("复制失败", "Copy failed"));
+      return;
+    }
+
+    void navigator.clipboard.writeText(getInteractionIntentText(pattern, language))
+      .then(() => setFeedback(t("已复制", "Copied")))
+      .catch(() => setFeedback(t("复制失败", "Copy failed")));
+  };
+
   const handleClick = (event: Event): void => {
     const target = event.target as HTMLElement;
     if (target === element || target.closest("[data-library-action='close']")) {
@@ -1430,6 +1493,11 @@ export function createInteractionLibrary(
       const pattern = interactionPatterns.find((item) => item.id === selectedId) ?? interactionPatterns[0];
       options.onSelect?.(pattern, getInteractionIntentText(pattern, language));
       close();
+      return;
+    }
+
+    if (target.closest("[data-library-action='copy-pattern']")) {
+      copySelectedPattern();
       return;
     }
 

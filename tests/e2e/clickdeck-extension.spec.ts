@@ -972,6 +972,19 @@ test.describe("ClickDeck core editing workflows", () => {
     ).toBe("50%");
     await expect(library.locator(".clickdeck-interaction-library__demo-wrap")).toHaveCSS("background-color", "rgb(23, 35, 31)");
 
+    const copyPatternButton = library.locator("[data-library-action='copy-pattern']");
+    const detailTitle = library.locator(".clickdeck-interaction-library__detail-title");
+    const copyBox = await copyPatternButton.boundingBox();
+    const titleBox = await detailTitle.boundingBox();
+    expect(copyBox).not.toBeNull();
+    expect(titleBox).not.toBeNull();
+    expect(copyBox!.x).toBeGreaterThan(titleBox!.x);
+    await copyPatternButton.click();
+    await expect(copyPatternButton).toHaveText("Copied");
+    const copiedPattern = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copiedPattern).toContain("Change this region to Before–After Compare Slider");
+    expect(copiedPattern).toContain("invent no new content");
+
     await page.setViewportSize({ width: 390, height: 780 });
     const dialogBox = await dialog.boundingBox();
     const listBox = await library.locator(".clickdeck-interaction-library__list-pane").boundingBox();

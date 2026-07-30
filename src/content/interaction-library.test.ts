@@ -84,6 +84,40 @@ describe("createInteractionLibrary", () => {
     library.destroy();
   });
 
+  it("copies the selected interaction pattern from the right-side heading", async () => {
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+      const copyButton = library.element.querySelector<HTMLButtonElement>("[data-library-action='copy-pattern']");
+      expect(copyButton?.textContent).toBe("Copy pattern");
+      expect(copyButton?.closest(".clickdeck-interaction-library__detail-heading")).not.toBeNull();
+
+      copyButton?.click();
+      await Promise.resolve();
+
+      expect(writeText).toHaveBeenCalledTimes(1);
+      expect(writeText.mock.calls[0][0]).toContain("Change this region to Tabs");
+      expect(writeText.mock.calls[0][0]).toContain("invent no new content");
+      expect(copyButton?.textContent).toBe("Copied");
+
+      library.destroy();
+    } finally {
+      if (originalClipboard) {
+        Object.defineProperty(navigator, "clipboard", originalClipboard);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
+  });
+
   it("keeps left-index feedback static and uses neutral structural examples in every demo", () => {
     const englishLibrary = createInteractionLibrary("en");
     document.body.appendChild(englishLibrary.element);
