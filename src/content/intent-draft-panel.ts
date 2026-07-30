@@ -1,4 +1,5 @@
-import { getPanelLabels } from "./i18n";
+import { getPanelLabels, getPanelLanguage } from "./i18n";
+import { createInteractionLibrary, type InteractionLibraryView } from "./interaction-library";
 import type { PanelLayout } from "./panel";
 import type { IntentOperation, IntentAction } from "./intent-region";
 
@@ -50,6 +51,7 @@ export function createIntentDraftPanel(
   sheet.appendChild(cardsContainer);
 
   const cards = new Map<string, HTMLDivElement>();
+  let activeInteractionLibrary: InteractionLibraryView | null = null;
   let expanded = true;
   let manuallyHidden = false;
   let currentLayout: PanelLayout | null = null;
@@ -62,6 +64,9 @@ export function createIntentDraftPanel(
     card.innerHTML = `
       <div class="clickdeck-intent-draft__editing" style="display: flex;">
         <textarea class="clickdeck-intent-draft__textarea" placeholder="${labels.intentPlaceholder}"></textarea>
+        <button class="clickdeck-button clickdeck-button--outline clickdeck-intent-draft__interaction-btn" type="button">
+          ${labels.intentChooseInteraction}
+        </button>
         <div class="clickdeck-intent-draft__target-actions" style="display: flex; gap: 8px;">
           <button class="clickdeck-button clickdeck-button--outline clickdeck-intent-draft__target-btn" type="button">
             ${labels.intentMoveTo}
@@ -95,6 +100,7 @@ export function createIntentDraftPanel(
     const btnCancel = card.querySelector('button[data-action="cancel"]') as HTMLButtonElement;
     const btnSave = card.querySelector('button[data-action="save"]') as HTMLButtonElement;
     const btnDelete = card.querySelector('button[data-action="delete"]') as HTMLButtonElement;
+    const btnInteraction = card.querySelector(".clickdeck-intent-draft__interaction-btn") as HTMLButtonElement;
     const btnTarget = card.querySelector('.clickdeck-intent-draft__target-btn') as HTMLButtonElement;
     const btnRemove = card.querySelector('.clickdeck-intent-draft__remove-btn') as HTMLButtonElement;
 
@@ -133,6 +139,29 @@ export function createIntentDraftPanel(
       if (changed) onActionChange?.(operation.id, "remove");
     });
 
+    btnInteraction.addEventListener("click", () => {
+      activeInteractionLibrary?.destroy();
+      activeInteractionLibrary = createInteractionLibrary(getPanelLanguage(), {
+        onSelect: (_pattern, intentText) => {
+          const currentText = textarea.value.trim();
+          if (!currentText.includes(intentText)) {
+            textarea.value = currentText ? `${currentText}\n\n${intentText}` : intentText;
+            textarea.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+
+          const changed = draftAction !== "intent";
+          draftAction = "intent";
+          syncMoveButton();
+          if (changed) onActionChange?.(operation.id, "intent");
+
+          activeInteractionLibrary = null;
+          textarea.focus();
+        }
+      });
+      element.appendChild(activeInteractionLibrary.element);
+      activeInteractionLibrary.focusInitial();
+    });
+
     const updateSavedView = () => {
       const isMove = operation.action === "move";
       const isRemove = operation.action === "remove";
@@ -156,6 +185,8 @@ export function createIntentDraftPanel(
     };
 
     btnCancel.addEventListener("click", () => {
+      activeInteractionLibrary?.destroy();
+      activeInteractionLibrary = null;
       if (isSaved) {
         // Revert to saved view
         draftAction = operation.action;
@@ -188,6 +219,8 @@ export function createIntentDraftPanel(
 
     btnDelete.addEventListener("click", (e) => {
       e.stopPropagation();
+      activeInteractionLibrary?.destroy();
+      activeInteractionLibrary = null;
       card.remove();
       cards.delete(operation.id);
       onDelete(operation.id);
@@ -270,6 +303,7 @@ export function createIntentDraftPanel(
   return {
     element,
     destroy: () => {
+      activeInteractionLibrary?.destroy();
       element.remove();
     },
     addDraft: (operation: IntentOperation, color?: string) => {
@@ -404,6 +438,14 @@ function injectBaseStyles(): void {
     }
     .clickdeck-intent-draft__textarea:focus {
       border-color: #3b82f6;
+    }
+    .clickdeck-intent-draft__interaction-btn {
+      width: 100%;
+      min-height: 32px;
+      border-color: #f2b37f;
+      color: #a7440c;
+      background: #fff8f1;
+      font-size: 12px;
     }
     .clickdeck-intent-draft__target-btn {
       align-self: flex-start;

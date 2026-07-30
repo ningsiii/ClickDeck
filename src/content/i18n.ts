@@ -150,6 +150,7 @@ export type PanelLabels = {
   interactionLibraryTooltip: string;
   copyFailed: string;
   addIntent: string;
+  intentChooseInteraction: string;
   intentActionMove: string;
   intentMoveTo: string;
   intentPlaceholder: string;
@@ -322,6 +323,7 @@ const englishLabels: PanelLabels = {
   interactionLibraryTooltip: "Browse six information relationships and try 20 lightweight interaction micro-demos.",
   copyFailed: "Copy failed",
   addIntent: "Add suggestion",
+  intentChooseInteraction: "Choose interaction pattern",
   intentActionMove: "Move",
   intentMoveTo: "Move to...",
   intentPlaceholder: "Enter your instructions for AI...",
@@ -494,6 +496,7 @@ const chineseLabels: PanelLabels = {
   interactionLibraryTooltip: "按 6 种信息关系查找，并体验 20 种轻量交互微演示。",
   copyFailed: "复制失败",
   addIntent: "添加修改意见",
+  intentChooseInteraction: "选择交互方式",
   intentActionMove: "移动",
   intentMoveTo: "移动到...",
   intentPlaceholder: "输入你想让 AI 做的操作...",

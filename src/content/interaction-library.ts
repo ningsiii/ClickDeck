@@ -414,6 +414,20 @@ export type InteractionLibraryView = {
   focusInitial: () => void;
 };
 
+export type InteractionLibraryOptions = {
+  onSelect?: (pattern: InteractionPattern, intentText: string) => void;
+};
+
+export function getInteractionIntentText(
+  pattern: InteractionPattern,
+  language: InteractionLibraryLanguage
+): string {
+  if (language === "zh") {
+    return `将此区域改为${pattern.nameZh}（${pattern.nameEn}），${pattern.summaryZh}保留现有内容和视觉风格，不添加页面中不存在的内容，并支持点击、触摸和键盘操作。`;
+  }
+  return `Change this region to ${pattern.nameEn}: ${pattern.summaryEn} Preserve the existing content and visual style, invent no new content, and support click, touch, and keyboard operation.`;
+}
+
 const libraryStyles = `
   .clickdeck-interaction-library {
     position: fixed;
@@ -617,6 +631,24 @@ const libraryStyles = `
     font-size: 11px;
     line-height: 1.45;
     overflow-wrap: anywhere;
+  }
+  .clickdeck-interaction-library__selection {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 18px;
+    border-top: 1px solid #eadcc2;
+    background: #fffaf3;
+  }
+  .clickdeck-interaction-library__select {
+    min-height: 36px;
+    padding: 7px 14px;
+    border: 1px solid #e86512;
+    border-radius: 9px;
+    background: #f97316;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
   }
   .cd-demo {
     min-height: 150px;
@@ -917,7 +949,10 @@ function renderDemo(renderer: InteractionDemoRenderer, language: InteractionLibr
   }
 }
 
-export function createInteractionLibrary(language: InteractionLibraryLanguage): InteractionLibraryView {
+export function createInteractionLibrary(
+  language: InteractionLibraryLanguage,
+  options: InteractionLibraryOptions = {}
+): InteractionLibraryView {
   const t = (zh: string, en: string): string => pick(language, zh, en);
   const element = document.createElement("div");
   element.className = "clickdeck-interaction-library";
@@ -928,7 +963,9 @@ export function createInteractionLibrary(language: InteractionLibraryLanguage): 
       <header class="clickdeck-interaction-library__header">
         <div>
           <h2 class="clickdeck-interaction-library__title" id="clickdeck-interaction-library-title">${t("交互小字典 · 20 种", "Interaction dictionary · 20 patterns")}</h2>
-          <p class="clickdeck-interaction-library__subtitle">${t("先按信息关系查找，再点击名称体验微演示。它只用于理解，不会修改当前页面。", "Filter by information relationship, then select a pattern to try its micro-demo. Nothing is applied to the page.")}</p>
+          <p class="clickdeck-interaction-library__subtitle">${options.onSelect
+            ? t("选择一种方式，确认后写入当前修改意见；写入的文字仍可继续编辑。", "Choose a pattern, then write an editable description into the current suggestion.")
+            : t("先按信息关系查找，再点击名称体验微演示。它只用于理解，不会修改当前页面。", "Filter by information relationship, then select a pattern to try its micro-demo. Nothing is applied to the page.")}</p>
         </div>
         <button class="clickdeck-interaction-library__close" data-library-action="close" type="button" aria-label="${t("关闭交互小字典", "Close interaction dictionary")}">×</button>
       </header>
@@ -940,6 +977,11 @@ export function createInteractionLibrary(language: InteractionLibraryLanguage): 
         </aside>
         <main class="clickdeck-interaction-library__detail"></main>
       </div>
+      ${options.onSelect ? `
+        <footer class="clickdeck-interaction-library__selection">
+          <button class="clickdeck-interaction-library__select" data-library-action="select" type="button">${t("写入这条修改意见", "Use in this suggestion")}</button>
+        </footer>
+      ` : ""}
     </section>
   `;
 
@@ -1114,6 +1156,13 @@ export function createInteractionLibrary(language: InteractionLibraryLanguage): 
   const handleClick = (event: Event): void => {
     const target = event.target as HTMLElement;
     if (target === element || target.closest("[data-library-action='close']")) {
+      close();
+      return;
+    }
+
+    if (target.closest("[data-library-action='select']")) {
+      const pattern = interactionPatterns.find((item) => item.id === selectedId) ?? interactionPatterns[0];
+      options.onSelect?.(pattern, getInteractionIntentText(pattern, language));
       close();
       return;
     }

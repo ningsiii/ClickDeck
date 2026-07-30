@@ -104,6 +104,66 @@ describe("intent-draft-panel", () => {
     expect(savedOp.source.userIntent).toBe("align left edge");
   });
 
+  it("writes a selected interaction into the existing editable suggestion", () => {
+    const onSave = vi.fn();
+    const panel = createIntentDraftPanel(onSave, vi.fn(), vi.fn(), vi.fn());
+    const operation = createMockOperation();
+    panel.addDraft(operation);
+
+    const card = panel.element.querySelector(".clickdeck-intent-draft__card") as HTMLElement;
+    const textarea = card.querySelector(".clickdeck-intent-draft__textarea") as HTMLTextAreaElement;
+    card.querySelector<HTMLButtonElement>(".clickdeck-intent-draft__interaction-btn")?.click();
+
+    const library = panel.element.querySelector(".clickdeck-interaction-library") as HTMLElement;
+    expect(library).not.toBeNull();
+    library.querySelector<HTMLButtonElement>("[data-library-pattern='filter-chips']")?.click();
+    library.querySelector<HTMLButtonElement>("[data-library-action='select']")?.click();
+
+    expect(textarea.value).toContain("Filter Chips");
+    expect(textarea.value).toContain("invent no new content");
+    expect(panel.element.querySelector(".clickdeck-interaction-library")).toBeNull();
+
+    card.querySelector<HTMLButtonElement>('button[data-action="save"]')?.click();
+    expect(onSave).toHaveBeenCalled();
+    expect(onSave.mock.calls[0][0].source.userIntent).toBe(textarea.value);
+
+    panel.destroy();
+  });
+
+  it("appends interaction text without overwriting an existing note and restores intent action", () => {
+    const onActionChange = vi.fn();
+    const panel = createIntentDraftPanel(
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      onActionChange
+    );
+    const operation = createMockOperation();
+    operation.action = "move";
+    operation.source.action = "move";
+    operation.source.userIntent = "Keep the heading in view.";
+    panel.addDraft(operation);
+
+    const card = panel.element.querySelector(".clickdeck-intent-draft__card") as HTMLElement;
+    const textarea = card.querySelector(".clickdeck-intent-draft__textarea") as HTMLTextAreaElement;
+    card.querySelector<HTMLButtonElement>(".clickdeck-intent-draft__interaction-btn")?.click();
+
+    const library = panel.element.querySelector(".clickdeck-interaction-library") as HTMLElement;
+    library.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+    library.querySelector<HTMLButtonElement>("[data-library-action='select']")?.click();
+
+    expect(textarea.value).toMatch(/^Keep the heading in view\.\n\nChange this region to Tabs/);
+    expect(onActionChange).toHaveBeenCalledWith("op-1", "intent");
+
+    card.querySelector<HTMLButtonElement>('button[data-action="save"]')?.click();
+    expect(operation.action).toBe("intent");
+
+    panel.destroy();
+  });
+
   it("should trigger onDragTarget on Move to click immediately", () => {
     const onDragTarget = vi.fn();
     const onActionChange = vi.fn();

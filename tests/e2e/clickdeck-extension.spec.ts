@@ -944,4 +944,34 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(library).toHaveCount(0);
   });
 
+  test("19. Interaction pattern writes an editable description into the active suggestion", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    await page.getByRole("heading", { name: "Quarterly Product Review" }).click();
+    await page.locator("[data-action='add-intent']").click();
+    await page.mouse.move(40, 40);
+    await page.mouse.down();
+    await page.mouse.move(180, 130);
+    await page.mouse.up();
+
+    const draft = page.locator(".clickdeck-intent-draft");
+    await expect(draft).toBeVisible();
+    await draft.locator(".clickdeck-intent-draft__interaction-btn").click();
+
+    const library = page.locator(".clickdeck-interaction-library");
+    await expect(library).toBeVisible();
+    await expect(library).toContainText("write an editable description into the current suggestion");
+    await library.locator("[data-library-pattern='filter-chips']").click();
+    await library.locator("[data-library-action='select']").click();
+
+    await expect(library).toHaveCount(0);
+    const textarea = draft.locator(".clickdeck-intent-draft__textarea");
+    await expect(textarea).toHaveValue(/Filter Chips/);
+    await expect(textarea).toHaveValue(/invent no new content/);
+
+    await draft.locator("button[data-action='save']").click();
+    await expect(draft.locator(".clickdeck-intent-draft__saved-text")).toContainText("Filter Chips");
+  });
+
 });

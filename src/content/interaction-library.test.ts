@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createInteractionLibrary,
+  getInteractionIntentText,
   interactionPatterns,
   interactionRelations
 } from "./interaction-library";
@@ -23,6 +24,20 @@ describe("interaction library data", () => {
       expect(pattern.mobileNoteZh).not.toBe("");
       expect(pattern.mobileNoteEn).not.toBe("");
     }
+  });
+
+  it("creates concise bilingual intent text without inventing page content", () => {
+    const pattern = interactionPatterns.find((item) => item.id === "filter-chips");
+    expect(pattern).toBeDefined();
+    if (!pattern) return;
+
+    const zh = getInteractionIntentText(pattern, "zh");
+    const en = getInteractionIntentText(pattern, "en");
+
+    expect(zh).toContain("分类筛选（Filter Chips）");
+    expect(zh).toContain("不添加页面中不存在的内容");
+    expect(en).toContain("Filter Chips");
+    expect(en).toContain("invent no new content");
   });
 });
 
@@ -103,5 +118,28 @@ describe("createInteractionLibrary", () => {
     expect(document.body.contains(library.element)).toBe(false);
     expect(host.textContent).toBe("Host page remains unchanged");
     host.remove();
+  });
+
+  it("offers an explicit selection action only when connected to a suggestion", () => {
+    const referenceLibrary = createInteractionLibrary("en");
+    document.body.appendChild(referenceLibrary.element);
+    expect(referenceLibrary.element.querySelector("[data-library-action='select']")).toBeNull();
+    referenceLibrary.destroy();
+
+    const selections: { id: string; intentText: string }[] = [];
+    const selectionLibrary = createInteractionLibrary("en", {
+      onSelect: (pattern, intentText) => {
+        selections.push({ id: pattern.id, intentText });
+      }
+    });
+    document.body.appendChild(selectionLibrary.element);
+
+    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-action='select']")?.click();
+
+    expect(selections).toHaveLength(1);
+    expect(selections[0].id).toBe("tabs");
+    expect(selections[0].intentText).toContain("Tabs");
+    expect(document.body.contains(selectionLibrary.element)).toBe(false);
   });
 });
