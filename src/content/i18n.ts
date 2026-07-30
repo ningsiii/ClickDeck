@@ -142,6 +142,8 @@ export type PanelLabels = {
   askGeminiFocusTooltip: string;
   askGeminiInteraction: string;
   askGeminiInteractionTooltip: string;
+  askGeminiInteractionSelection: string;
+  askGeminiInteractionSelectionTooltip: string;
   askGeminiCopied: string;
   copyFailed: string;
   addIntent: string;
@@ -307,8 +309,10 @@ const englishLabels: PanelLabels = {
   askGeminiFlowTooltip: "Ask AI to review page order, cause-and-effect, and narrative flow.",
   askGeminiFocus: "Focus",
   askGeminiFocusTooltip: "Ask AI to spot weak visual hierarchy and buried key messages.",
-  askGeminiInteraction: "Interaction",
-  askGeminiInteractionTooltip: "Ask AI to review buttons, tabs, scrolling, and reveal patterns.",
+  askGeminiInteraction: "Page interaction",
+  askGeminiInteractionTooltip: "Ask AI where lightweight interaction would genuinely help across the current page.",
+  askGeminiInteractionSelection: "Selected area",
+  askGeminiInteractionSelectionTooltip: "Copy this, then use Select from screen in Gemini to choose one region.",
   askGeminiCopied: "Copied. Paste it into Review with AI.",
   copyFailed: "Copy failed",
   addIntent: "Add suggestion",
@@ -474,8 +478,10 @@ const chineseLabels: PanelLabels = {
   askGeminiFlowTooltip: "让 AI 给页面顺序、因果关系和叙事节奏提建议。",
   askGeminiFocus: "看重点",
   askGeminiFocusTooltip: "让 AI 找出视觉主次问题，提醒哪些重点被埋没。",
-  askGeminiInteraction: "看交互",
-  askGeminiInteractionTooltip: "让 AI 检查按钮、切换和滚动路径是否顺手。",
+  askGeminiInteraction: "整页交互",
+  askGeminiInteractionTooltip: "让 AI 判断整个页面哪里真正值得增加轻量交互。",
+  askGeminiInteractionSelection: "框选交互",
+  askGeminiInteractionSelectionTooltip: "复制后，在 Gemini 中用 Select from screen 框选一个区域。",
   askGeminiCopied: "已复制，可粘贴给 AI 看页面",
   copyFailed: "复制失败",
   addIntent: "添加修改意见",

@@ -1069,11 +1069,17 @@ export function createController(logger: ClickDeckLogger, rootId: string): Click
       return;
     }
 
-    if (action === "ask-gemini-flow" || action === "ask-gemini-focus" || action === "ask-gemini-interaction") {
+    if (
+      action === "ask-gemini-flow"
+      || action === "ask-gemini-focus"
+      || action === "ask-gemini-interaction"
+      || action === "ask-gemini-interaction-selection"
+    ) {
       const promptKeyByAction: Record<typeof action, AskGeminiPromptKey> = {
         "ask-gemini-flow": "flow",
         "ask-gemini-focus": "focus",
-        "ask-gemini-interaction": "interaction"
+        "ask-gemini-interaction": "interaction",
+        "ask-gemini-interaction-selection": "interaction-selection"
       };
       const promptText = getAskGeminiPrompt(promptKeyByAction[action], getPanelLanguage());
 

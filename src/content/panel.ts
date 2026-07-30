@@ -21,6 +21,7 @@ export type PanelAction =
   | "ask-gemini-flow"
   | "ask-gemini-focus"
   | "ask-gemini-interaction"
+  | "ask-gemini-interaction-selection"
   | `color:${string}`;
 
 export type PromptPreviewOptions = {
@@ -267,6 +268,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
         ${buttonMarkup("ask-gemini-flow", labels.askGeminiFlow, false, labels.askGeminiFlowTooltip)}
         ${buttonMarkup("ask-gemini-focus", labels.askGeminiFocus, false, labels.askGeminiFocusTooltip)}
         ${buttonMarkup("ask-gemini-interaction", labels.askGeminiInteraction, false, labels.askGeminiInteractionTooltip)}
+        ${buttonMarkup("ask-gemini-interaction-selection", labels.askGeminiInteractionSelection, false, labels.askGeminiInteractionSelectionTooltip)}
       </div>
     </div>
 
@@ -457,6 +459,7 @@ export function createPanel(onAction: (action: PanelAction) => void, options: Pa
       "ask-gemini-flow",
       "ask-gemini-focus",
       "ask-gemini-interaction",
+      "ask-gemini-interaction-selection",
       "export-html",
       "export-long-image",
       "export-image-pdf-long",

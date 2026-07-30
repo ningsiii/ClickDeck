@@ -895,4 +895,17 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(drawer).toBeHidden();
   });
 
+  test("17. Selected-area interaction review copies its dedicated prompt and collapses the panel", async ({ page, demoPageUrl }) => {
+    await page.goto(demoPageUrl);
+    await activateExtension(page);
+
+    await page.locator("[data-action='ask-gemini-interaction-selection']").click();
+
+    await expect(page.locator(".clickdeck-panel")).toHaveClass(/clickdeck-panel--collapsed/);
+    const copiedPrompt = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copiedPrompt).toContain("Select from screen");
+    expect(copiedPrompt).toContain("Analyze only this selected region");
+    expect(copiedPrompt).toContain("Option 0");
+  });
+
 });

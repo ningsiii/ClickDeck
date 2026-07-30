@@ -255,7 +255,7 @@ describe("createPanel export controls", () => {
 });
 
 describe("createPanel Ask Gemini section", () => {
-  it("renders Ask Gemini section with three buttons", () => {
+  it("renders Ask Gemini section with whole-page and selected-area interaction buttons", () => {
     const panel = createPanel(() => undefined);
     document.body.appendChild(panel.element);
 
@@ -265,13 +265,16 @@ describe("createPanel Ask Gemini section", () => {
     const btnFlow = group?.querySelector("[data-action='ask-gemini-flow']");
     const btnFocus = group?.querySelector("[data-action='ask-gemini-focus']");
     const btnInteraction = group?.querySelector("[data-action='ask-gemini-interaction']");
+    const btnInteractionSelection = group?.querySelector("[data-action='ask-gemini-interaction-selection']");
 
     expect(btnFlow).not.toBeNull();
     expect(btnFocus).not.toBeNull();
     expect(btnInteraction).not.toBeNull();
+    expect(btnInteractionSelection).not.toBeNull();
 
     expect(btnFlow?.getAttribute("title")).toBeTruthy();
     expect(btnFlow?.getAttribute("aria-label")).toBeTruthy();
+    expect(btnInteractionSelection?.getAttribute("title")).toContain("Select from screen");
 
     const panelHtml = panel.element.innerHTML;
     expect(panelHtml).not.toContain("Paste into Chrome Ask Gemini");
