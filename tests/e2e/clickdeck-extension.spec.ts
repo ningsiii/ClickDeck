@@ -926,12 +926,17 @@ test.describe("ClickDeck core editing workflows", () => {
     await page.goto(demoPageUrl);
     await activateExtension(page);
 
-    await page.locator("[data-internal-action='interaction-library']").click();
+    const dictionaryButton = page.locator("[data-internal-action='interaction-library']");
+    await expect(dictionaryButton).toHaveText("Open interaction dictionary");
+    await expect(dictionaryButton).not.toContainText("20");
+    await dictionaryButton.click();
 
     const library = page.locator(".clickdeck-interaction-library");
     const dialog = library.locator(".clickdeck-interaction-library__dialog");
     await expect(library).toBeVisible();
     await expect(dialog.locator(".clickdeck-interaction-library__title")).toHaveText("Interaction dictionary");
+    await expect(library.locator("[data-library-relation='all']")).toHaveText("All");
+    await expect(library.locator(".clickdeck-interaction-library__count")).toHaveText("Fixed index");
     await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
     await expect(library.locator(".clickdeck-interaction-library__item-index").first()).toHaveText("01");
     await expect(library.locator(".clickdeck-interaction-library__item-index").last()).toHaveText("20");

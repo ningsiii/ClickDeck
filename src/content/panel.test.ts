@@ -295,14 +295,17 @@ describe("createPanel Ask Gemini section", () => {
 });
 
 describe("createPanel interaction dictionary", () => {
-  it("opens the local 20-pattern dictionary without dispatching a page action", () => {
+  it("opens the local interaction dictionary without a visible pattern count or page action", () => {
     const actions: string[] = [];
     const panel = createPanel((action) => actions.push(action));
     document.body.appendChild(panel.element);
 
     const openButton = panel.element.querySelector<HTMLButtonElement>("[data-internal-action='interaction-library']");
     expect(openButton).not.toBeNull();
-    expect(openButton?.getAttribute("title")).toContain("20 lightweight interaction");
+    expect(openButton?.textContent).toBe("Open interaction dictionary");
+    expect(openButton?.getAttribute("title")).toBe("Browse information relationships and try lightweight interaction micro-demos.");
+    expect(openButton?.textContent).not.toContain("20");
+    expect(openButton?.getAttribute("title")).not.toContain("20");
 
     openButton?.click();
 

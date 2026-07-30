@@ -47,6 +47,8 @@ describe("createInteractionLibrary", () => {
     document.body.appendChild(library.element);
 
     expect(library.element.querySelectorAll("[data-library-pattern]")).toHaveLength(20);
+    expect(library.element.querySelector("[data-library-relation='all']")?.textContent).toBe("All");
+    expect(library.element.querySelector(".clickdeck-interaction-library__count")?.textContent).toBe("Fixed index");
     const initialItems = Array.from(library.element.querySelectorAll<HTMLElement>("[data-library-pattern]"));
     expect(initialItems[0].querySelector(".clickdeck-interaction-library__item-index")?.textContent).toBe("01");
     expect(initialItems[19].querySelector(".clickdeck-interaction-library__item-index")?.textContent).toBe("20");

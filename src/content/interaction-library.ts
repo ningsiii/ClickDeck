@@ -1083,7 +1083,7 @@ export function createInteractionLibrary(
 
   const renderFilters = (): void => {
     if (!filtersElement) return;
-    const allButton = `<button class="clickdeck-interaction-library__filter" type="button" data-library-relation="all" aria-pressed="${activeRelation === "all"}">${t("全部 20", "All 20")}</button>`;
+    const allButton = `<button class="clickdeck-interaction-library__filter" type="button" data-library-relation="all" aria-pressed="${activeRelation === "all"}">${t("全部", "All")}</button>`;
     filtersElement.innerHTML = allButton + interactionRelations.map((relation) => {
       const count = interactionPatterns.filter((pattern) => pattern.relationId === relation.id).length;
       return `<button class="clickdeck-interaction-library__filter" type="button" data-library-relation="${relation.id}" aria-pressed="${activeRelation === relation.id}">${pick(language, relation.nameZh, relation.nameEn)} ${count}</button>`;
@@ -1108,7 +1108,7 @@ export function createInteractionLibrary(
     const matches = matchingPatterns();
     if (countElement) {
       countElement.textContent = activeRelation === "all"
-        ? t("固定目录 · 20 种", "Fixed index · 20 patterns")
+        ? t("固定目录", "Fixed index")
         : t(`固定目录 · ${matches.length} 种匹配`, `Fixed index · ${matches.length} matches`);
     }
     listElement?.querySelectorAll<HTMLElement>("[data-library-pattern]").forEach((item) => {
