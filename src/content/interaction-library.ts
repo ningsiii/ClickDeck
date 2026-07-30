@@ -534,24 +534,58 @@ const libraryStyles = `
   }
   .clickdeck-interaction-library__item {
     width: 100%;
-    padding: 9px 10px;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    padding: 8px;
     border: 1px solid transparent;
     border-radius: 9px;
     background: transparent;
     color: #4e3b2c;
     text-align: left;
     cursor: pointer;
+    transition: opacity 180ms ease, transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+  .clickdeck-interaction-library__item[data-filter-match="false"] {
+    opacity: 0.3;
+  }
+  .clickdeck-interaction-library__item[data-filter-match="false"]:hover,
+  .clickdeck-interaction-library__item[data-filter-match="false"]:focus-visible {
+    opacity: 0.72;
   }
   .clickdeck-interaction-library__item:hover,
   .clickdeck-interaction-library__item:focus-visible {
     border-color: #dec9a6;
     background: #fff;
+    transform: translateX(3px);
     outline: none;
   }
   .clickdeck-interaction-library__item[aria-current="true"] {
+    opacity: 1;
     border-color: #f2b37f;
     background: #fff;
     box-shadow: 0 2px 8px rgba(79, 48, 21, 0.08);
+  }
+  .clickdeck-interaction-library__item-index {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: #f2e5d2;
+    color: #9b6f45;
+    font-size: 11px;
+    font-weight: 800;
+    transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+  }
+  .clickdeck-interaction-library__item[aria-current="true"] .clickdeck-interaction-library__item-index {
+    background: #f97316;
+    color: #fff;
+    transform: rotate(-4deg) scale(1.05);
+  }
+  .clickdeck-interaction-library__item-copy {
+    min-width: 0;
   }
   .clickdeck-interaction-library__item-name {
     display: block;
@@ -593,14 +627,20 @@ const libraryStyles = `
   }
   .clickdeck-interaction-library__demo-wrap {
     margin: 12px 0 16px;
-    padding: 14px;
-    border: 1px solid #ead8b8;
-    border-radius: 12px;
-    background: #fff;
+    min-height: 218px;
+    padding: 16px;
+    overflow: hidden;
+    border: 1px solid #29443b;
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(241, 199, 91, 0.18), transparent 30%),
+      radial-gradient(circle at 8% 96%, rgba(249, 115, 22, 0.16), transparent 34%),
+      #17231f;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 30px rgba(23, 35, 31, 0.15);
   }
   .clickdeck-interaction-library__demo-label {
     margin-bottom: 10px;
-    color: #8a7561;
+    color: #f1c75b;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -652,7 +692,7 @@ const libraryStyles = `
   }
   .cd-demo {
     min-height: 150px;
-    color: #3d2f24;
+    color: #f7f4eb;
     font-size: 11px;
   }
   .cd-demo.is-previewing {
@@ -669,18 +709,26 @@ const libraryStyles = `
   .cd-demo button {
     min-height: 28px;
     padding: 4px 9px;
-    border: 1px solid #d9c5a4;
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 7px;
-    background: #fff;
-    color: #5c4632;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f7f4eb;
     cursor: pointer;
+    transition: transform 180ms ease, color 180ms ease, background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+  }
+  .cd-demo button:hover,
+  .cd-demo button:focus-visible {
+    border-color: #f1c75b;
+    transform: translateY(-2px);
+    outline: none;
   }
   .cd-demo button[aria-pressed="true"],
   .cd-demo button[aria-selected="true"],
   .cd-demo .is-active {
-    border-color: #f97316;
-    background: #fff0e5;
-    color: #a7440c;
+    border-color: #f1c75b;
+    background: #f1c75b;
+    color: #17231f;
+    box-shadow: 0 8px 20px rgba(241, 199, 91, 0.18);
   }
   .cd-demo__row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
   .cd-demo__stack { display: flex; flex-direction: column; gap: 7px; }
@@ -690,36 +738,52 @@ const libraryStyles = `
     align-items: center;
     justify-content: center;
     padding: 12px;
-    border: 1px solid #eadcc4;
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 10px;
-    background: #fffaf3;
+    background: linear-gradient(135deg, #205b48, #2c8065);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 750;
     text-align: center;
+    box-shadow: 0 12px 28px rgba(8, 19, 15, 0.3);
   }
-  .cd-demo__muted { color: #8a7561; }
+  .cd-demo__surface.is-changing {
+    animation: cd-demo-state-change 360ms ease both;
+  }
+  @keyframes cd-demo-state-change {
+    0% { opacity: 0.45; transform: scale(0.96); filter: saturate(0.7); }
+    65% { transform: scale(1.025); }
+    100% { opacity: 1; transform: scale(1); filter: saturate(1); }
+  }
+  .cd-demo__muted { color: rgba(247, 244, 235, 0.64); }
   .cd-demo__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-  .cd-demo__card { min-height: 58px; padding: 8px; border: 1px solid #eadcc4; border-radius: 8px; background: #fffaf3; transition: opacity 120ms, transform 120ms; }
-  .cd-demo__card.is-dimmed { opacity: 0.38; transform: scale(0.96); }
-  .cd-demo__card.is-active { opacity: 1; transform: scale(1.03); }
+  .cd-demo__card { min-height: 58px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: #205b48; color: #fff; transition: opacity 220ms, transform 220ms, background 220ms, box-shadow 220ms; }
+  .cd-demo__card:nth-child(2n) { background: #bc572f; }
+  .cd-demo__card:nth-child(3n) { background: #9a7b2d; }
+  .cd-demo__card.is-dimmed { opacity: 0.24; transform: scale(0.92); filter: saturate(0.45); }
+  .cd-demo__card.is-active { opacity: 1; transform: translateY(-4px) scale(1.04); background: #f1c75b; color: #17231f; box-shadow: 0 12px 24px rgba(0,0,0,.24); }
   .cd-demo__split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .cd-demo__panel { min-height: 72px; padding: 9px; border: 1px solid #eadcc4; border-radius: 8px; background: #fffaf3; }
-  .cd-demo__bar { height: 8px; margin: 5px 0; border-radius: 999px; background: #decdb5; }
-  .cd-demo__bar--accent { background: #f97316; }
+  .cd-demo__panel { min-height: 72px; padding: 9px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.04)); color: #fff; }
+  .cd-demo__bar { height: 8px; margin: 5px 0; border-radius: 999px; background: rgba(255,255,255,.22); }
+  .cd-demo__bar--accent { background: #f97316; box-shadow: 0 0 18px rgba(249,115,22,.3); }
   .cd-demo__drawer-stage, .cd-demo__dialog-stage, .cd-demo__compare {
     position: relative;
     min-height: 128px;
     overflow: hidden;
-    border: 1px solid #eadcc4;
+    border: 1px solid rgba(255,255,255,.16);
     border-radius: 9px;
-    background: #fffaf3;
+    background: linear-gradient(135deg, #203a32, #10231d);
   }
   .cd-demo__drawer {
     position: absolute;
     inset: 0 0 0 44%;
     padding: 10px;
-    background: #fff;
-    border-left: 1px solid #e2cba6;
+    background: linear-gradient(145deg, #f97316, #c64d16);
+    color: #fff;
+    border-left: 1px solid rgba(255,255,255,.26);
     transform: translateX(102%);
-    transition: transform 160ms ease;
+    box-shadow: -14px 0 30px rgba(0,0,0,.26);
+    transition: transform 320ms cubic-bezier(.2,.8,.2,1);
   }
   .cd-demo__drawer.is-open { transform: translateX(0); }
   .cd-demo__scrim {
@@ -729,10 +793,11 @@ const libraryStyles = `
     align-items: center;
     justify-content: center;
     padding: 12px;
-    background: rgba(64, 43, 24, 0.3);
+    background: rgba(4, 12, 9, 0.72);
   }
   .cd-demo__scrim.is-open { display: flex; }
-  .cd-demo__mini-dialog { width: min(220px, 90%); padding: 12px; border-radius: 9px; background: #fff; box-shadow: 0 8px 22px rgba(49, 33, 18, 0.22); }
+  .cd-demo__mini-dialog { width: min(220px, 90%); padding: 12px; border-radius: 9px; background: #f1c75b; color: #17231f; box-shadow: 0 18px 38px rgba(0,0,0,.34); animation: cd-demo-dialog-in 260ms ease both; }
+  @keyframes cd-demo-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.94); } }
   .cd-demo__nodes { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 12px 0; }
   .cd-demo__node { width: 30px; height: 30px; padding: 0 !important; border-radius: 50% !important; }
   .cd-demo__compare-layer {
@@ -742,18 +807,22 @@ const libraryStyles = `
     align-items: center;
     justify-content: flex-end;
     padding: 12px 18px;
-    background: linear-gradient(135deg, #d8e9df, #f7faf8);
+    background: linear-gradient(135deg, #205b48, #4a9f7e);
+    color: #fff;
   }
   .cd-demo__compare-layer--after {
     justify-content: flex-start;
     overflow: hidden;
-    background: linear-gradient(135deg, #ffd9bd, #fff6eb);
-    border-right: 2px solid #f97316;
+    background: linear-gradient(135deg, #f97316, #f1c75b);
+    color: #17231f;
+    border-right: 3px solid #fff;
+    transition: width 520ms cubic-bezier(.2,.8,.2,1);
   }
-  .cd-demo__compare-control { width: 100%; margin-top: 8px; accent-color: #f97316; }
-  .cd-demo__pair { padding: 7px; border: 1px solid #eadcc4; border-radius: 7px; background: #fff; }
-  .cd-demo__pair.is-linked { border-color: #f97316; background: #fff0e5; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.12); }
-  .cd-demo__reveal-item { display: none; padding: 7px; border-left: 3px solid #f97316; background: #fff7ed; }
+  .cd-demo__compare-control { width: 100%; margin-top: 8px; accent-color: #f1c75b; }
+  .cd-demo__pair { padding: 7px; border: 1px solid rgba(255,255,255,.17); border-radius: 7px; background: rgba(255,255,255,.08); color: #fff; transition: transform 220ms, background 220ms, border-color 220ms, box-shadow 220ms; }
+  .cd-demo__pair.is-linked { border-color: #f1c75b; background: #f1c75b; color: #17231f; transform: translateX(4px); box-shadow: 0 8px 20px rgba(241,199,91,.2); }
+  .cd-demo__reveal-item { display: none; padding: 7px; border-left: 3px solid #f97316; background: rgba(249,115,22,.18); color: #fff; animation: cd-demo-reveal-in 260ms ease both; }
+  @keyframes cd-demo-reveal-in { from { opacity: 0; transform: translateX(-8px); } }
   .cd-demo__reveal-item.is-visible { display: block; }
   .cd-demo__popover-stage { position: relative; min-height: 110px; padding: 24px 8px; }
   .cd-demo__popover {
@@ -762,17 +831,22 @@ const libraryStyles = `
     bottom: 4px;
     width: min(230px, 90%);
     padding: 8px;
-    border: 1px solid #d9c5a4;
+    border: 1px solid #f1c75b;
     border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 7px 18px rgba(49, 33, 18, 0.16);
+    background: #f1c75b;
+    color: #17231f;
+    box-shadow: 0 12px 28px rgba(0,0,0,.3);
     transform: translateX(-50%);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-demo.is-previewing { animation: none; }
     .cd-demo__card,
     .cd-demo__drawer,
-    .cd-demo__compare-layer--after { transition: none; }
+    .cd-demo__compare-layer--after,
+    .cd-demo__pair { transition: none; }
+    .cd-demo__surface.is-changing,
+    .cd-demo__mini-dialog,
+    .cd-demo__reveal-item { animation: none; }
   }
   @media (max-width: 720px) {
     .clickdeck-interaction-library { padding: 8px; }
@@ -1006,7 +1080,7 @@ export function createInteractionLibrary(
   const listElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__list");
   const detailElement = element.querySelector<HTMLElement>(".clickdeck-interaction-library__detail");
 
-  const filteredPatterns = (): readonly InteractionPattern[] => (
+  const matchingPatterns = (): readonly InteractionPattern[] => (
     activeRelation === "all"
       ? interactionPatterns
       : interactionPatterns.filter((pattern) => pattern.relationId === activeRelation)
@@ -1023,15 +1097,31 @@ export function createInteractionLibrary(
 
   const renderList = (): void => {
     if (!listElement || !countElement) return;
-    const patterns = filteredPatterns();
-    countElement.textContent = t(`当前显示 ${patterns.length} 种`, `${patterns.length} patterns shown`);
-    listElement.innerHTML = patterns.map((pattern) => {
+    listElement.innerHTML = interactionPatterns.map((pattern, index) => {
       const relation = relationFor(pattern.relationId);
-      return `<button class="clickdeck-interaction-library__item" type="button" data-library-pattern="${pattern.id}" aria-current="${pattern.id === selectedId}">
-        <span class="clickdeck-interaction-library__item-name">${patternName(pattern, language)}</span>
-        <span class="clickdeck-interaction-library__item-meta">${pick(language, relation.nameZh, relation.nameEn)} · ${patternTask(pattern, language)}</span>
+      return `<button class="clickdeck-interaction-library__item" type="button" data-library-pattern="${pattern.id}" data-filter-match="true" aria-current="${pattern.id === selectedId}">
+        <span class="clickdeck-interaction-library__item-index" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+        <span class="clickdeck-interaction-library__item-copy">
+          <span class="clickdeck-interaction-library__item-name">${patternName(pattern, language)}</span>
+          <span class="clickdeck-interaction-library__item-meta">${pick(language, relation.nameZh, relation.nameEn)} · ${patternTask(pattern, language)}</span>
+        </span>
       </button>`;
     }).join("");
+  };
+
+  const updateListState = (): void => {
+    const matches = matchingPatterns();
+    if (countElement) {
+      countElement.textContent = activeRelation === "all"
+        ? t("固定目录 · 20 种", "Fixed index · 20 patterns")
+        : t(`固定目录 · ${matches.length} 种匹配`, `Fixed index · ${matches.length} matches`);
+    }
+    listElement?.querySelectorAll<HTMLElement>("[data-library-pattern]").forEach((item) => {
+      const pattern = interactionPatterns.find((candidate) => candidate.id === item.dataset.libraryPattern);
+      const isMatch = activeRelation === "all" || pattern?.relationId === activeRelation;
+      item.dataset.filterMatch = String(isMatch);
+      item.setAttribute("aria-current", String(item.dataset.libraryPattern === selectedId));
+    });
   };
 
   const renderDetail = (): void => {
@@ -1067,12 +1157,9 @@ export function createInteractionLibrary(
   };
 
   const render = (): void => {
-    const patterns = filteredPatterns();
-    if (!patterns.some((pattern) => pattern.id === selectedId)) {
-      selectedId = patterns[0]?.id ?? interactionPatterns[0].id;
-    }
     renderFilters();
     renderList();
+    updateListState();
     renderDetail();
   };
 
@@ -1095,7 +1182,11 @@ export function createInteractionLibrary(
 
   const setOutput = (demo: Element, value: string): void => {
     const output = demo.querySelector<HTMLElement>("[data-demo-output]");
-    if (output) output.textContent = value;
+    if (!output) return;
+    output.textContent = value;
+    output.classList.remove("is-changing");
+    void output.offsetWidth;
+    output.classList.add("is-changing");
   };
 
   const handleDemoClick = (button: HTMLElement, demo: HTMLElement): void => {
@@ -1253,7 +1344,12 @@ export function createInteractionLibrary(
     const relationButton = target.closest<HTMLElement>("[data-library-relation]");
     if (relationButton) {
       activeRelation = relationButton.dataset.libraryRelation as InteractionRelationId | "all";
-      render();
+      renderFilters();
+      const firstMatch = matchingPatterns()[0] ?? interactionPatterns[0];
+      selectedId = firstMatch.id;
+      updateListState();
+      renderDetail();
+      playCurrentPreview();
       return;
     }
 

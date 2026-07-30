@@ -256,31 +256,28 @@ function injectBaseStyles(rootId: string): void {
     }
 
     .clickdeck-panel__group--ask-gemini {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       align-items: stretch;
     }
 
     .clickdeck-panel__group--ask-gemini > .clickdeck-button {
-      min-height: 72px;
-      padding: 6px 4px;
-      line-height: 1.25;
-      white-space: normal;
-      overflow-wrap: anywhere;
+      min-height: 34px;
+      white-space: nowrap;
     }
 
     .clickdeck-panel__ask-gemini-interaction {
       min-width: 0;
       display: grid;
-      grid-template-rows: repeat(2, minmax(0, 1fr));
-      gap: 4px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
     }
 
     .clickdeck-panel__ask-gemini-interaction .clickdeck-button {
       min-width: 0;
       min-height: 34px;
-      padding: 4px 2px;
-      font-size: 10px;
-      line-height: 1.2;
+      padding: 4px;
+      font-size: 11px;
+      line-height: 1.25;
       white-space: normal;
       overflow-wrap: anywhere;
     }

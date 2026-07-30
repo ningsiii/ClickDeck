@@ -255,7 +255,7 @@ describe("createPanel export controls", () => {
 });
 
 describe("createPanel Ask Gemini section", () => {
-  it("renders three main columns with whole-page and selected-area actions sharing the interaction column", () => {
+  it("renders three vertical rows with whole-page and selected-area actions sharing the final row", () => {
     const panel = createPanel(() => undefined);
     document.body.appendChild(panel.element);
 
@@ -266,17 +266,20 @@ describe("createPanel Ask Gemini section", () => {
     const btnFocus = group?.querySelector("[data-action='ask-gemini-focus']");
     const btnInteraction = group?.querySelector("[data-action='ask-gemini-interaction']");
     const btnInteractionSelection = group?.querySelector("[data-action='ask-gemini-interaction-selection']");
-    const interactionColumn = group?.querySelector("[data-ask-gemini-column='interaction']");
+    const interactionRow = group?.querySelector("[data-ask-gemini-column='interaction']");
 
     expect(btnFlow).not.toBeNull();
     expect(btnFocus).not.toBeNull();
     expect(btnInteraction).not.toBeNull();
     expect(btnInteractionSelection).not.toBeNull();
-    expect(interactionColumn).not.toBeNull();
+    expect(interactionRow).not.toBeNull();
     expect(group?.children).toHaveLength(3);
-    expect(interactionColumn?.children).toHaveLength(2);
-    expect(interactionColumn?.contains(btnInteraction ?? null)).toBe(true);
-    expect(interactionColumn?.contains(btnInteractionSelection ?? null)).toBe(true);
+    expect(group?.children[0]).toBe(btnFlow);
+    expect(group?.children[1]).toBe(btnFocus);
+    expect(group?.children[2]).toBe(interactionRow);
+    expect(interactionRow?.children).toHaveLength(2);
+    expect(interactionRow?.contains(btnInteraction ?? null)).toBe(true);
+    expect(interactionRow?.contains(btnInteractionSelection ?? null)).toBe(true);
 
     expect(btnFlow?.getAttribute("title")).toBeTruthy();
     expect(btnFlow?.getAttribute("aria-label")).toBeTruthy();

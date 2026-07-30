@@ -900,10 +900,18 @@ test.describe("ClickDeck core editing workflows", () => {
     await activateExtension(page);
 
     const askGeminiGroup = page.locator(".clickdeck-panel__group--ask-gemini");
-    const interactionColumn = askGeminiGroup.locator("[data-ask-gemini-column='interaction']");
+    const interactionRow = askGeminiGroup.locator("[data-ask-gemini-column='interaction']");
     await expect(askGeminiGroup.locator(":scope > *")).toHaveCount(3);
-    await expect(interactionColumn.locator("[data-action='ask-gemini-interaction']")).toBeVisible();
-    await expect(interactionColumn.locator("[data-action='ask-gemini-interaction-selection']")).toBeVisible();
+    await expect(interactionRow.locator("[data-action='ask-gemini-interaction']")).toBeVisible();
+    await expect(interactionRow.locator("[data-action='ask-gemini-interaction-selection']")).toBeVisible();
+    const askRows = await askGeminiGroup.locator(":scope > *").evaluateAll((rows) => rows.map((row) => {
+      const rect = row.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width };
+    }));
+    expect(askRows[0].y).toBeLessThan(askRows[1].y);
+    expect(askRows[1].y).toBeLessThan(askRows[2].y);
+    expect(Math.abs(askRows[0].width - askRows[1].width)).toBeLessThan(1);
+    expect(Math.abs(askRows[1].width - askRows[2].width)).toBeLessThan(1);
 
     await page.locator("[data-action='ask-gemini-interaction-selection']").click();
 
@@ -925,9 +933,12 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect(library).toBeVisible();
     await expect(dialog).toContainText("Interaction dictionary · 20 patterns");
     await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
+    await expect(library.locator(".clickdeck-interaction-library__item-index").first()).toHaveText("01");
+    await expect(library.locator(".clickdeck-interaction-library__item-index").last()).toHaveText("20");
 
     await library.locator("[data-library-relation='comparison-change']").click();
-    await expect(library.locator("[data-library-pattern]")).toHaveCount(3);
+    await expect(library.locator("[data-library-pattern]")).toHaveCount(20);
+    await expect(library.locator("[data-library-pattern][data-filter-match='true']")).toHaveCount(3);
     await library.locator("[data-library-pattern='compare-slider']").hover();
 
     const slider = library.locator("[data-demo-action='compare-slider']");
@@ -935,6 +946,7 @@ test.describe("ClickDeck core editing workflows", () => {
     await expect.poll(
       () => library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)
     ).toBe("72%");
+    await expect(library.locator(".clickdeck-interaction-library__demo-wrap")).toHaveCSS("background-color", "rgb(23, 35, 31)");
 
     await page.setViewportSize({ width: 390, height: 780 });
     const dialogBox = await dialog.boundingBox();

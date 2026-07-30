@@ -42,21 +42,27 @@ describe("interaction library data", () => {
 });
 
 describe("createInteractionLibrary", () => {
-  it("filters patterns by relationship and keeps a valid selected pattern", () => {
+  it("keeps a fixed numbered index while relationship filters only de-emphasize non-matches", () => {
     const library = createInteractionLibrary("en");
     document.body.appendChild(library.element);
 
     expect(library.element.querySelectorAll("[data-library-pattern]")).toHaveLength(20);
+    const initialItems = Array.from(library.element.querySelectorAll<HTMLElement>("[data-library-pattern]"));
+    expect(initialItems[0].querySelector(".clickdeck-interaction-library__item-index")?.textContent).toBe("01");
+    expect(initialItems[19].querySelector(".clickdeck-interaction-library__item-index")?.textContent).toBe("20");
 
     library.element.querySelector<HTMLButtonElement>("[data-library-relation='comparison-change']")?.click();
 
-    const visibleItems = library.element.querySelectorAll<HTMLElement>("[data-library-pattern]");
-    expect(visibleItems).toHaveLength(3);
-    expect(Array.from(visibleItems).map((item) => item.dataset.libraryPattern)).toEqual([
+    const itemsAfterFilter = Array.from(library.element.querySelectorAll<HTMLElement>("[data-library-pattern]"));
+    const matchingItems = itemsAfterFilter.filter((item) => item.dataset.filterMatch === "true");
+    expect(itemsAfterFilter).toHaveLength(20);
+    expect(itemsAfterFilter.every((item, index) => item === initialItems[index])).toBe(true);
+    expect(matchingItems.map((item) => item.dataset.libraryPattern)).toEqual([
       "view-switcher",
       "compare-slider",
       "synchronized-comparison"
     ]);
+    expect(library.element.querySelector(".clickdeck-interaction-library__count")?.textContent).toContain("3 matches");
     expect(library.element.querySelector("[data-demo-renderer='view-switcher']")).not.toBeNull();
 
     library.destroy();
