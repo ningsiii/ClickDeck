@@ -302,7 +302,7 @@ describe("createPanel interaction dictionary", () => {
 
     const openButton = panel.element.querySelector<HTMLButtonElement>("[data-internal-action='interaction-library']");
     expect(openButton).not.toBeNull();
-    expect(openButton?.textContent).toBe("Open interaction dictionary");
+    expect(openButton?.textContent).toBe("Interaction dictionary");
     expect(openButton?.getAttribute("title")).toBe("Browse information relationships and try lightweight interaction micro-demos.");
     expect(openButton?.textContent).not.toContain("20");
     expect(openButton?.getAttribute("title")).not.toContain("20");

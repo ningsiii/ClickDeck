@@ -927,7 +927,7 @@ test.describe("ClickDeck core editing workflows", () => {
     await activateExtension(page);
 
     const dictionaryButton = page.locator("[data-internal-action='interaction-library']");
-    await expect(dictionaryButton).toHaveText("Open interaction dictionary");
+    await expect(dictionaryButton).toHaveText("Interaction dictionary");
     await expect(dictionaryButton).not.toContainText("20");
     await dictionaryButton.click();
 
