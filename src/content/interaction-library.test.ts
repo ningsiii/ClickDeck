@@ -113,7 +113,7 @@ describe("createInteractionLibrary", () => {
     chineseLibrary.destroy();
   });
 
-  it("switches and previews patterns on hover or keyboard focus without a click", () => {
+  it("keeps left hover and focus inert, then selects only on click", () => {
     vi.useFakeTimers();
     try {
       const library = createInteractionLibrary("en");
@@ -122,17 +122,46 @@ describe("createInteractionLibrary", () => {
       const tabsItem = library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']");
       tabsItem?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
-      expect(tabsItem?.getAttribute("aria-current")).toBe("true");
-      expect(library.element.querySelector("[data-demo-renderer='tabs']")).not.toBeNull();
-      expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(true);
-
-      vi.advanceTimersByTime(150);
-      expect(library.element.querySelector("[data-demo-renderer='tabs'] [data-demo-output]")?.textContent).toContain("Logic 2");
+      expect(tabsItem?.getAttribute("aria-current")).toBe("false");
+      expect(library.element.querySelector("[data-demo-renderer='carousel']")).not.toBeNull();
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")).toBeNull();
 
       const drawerItem = library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']");
       drawerItem?.focus();
-      expect(drawerItem?.getAttribute("aria-current")).toBe("true");
-      expect(library.element.querySelector("[data-demo-renderer='drawer']")).not.toBeNull();
+      expect(drawerItem?.getAttribute("aria-current")).toBe("false");
+      expect(library.element.querySelector("[data-demo-renderer='carousel']")).not.toBeNull();
+
+      tabsItem?.click();
+      expect(tabsItem?.getAttribute("aria-current")).toBe("true");
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")).not.toBeNull();
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(false);
+      library.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("plays a complete preview only from the right stage and resets on pointer leave", () => {
+    vi.useFakeTimers();
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+      const stage = library.element.querySelector<HTMLElement>("[data-library-demo-stage]");
+      stage?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")?.classList.contains("is-previewing")).toBe(true);
+      vi.advanceTimersByTime(250);
+      expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 2");
+
+      vi.advanceTimersByTime(900);
+      expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewStep).toBe("3");
+      expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 1");
+
+      stage?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+      expect(library.element.querySelector<HTMLElement>("[data-demo-renderer='tabs']")?.dataset.previewStep).toBeUndefined();
+      expect(library.element.querySelector("[data-demo-output]")?.textContent).toContain("Logic 1");
 
       library.destroy();
     } finally {
@@ -140,24 +169,85 @@ describe("createInteractionLibrary", () => {
     }
   });
 
-  it("cancels a pending preview when the pointer quickly moves to another pattern", () => {
+  it("supports click and keyboard playback fallbacks on the right stage", () => {
+    vi.useFakeTimers();
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']")?.click();
+
+      const clickStage = library.element.querySelector<HTMLElement>("[data-library-demo-stage]");
+      clickStage?.click();
+      vi.advanceTimersByTime(250);
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+
+      clickStage?.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+      const keyboardStage = library.element.querySelector<HTMLElement>("[data-library-demo-stage]");
+      keyboardStage?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      vi.advanceTimersByTime(250);
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(true);
+
+      library.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancels a running right-stage preview when another left item is clicked", () => {
     vi.useFakeTimers();
     try {
       const library = createInteractionLibrary("en");
       document.body.appendChild(library.element);
 
-      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']")
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
+      library.element.querySelector<HTMLElement>("[data-library-demo-stage]")
         ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='compare-slider']")
-        ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      vi.advanceTimersByTime(250);
 
-      vi.advanceTimersByTime(150);
+      library.element.querySelector<HTMLButtonElement>("[data-library-pattern='drawer']")?.click();
+      vi.runAllTimers();
 
-      expect(library.element.querySelector("[data-demo-renderer='drawer']")).toBeNull();
-      expect(library.element.querySelector<HTMLElement>("[data-demo-compare]")?.style.width).toBe("72%");
+      expect(library.element.querySelector("[data-demo-renderer='tabs']")).toBeNull();
+      expect(library.element.querySelector("[data-demo-renderer='drawer']")).not.toBeNull();
+      expect(library.element.querySelector("[data-demo-drawer]")?.classList.contains("is-open")).toBe(false);
 
       library.destroy();
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("runs a complete multi-state sequence for every right-side demo", () => {
+    vi.useFakeTimers();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn()
+    });
+    try {
+      const library = createInteractionLibrary("en");
+      document.body.appendChild(library.element);
+
+      for (const pattern of interactionPatterns) {
+        library.element.querySelector<HTMLButtonElement>(`[data-library-pattern='${pattern.id}']`)?.click();
+        library.element.querySelector<HTMLElement>("[data-library-demo-stage]")
+          ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+        vi.runAllTimers();
+
+        const demo = library.element.querySelector<HTMLElement>(`[data-demo-renderer='${pattern.demoRenderer}']`);
+        expect(Number(demo?.dataset.previewStep ?? 0), pattern.id).toBeGreaterThanOrEqual(2);
+      }
+
+      library.destroy();
+    } finally {
+      if (originalScrollIntoView) {
+        Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+          configurable: true,
+          value: originalScrollIntoView
+        });
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+      }
       vi.useRealTimers();
     }
   });
@@ -220,8 +310,7 @@ describe("createInteractionLibrary", () => {
     });
     document.body.appendChild(selectionLibrary.element);
 
-    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")
-      ?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-pattern='tabs']")?.click();
     selectionLibrary.element.querySelector<HTMLButtonElement>("[data-library-action='select']")?.click();
 
     expect(selections).toHaveLength(1);

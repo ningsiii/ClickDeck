@@ -949,12 +949,21 @@ test.describe("ClickDeck core editing workflows", () => {
     expect(compareItemAfterHover?.height).toBe(compareItemBeforeHover?.height);
     await expect(compareItem).toHaveCSS("transform", "none");
     await expect(compareItem).toHaveCSS("box-shadow", "none");
+    await expect(compareItem).toHaveAttribute("aria-current", "false");
+    await expect(library.locator("[data-demo-renderer='view-switcher']")).toBeVisible();
 
+    await compareItem.click();
+    await expect(compareItem).toHaveAttribute("aria-current", "true");
     const slider = library.locator("[data-demo-action='compare-slider']");
     await expect(slider).toBeVisible();
+    expect(await library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)).toBe("50%");
+    await library.locator("[data-library-demo-stage]").hover();
+    await expect.poll(
+      () => library.locator("[data-demo-renderer='compare-slider']").getAttribute("data-preview-step")
+    ).toBe("3");
     await expect.poll(
       () => library.locator("[data-demo-compare]").evaluate((element: HTMLElement) => element.style.width)
-    ).toBe("72%");
+    ).toBe("50%");
     await expect(library.locator(".clickdeck-interaction-library__demo-wrap")).toHaveCSS("background-color", "rgb(23, 35, 31)");
 
     await page.setViewportSize({ width: 390, height: 780 });
@@ -989,7 +998,8 @@ test.describe("ClickDeck core editing workflows", () => {
 
     const library = page.locator(".clickdeck-interaction-library");
     await expect(library).toBeVisible();
-    await expect(library).toContainText("write an editable description into the current suggestion");
+    await expect(library).toContainText("Click a pattern on the left");
+    await expect(library).toContainText("The inserted description remains editable");
     await library.locator("[data-library-pattern='filter-chips']").click();
     await library.locator("[data-library-action='select']").click();
 
